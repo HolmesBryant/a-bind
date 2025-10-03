@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>a-bind Web Component</title>
+  <meta description="A web component that performs one/two-way data binding for JS objects and custom elements.">
+
+	<script type="module" src="extra/custom-element.js"></script>
+  <script type="module" src="src/a-bind.js"></script>
+  <!-- <script type="module" src="dist/a-bind.min.js"></script> -->
+
+  <script type="module" src="extra/a-tabset.min.js"></script>
+  <!-- <script type="module" src="extra/a-tabset.js"></script> -->
+
+  <script type="module" src="extra/a-code.min.js"></script>
+  <!-- <script type="module" src="extra/a-code.js"></script> -->
+
+  <script src="extra/example-component.js"></script>
+  <script type="module" src="extra/data-row.js"></script>
+
+  <script defer src="extra/testObject.js"></script>
+  <script defer src="extra/exampleObject.js"></script>
+	<script defer src="extra/scripts.js"></script>
+
+	<link rel="stylesheet" href="extra/styles.css">
+  <link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="extra/a-tabset.css">
+<noscript><link rel="stylesheet" href="non-critical.css"></noscript>
+
+  <style>
+    data-bar {
+      opacity: 0;
+      transition: all .5s;
+    }
+  </style>
+</head>
+<body>
+	<header>
+		<h1>a-bind Web Component</h1>
+		<p>A web component that performs one/two-way data binding for JS objects and custom elements.</p>
+	</header>
+
+	<details>
+		<summary>README</summary>
+		<div id="instructions"></div>
+	</details>
+
+  <a href="tests.html" target="_blank">Unit Tests</a>
+
+  <custom-element></custom-element>
+
+<p> </p>
+
+  <a-tabset active="1">
+    <span slot="title">Web Component</span>
+    <div slot="content" data-src="tab-component.html"></div>
+
+    <span slot="title">JS Object</span>
+    <div slot="content" data-src="tab-object.html"></div>
+  </a-tabset>
+</body>
+</html>

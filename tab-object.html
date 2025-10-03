@@ -1,0 +1,1124 @@
+<details name="object-props">
+  <summary> Text-ish Inputs </summary>
+    <section>
+      <!-- reset -->
+      <aside class="flex sticky">
+        <a-bind o="testObj" e="click" f="reset">
+          <button>Reset</button>
+        </a-bind>
+      </aside>
+
+      <!-- text-->
+      <data-bar
+        o="testObj"
+        p="text"
+        inputid="o-text-input"
+        inputname="text"
+        propbtn="foo">
+        <div slot="input">
+          <a-bind o="testObj" p="text">
+            <input id="o-text-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="text">
+                <input id="o-text-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- datalist -->
+      <data-bar
+        o="testObj"
+        p="datalist"
+        inputid="o-datalist-input"
+        inputname="text with datalist"
+        propbtn="Baz, Boom">
+        <div slot="input">
+          <input id="o-datalist-input" list="o-datalist">
+          <a-bind o="testObj" p="datalist" f="getDatalist" a="innerHTML">
+            <datalist id="o-datalist"></datalist>
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="">
+
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- search-->
+      <data-bar
+        o="testObj"
+        p="search"
+        inputid="o-search-input"
+        inputname="search"
+        propbtn="foo">
+        <div slot="input">
+          <a-bind o="testObj" p="search">
+            <input type="search" id="o-search-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="search">
+                <input
+                  type="search"
+                  id="o-search-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- password -->
+      <data-bar
+        o="testObj"
+        p="password"
+        inputid="o-password-input"
+        inputname="password"
+        propbtn="foo">
+        <div slot="input">
+          <a-bind o="testObj" p="password">
+            <input type="password" id="o-password-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="password">
+                <input
+                  type="password"
+                  id="o-password-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- tel -->
+      <data-bar
+        o="testObj"
+        p="tel"
+        inputid="o-tel-input"
+        inputname="tel"
+        propbtn="0000">
+        <div slot="input">
+          <a-bind o="testObj" p="tel">
+            <input type="tel" id="o-tel-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="tel">
+                <input type="tel" id="o-tel-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- url -->
+      <data-bar
+        o="testObj"
+        p="url"
+        inputid="o-url-input"
+        inputname="url"
+        propbtn="foo.com">
+        <div slot="input">
+          <a-bind o="testObj" p="url">
+            <input type="url" id="o-url-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="url">
+                <input
+                  type="url"
+                  id="o-url-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- email -->
+      <data-bar
+        o="testObj"
+        p="email"
+        inputid="o-email-input"
+        inputname="email"
+        propbtn="foo@bar.com">
+        <div slot="input">
+          <a-bind o="testObj" p="email">
+            <input type="email" id="o-email-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="email">
+                <input
+                  type="email"
+                  id="o-email-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- number -->
+      <data-bar
+        o="testObj"
+        p="number"
+        inputid="o-number-input"
+        inputname="number"
+        propbtn="0000">
+        <div slot="input">
+          <a-bind o="testObj" p="number">
+            <input type="number" id="o-number-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="number">
+                <input
+                  type="number"
+                  id="o-number-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+      <!-- textarea -->
+      <data-bar
+        o="testObj"
+        p="textarea"
+        inputid="o-textarea-input"
+        inputname="textarea"
+        propbtn="foo bar">
+        <div slot="input">
+          <a-bind o="testObj" p="textarea">
+            <textarea id="o-textarea-input"></textarea>
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="textarea">
+                <testarea
+                  id="o-textarea-input">
+                </testarea>
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+    </section>
+  </details>
+
+  <details name="object-props">
+  <summary>Date/Time Inputs</summary>
+    <!-- reset -->
+    <aside class="flex sticky">
+      <a-bind o="testObj" e="click" f="reset">
+        <button>Reset</button>
+      </a-bind>
+    </aside>
+
+    <!-- date -->
+    <data-bar
+        o="testObj"
+        p="date"
+        inputid="o-date-input"
+        inputname="date"
+        propbtn="1995-01-02">
+        <div slot="input">
+          <a-bind o="testObj" p="date">
+            <input type="date" id="o-date-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="date">
+                <input
+                  type="date"
+                  id="o-date-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+    <!-- time -->
+    <data-bar
+        o="testObj"
+        p="time"
+        inputid="o-time-input"
+        inputname="time"
+        propbtn="06:30">
+        <div slot="input">
+          <a-bind o="testObj" p="time">
+            <input type="time" id="o-time-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="time">
+                <input
+                  type="time"
+                  id="o-time-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+    <!-- dateTime -->
+    <data-bar
+        o="testObj"
+        p="dateTime"
+        inputid="o-datetime-input"
+        inputname="datetime-local"
+        propbtn="1995-01-01T05:00">
+        <div slot="input">
+          <a-bind o="testObj" p="dateTime">
+            <input type="datetime-local" id="o-datetime-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="dateTime">
+                <input
+                  type="datetime-local"
+                  id="o-datetime-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+    <!-- week -->
+    <data-bar
+        o="testObj"
+        p="week"
+        inputid="o-week-input"
+        inputname="week"
+        propbtn="1995-W21">
+        <div slot="input">
+          <a-bind o="testObj" p="week">
+            <input type="week" id="o-week-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="week">
+                <input
+                  type="week"
+                  id="o-week-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+
+    <!-- month -->
+    <data-bar
+        o="testObj"
+        p="month"
+        inputid="o-month-input"
+        inputname="month"
+        propbtn="1995-05">
+        <div slot="input">
+          <a-bind o="testObj" p="month">
+            <input type="month" id="o-month-input">
+          </a-bind>
+        </div>
+        <div slot="code-input">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="month">
+                <input
+                  type="month"
+                  id="o-month-input">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </data-bar>
+  </details>
+
+  <details name="object-props">
+  <summary>Select Inputs</summary>
+    <!-- reset -->
+    <aside class="flex sticky">
+      <a-bind o="testObj" e="click" f="reset">
+        <button>Reset</button>
+      </a-bind>
+    </aside>
+
+    <!-- select -->
+    <data-bar
+      o="testObj"
+      p="select"
+      inputid="o-select-input"
+      inputname="select"
+      propbtn="foo">
+      <div slot="input">
+        <a-bind o="testObj" p="select">
+          <select id="o-select-input">
+            <option value="">Select...</option>
+            <option>foo</option>
+            <option>bar</option>
+          </select>
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="select">
+              <select id="o-select-input">
+                <option value="Select..."></option>
+                <option>foo</option>
+                <option>bar</option>
+              </select>
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+
+    <!-- selectMulti -->
+    <data-bar
+      o="testObj"
+      p="selectMulti"
+      inputid="o-selectmulti-input"
+      inputname="select multiple"
+      propbtn="bar, baz">
+      <div slot="input">
+        <a-bind o="testObj" p="selectMulti">
+          <select
+            multiple
+            size="3"
+            id="o-selectmulti-input">
+            <option>foo</option>
+            <option>bar</option>
+            <option>baz</option>
+          </select>
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="selectMulti">
+              <select
+                multiple
+                size="3"
+                id="o-selectmulti-input">
+                <option>foo</option>
+                <option>bar</option>
+                <option>baz</option>
+              </select>
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+  </details>
+
+  <details name="object-props">
+  <summary>Checkboxes</summary>
+    <!-- reset -->
+    <aside class="flex sticky">
+      <a-bind o="testObj" e="click" f="reset">
+        <button>Reset</button>
+      </a-bind>
+    </aside>
+
+    <!-- checkboxFoo -->
+    <data-bar
+      o="testObj"
+      p="checkboxFoo"
+      inputid="o-checkfoo-input"
+      inputname="checkbox value = foo"
+      propbtn="bar">
+      <div slot="input">
+        <a-bind o="testObj" p="checkboxFoo">
+          <input type="checkbox" value="foo" id="o-checkfoo-input">
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="checkboxFoo">
+              <input
+                type="checkbox"
+                value="foo"
+                id="o-checkfoo-input">
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+
+    <!-- checkboxBar -->
+    <data-bar
+      o="testObj"
+      p="checkboxBar"
+      inputid="o-checkbar-input"
+      inputname="checkbox value = bar"
+      propbtn="foo">
+      <div slot="input">
+        <a-bind o="testObj" p="checkboxBar">
+          <input type="checkbox" value="bar" id="o-checkbar-input">
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="checkboxBar">
+              <input
+                type="checkbox"
+                value="bar"
+                id="o-checkbar-input">
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+  </details>
+
+  <details name="object-props">
+  <summary>Radio Inputs</summary>
+    <!-- reset -->
+    <aside class="flex sticky">
+      <a-bind o="testObj" e="click" f="reset">
+        <button>Reset</button>
+      </a-bind>
+    </aside>
+
+    <!-- radioGroup -->
+    <data-bar
+      o="testObj"
+      p="radioGroup"
+      inputid="o-radio-group-inputs"
+      inputname="radio group"
+      propbtn="foo">
+      <div slot="input">
+        <div>
+          <label for="o-rad-a">value="foo"</label>
+            <a-bind o="testObj" p="radioGroup">
+              <input type="radio" value="foo" name="orads" id="o-rad-a">
+            </a-bind>
+          </div>
+
+        <div>
+          <label for="o-rad-b">value="bar"</label>
+          <a-bind o="testObj" p="radioGroup">
+            <input type="radio" value="bar" name="orads" id="o-rad-b">
+          </a-bind>
+        </div>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="radioGroup">
+              <input
+                type="radio"
+                value="foo"
+                name="orads"
+                id="o-rad-a">
+            </a-bind>
+
+            <a-bind
+              o="testObj"
+              p="radioGroup">
+              <input
+                type="radio"
+                value="bar"
+                name="orads"
+                id="o-rad-b">
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+  </details>
+
+  <details name="object-props">
+  <summary>Buttons</summary>
+    <!-- reset -->
+    <aside class="flex sticky">
+      <a-bind o="testObj" e="click" f="reset">
+        <button>Reset</button>
+      </a-bind>
+    </aside>
+
+    <!-- button -->
+    <data-bar
+      o="testObj"
+      p="button"
+      inputid="o-button-inputs"
+      inputname="button"
+      propbtn="foo">
+      <div slot="input" class="flex column">
+        <div class="flex column gap0">
+          <label for="o-btn-a">
+            Button
+          </label>
+          <a-bind
+            o="testObj"
+            p="button"
+            e="click"
+            a="innerText"
+            f="notify">
+            <button
+              id="o-btn-a">
+              ...
+            </button>
+          </a-bind>
+        </div>
+        <div class="flex column gap0">
+          <label
+            for="o-btn-b">
+            Button oneway value="boom"
+          </label>
+          <a-bind
+            oneway
+            o="testObj"
+            p="button"
+            e="click"
+            f="notify">
+            <button
+              value="boom"
+              id="o-btn-b">
+              Oneway Button
+            </button>
+          </a-bind>
+        </div>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="">
+
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+  </details>
+
+  <details name="object-props">
+  <summary>Other Inputs</summary>
+    <!-- reset -->
+    <aside class="flex sticky">
+      <a-bind o="testObj" e="click" f="reset">
+        <button>Reset</button>
+      </a-bind>
+    </aside>
+
+    <!-- color -->
+    <data-bar
+      o="testObj"
+      p="color"
+      inputid="o-color-input"
+      inputname="color"
+      propbtn="#00ced1">
+      <div slot="input">
+        <a-bind o="testObj" p="color">
+          <input type="color" id="o-color-input">
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="color">
+              <input
+                type="color"
+                id="o-color-input">
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+
+    <!-- range -->
+    <data-bar
+      o="testObj"
+      p="range"
+      inputid="o-range-input"
+      inputname="range"
+      propbtn="80">
+      <div slot="input">
+        <a-bind o="testObj" p="range">
+          <input
+            id="o-range-input"
+            type="range"
+            min="0"
+            max="100">
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="range">
+              <input
+                id="o-range-input"
+                type="range"
+                min="0"
+                max="100">
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+
+    <!-- progress -->
+    <data-bar
+      o="testObj"
+      p="progress"
+      inputid="o-progress-input"
+      inputname="progress"
+      propbtn="80">
+      <div slot="input">
+        <a-bind o="testObj" p="progress">
+          <progress
+            max="100"
+            id="o-progress-input">
+          </progress>
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="progress">
+              <progress
+                max="100"
+                id="o-progress-input">
+              </progress>
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+
+    <!-- meter -->
+    <data-bar
+      o="testObj"
+      p="meter"
+      inputid="o-meter-input"
+      inputname="meter"
+      propbtn="80">
+      <div slot="input">
+        <a-bind o="testObj" p="meter">
+          <meter
+            id="o-meter-input"
+            max="100"
+            low="33",
+            high="66",
+            optimum="80">
+          </meter>
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="meter">
+              <meter
+                id="o-meter-input"
+                max="100"
+                low="33",
+                high="66",
+                optimum="80">
+              </meter>
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+
+    <!-- file -->
+    <data-bar
+      o="testObj"
+      p="file"
+      inputid="o-file-input"
+      inputname="file multiple">
+      <div slot="input">
+        <a-bind
+          o="testObj"
+          p="file"
+          e="change"
+          a="files"
+          f="getFiles">
+          <input type="file"
+            multiple
+            id="o-file-input">
+        </a-bind>
+      </div>
+      <div slot="code-input">
+        <a-code highlight>
+          <textarea>
+            <a-bind
+              o="testObj"
+              p="file"
+              e="change"
+              a="files"
+              f="getFiles">
+              <input type="file"
+                multiple
+                id="o-file-input">
+            </a-bind>
+          </textarea>
+        </a-code>
+      </div>
+    </data-bar>
+  </details>
+
+  <details name="object-props">
+  <summary>Contenteditable</summary>
+    <!-- reset -->
+    <aside class="flex sticky">
+      <a-bind o="testObj" e="click" f="reset">
+        <button>Reset</button>
+      </a-bind>
+    </aside>
+
+    <section
+      class="flex stretch"
+      style="height:400px; overflow:auto;">
+      <div class="flex1">
+        <a-bind
+          once
+          o="testObj"
+          p="editable"
+          a="innerHTML">
+          <div
+            contenteditable
+            id="content-editable"
+            class="card"
+            style="height:100%; border:2px dashed var(--border-color)">
+            Some content
+          </div>
+        </a-bind>
+      </div>
+
+      <div
+        class="flex1"
+        style="padding:var(--pad)">
+        <a-bind
+          o="testObj"
+          p="editable"
+          a="textContent">
+          <a-code
+            style="--wrap:pre-wrap">
+            ...
+          </a-code>
+      </a-bind>
+      </div>
+    </section>
+  </details>
+
+  <details name="object-props">
+  <summary>Form Submission</summary>
+    <section class="flex vstart">
+
+      <form id="o-test-form" method="get" class="flex column center flex1">
+
+        <h3>form id="o-test-form"</h3>
+
+        <!-- reset -->
+        <aside class="flex sticky">
+          <a-bind o="testObj" e="click" f="reset">
+            <button>Reset: Properties</button>
+          </a-bind>
+
+          <button type="reset" form="o-test-form">Reset: Form</button>
+        </aside>
+
+        <div class="flex column start gap0">
+          <label for="o-sub-name" name="name">Name</label>
+
+          <a-bind o="testObj" p="name">
+            <input id="o-sub-name" name="name">
+          </a-bind>
+        </div>
+
+        <div class="flex column start gap0">
+          <label for="o-sub-email">Email</label>
+
+          <a-bind o="testObj" p="email">
+            <input id="o-sub-email" name="email">
+          </a-bind>
+        </div>
+
+        <p>
+          <a-bind o="testObj" p="name">
+            Name: <output for="o-sub-name"></output>
+          </a-bind>
+
+          <br>
+
+          <a-bind o="testObj" p="email">
+            Email: <output for="o-sub-email"></output>
+          </a-bind>
+        </p>
+
+        <a-bind oneway o="testObj" e="click" f="sendForm">
+          <button
+            type="submit"
+            value="o-test-form">
+            Button with binding
+          </button>
+        </a-bind>
+
+        <button
+          name="onclick-submit"
+          type="submit"
+          onclick="testObj.sendForm(this.form); return false">
+          Button with 'onclick'
+        </button>
+      </form>
+
+      <!-- code -->
+      <div class="card flex1">
+        <h3>code</h3>
+
+        <div>
+          <p><strong>Reset Buttons</strong></p>
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                e="click"
+                f="reset">
+                <button>
+                  Reset: Properties
+                </button>
+              </a-bind>
+
+              <button
+                type="reset"
+                form="o-test-form">
+                Reset: Form
+              </button>
+            </textarea>
+          </a-code>
+        </div>
+
+        <div>
+          <p><strong>Inputs</strong></p>
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="name">
+                <input
+                  name="name"
+                  id="o-sub-name">
+              </a-bind>
+
+              <a-bind
+                o="testObj"
+                p="email">
+                <input
+                  name="email"
+                  id="o-sub-email">
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+
+        <div>
+          <p><strong>Outputs</strong></p>
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                o="testObj"
+                p="name">
+                Name:
+                <output for="o-sub-name">
+                </output>
+              </a-bind>
+
+              <a-bind
+                o="testObj"
+                p="email">
+                Email:
+                <output for="o-sub-email">
+                </output>
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+
+        <div>
+          <p><strong>Submit Buttons</strong></p>
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                oneway
+                o="testObj"
+                e="click"
+                f="sendForm">
+                <button
+                  type="submit"
+                  value="o-test-form">
+                  Button with binding
+                </button>
+              </a-bind>
+
+              <button
+                type="submit"
+                onclick="
+                  testObj.sendForm(this.form);
+                  return false
+                ">
+                Button with 'onclick'
+              </button>
+            </textarea>
+          </a-code>
+        </div>
+      </div>
+    </section>
+  </details>
+
+  <details name="object-props">
+  <summary>Example Object</summary>
+    <section>
+      <div class="flex">
+
+        <div class="flex1 flex column">
+          <label for="obj-foo-input">Foo Input</label>
+
+          <a-bind o="exampleObject" p="foo">
+            <input id="obj-foo-input">
+          </a-bind>
+
+          <details  style="position:relative; z-index:0">
+            <summary class="nofrills">Code</summary>
+            <a-code highlight>
+              <textarea>
+                <a-bind
+                  o="exampleObject"
+                  p="foo">
+                  <input id="obj-foo-input">
+                </a-bind>
+              </textarea>
+            </a-code>
+          </details>
+        </div>
+
+        <div class="flex1 flex column">
+          <label for="foo-output">Foo Output</label>
+
+          <a-bind
+            o="exampleObject"
+            p="foo">
+            <output
+              id="obj-foo-output"
+              for="obj-foo-input"
+              style="border:1px dashed var(--border-color); padding:var(--pad)">
+            </output>
+          </a-bind>
+
+          <details style="position:relative; z-index:0">
+            <summary class="nofrills">Code</summary>
+            <a-code highlight>
+              <textarea>
+                <a-bind
+                  o="exampleObject"
+                  p="foo">
+                  <output
+                    id="obj-foo-output"
+                    for="obj-foo-input">
+                  </output>
+                </a-bind>
+              </textarea>
+            </a-code>
+          </details>
+        </div>
+      </div>
+
+      <hr>
+
+      <strong>Example Object Code</strong>
+
+      <hr>
+      <a-code highlight="javascript" line-numbers>
+        var exampleObject = {
+          _foo: 'foo',
+          get foo() { return this._foo },
+          set foo(value) {
+            this._foo = value;
+            if (window.abind) abind.update(this, 'foo', value);
+          }
+        }
+      </a-code>
+    </section>
+  </details>
