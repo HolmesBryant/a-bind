@@ -39,7 +39,7 @@ export class DataRow extends HTMLElement {
 	}
 
 	connectedCallback() {
-		this.render();
+		// this.render();
 		this.#connected = true;
 	}
 
@@ -65,7 +65,10 @@ export class DataRow extends HTMLElement {
 						<span>
 				      Attribute <code>${this._attr}</code>
 						</span>
-			      <a-bind model="${this._model}" model-attr="${this._attr}">
+			      <a-bind
+			      	oneway
+			      	model="${this._model}"
+			      	model-attr="${this._attr}">
 			        <output>...</output>
 			      </a-bind>
 
@@ -80,7 +83,10 @@ export class DataRow extends HTMLElement {
 			      	Property <code>${this._prop}</code>
 						</span>
 
-			      <a-bind model="${this._model}" property="${this.prop}">
+			      <a-bind
+			      	oneway
+			      	model="${this._model}"
+			      	property="${this.prop}">
 			        <output>...</output>
 			      </a-bind>
 
@@ -105,7 +111,7 @@ export class DataRow extends HTMLElement {
 			      	<a-code highlight>
 			          <textarea>
 			            Attribute: ${this._attr}
-			            <a-bind
+			            <a-bind oneway
 			              model="${this._model}"
 			              model-attr="${this.attr}">
 			              <output></output>
@@ -128,7 +134,7 @@ export class DataRow extends HTMLElement {
 			        <a-code highlight>
 			          <textarea>
 			            Property: ${this._prop}
-			            <a-bind
+			            <a-bind oneway
 			              model="${this._model}"
 			              property="${this._prop}">
 			              <output></output>

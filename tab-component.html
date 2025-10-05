@@ -121,6 +121,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: search
         <a-bind
         model="custom-element"
         property="search">
@@ -141,17 +142,18 @@
 
     <div slot="input" class="flex column">
       <span>Input <code>password</code></span>
-
-      <a-bind
-        model="custom-element"
-        property="password">
-        <input
-          type="password">
-      </a-bind>
+        <a-bind
+          model="custom-element"
+          property="password">
+          <input
+            type="password"
+            autocomplete="new-password">
+        </a-bind>
     </div>
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: password
         <a-bind
           model="custom-element"
           property="password">
@@ -183,6 +185,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: tel
         <a-bind
           model="custom-element"
           property="tel">
@@ -214,6 +217,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: url
         <a-bind
           model="custom-element"
           property="url">
@@ -245,6 +249,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: email
         <a-bind
           model="custom-element"
           property="email">
@@ -276,6 +281,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: number
         <a-bind
           model="custom-element"
           property="number">
@@ -304,6 +310,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: textarea
         <a-bind
           model="custom-element"
           property="textarea">
@@ -337,6 +344,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: date
         <a-bind
           model="custom-element"
           property="date">
@@ -368,6 +376,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: time
         <a-bind
           model="custom-element"
           property="time">
@@ -400,6 +409,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
+        Input: datetime-local
         <a-bind
           model="custom-element"
           property="dateTime">
@@ -409,34 +419,6 @@
       </textarea>
     </a-code>
   </data-row>
-
-
-  <!-- <data-bar
-    model="custom-element"
-    property="dateTime"
-    model-attr="date-time"
-    inputid="datetime-input"
-    attrbtn="2000-02-06T01:00",
-    propbtn="1995-01-01T05:00">
-    <div slot="input">
-      <a-bind model="custom-element" property="dateTime">
-        <input type="datetime-local" id="datetime-input">
-      </a-bind>
-    </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="dateTime">
-            <input
-              type="datetime-local"
-              id="datetime-input">
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
 
   <!-- week -->
   <!-- <data-bar
@@ -497,13 +479,6 @@
 
 <details name="component-props">
 <summary>Select Inputs</summary>
-  <!-- reset -->
-  <aside class="flex sticky">
-    <a-bind model="custom-element" event="click" func="reset">
-      <button>Reset</button>
-    </a-bind>
-  </aside>
-
   <!-- select -->
   <!-- <data-bar
     model="custom-element"
@@ -578,13 +553,6 @@
 
 <details name="component-props">
 <summary>Checkboxes</summary>
-  <!-- reset -->
-  <aside class="flex sticky">
-    <a-bind model="custom-element" event="click" func="reset">
-      <button>Reset</button>
-    </a-bind>
-  </aside>
-
   <!-- checkboxFoo -->
   <<!-- data-bar
     model="custom-element"
@@ -650,13 +618,6 @@
 
 <details name="component-props">
 <summary>Radio Inputs</summary>
-  <!-- reset -->
-  <aside class="flex sticky">
-    <a-bind model="custom-element" event="click" func="reset">
-      <button>Reset</button>
-    </a-bind>
-  </aside>
-
   <!-- radioGroup -->
   <!-- <data-bar
     model="custom-element"
@@ -714,13 +675,6 @@
 
 <details name="component-props">
 <summary>Buttons</summary>
-  <!-- reset -->
-  <aside class="flex sticky">
-    <a-bind model="custom-element" event="click" func="reset">
-      <button>Reset</button>
-    </a-bind>
-  </aside>
-
   <!-- button -->
 <!--   <data-bar
     model="custom-element"
@@ -780,13 +734,6 @@
 
 <details name="component-props">
 <summary>Other Inputs</summary>
-  <!-- reset -->
-  <aside class="flex sticky">
-    <a-bind model="custom-element" event="click" func="reset">
-      <button>Reset</button>
-    </a-bind>
-  </aside>
-
   <!-- color -->
   <!-- <data-bar
     model="custom-element"
@@ -956,14 +903,7 @@
 
 <details name="component-props">
 <summary>Contenteditable</summary>
-  <!-- reset -->
-  <aside class="flex sticky">
-    <a-bind model="custom-element" event="click" func="reset">
-      <button>Reset</button>
-    </a-bind>
-  </aside>
-
-  <section
+  <!-- <section
     class="flex stretch"
     style="height:400px; overflow:auto;">
     <div class="flex1">
@@ -995,23 +935,22 @@
         </a-code>
     </a-bind>
     </div>
-  </section>
+  </section> -->
 </details>
 
 <details name="component-props">
 <summary>Form Submission</summary>
-  <section class="flex vstart">
+  <!-- <section class="flex vstart">
     <form id="test-form" method="get" class="flex column center flex1">
 
       <h3>form id="test-form"</h3>
 
-      <!-- reset -->
       <aside class="flex">
-        <a-bind model="custom-element" event="click" func="reset">
-          <button>Reset: Properties</button>
+        <a-bind model="custom-element" event="click" func="reset;">
+          <button>Reset; Properties</button>
         </a-bind>
 
-        <button type="reset" form="test-form">Reset: Form</button>
+        <button type="reset" form="test-form">Reset; Form</button>
       </aside>
 
       <div class="flex column start gap0">
@@ -1042,7 +981,7 @@
         </a-bind>
       </p>
 
-      <a-bind oneway model="custom-element" event="click" func="sendForm">
+      <a-bind oneway model="custom-element" event="click" func="sendForm;">
         <button
           type="submit"
           value="test-form">
@@ -1072,7 +1011,7 @@
             <a-bind
               model="custom-element"
               event="click"
-              func="reset">
+              func="reset;">
               <button>
                 Reset: Properties
               </button>
@@ -1141,7 +1080,7 @@
               oneway
               model="custom-element"
               event="click"
-              func="sendForm">
+              func="sendForm;">
               <button
                 type="submit"
                 value="test-form">
@@ -1161,12 +1100,12 @@
         </a-code>
       </div>
     </div>
-  </section>
+  </section> -->
 </details>
 
 <details name="component-props">
 <summary>Example Component</summary>
-  <section>
+  <!-- <section>
     <div class="flex">
 
       <div class="flex1 flex column">
@@ -1215,12 +1154,12 @@
 
     <hr>
 
-    <example-component fomodel="bar"></example-component>
+    <example-component foo="bar"></example-component>
 
     <hr>
     <a-code highlight="javascript" line-numbers>
-      <example-component fomodel="bar">
+      <example-component foo="bar">
       </example-component>
     </a-code>
-  </section>
+  </section> -->
 </details>

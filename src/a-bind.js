@@ -78,6 +78,7 @@ export default class ABind extends HTMLElement {
 	// Public
 
 	static update(model, property, value) {
+		if (property === 'inline') console.trace(value)
 		const event = new CustomEvent('abind:update', { detail: { model, property, value } });
 		document.dispatchEvent(event);
 	}
@@ -188,6 +189,7 @@ export default class ABind extends HTMLElement {
 	}
 
 	_handleElementEvent(event) {
+		console.log(event.detail, event)
 		event.preventDefault();
 		let value;
 
@@ -212,6 +214,24 @@ export default class ABind extends HTMLElement {
 		}
 
 		this._updateModel(value);
+	}
+
+	_handleModelUpdate(event) {
+		if (this.#resolvedModel !== event.detail.model || this.#property !== event.detail.property) {
+			return;
+		}
+		if (this.#modelAttr && this.#resolvedModel instanceof HTMLElement) {
+			const observed = this.#resolvedModel.constructor.observedAttributes;
+			if (!observed || !observed.includes(this.#modelAttr)) return;
+		}
+		if (this.#once && this.#hasUpdated) return;
+
+		if (this.#modelAttr) {
+			this.#boundElement[this.#elemAttr] = this.#resolvedModel.getAttribute(this.#modelAttr);
+		} else {
+			this._updateElement(event.detail.value);
+		}
+		this.#hasUpdated = true;
 	}
 
 	/**
@@ -284,25 +304,7 @@ export default class ABind extends HTMLElement {
 		this.#boundElement.addEventListener(this.#event, this._handleElementEvent.bind(this), { signal: this.#abortController.signal });
 
 		if (this.#property) {
-			const handleModelUpdate = (event) => {
-				console.log(event.details)
-				if (this.#resolvedModel !== event.detail.model || this.#property !== event.detail.property) {
-					return;
-				}
-				if (this.#modelAttr && this.#resolvedModel instanceof HTMLElement) {
-					const observed = this.#resolvedModel.constructor.observedAttributes;
-					if (!observed || !observed.includes(this.#modelAttr)) return;
-				}
-				if (this.#once && this.#hasUpdated) return;
-
-				if (this.#modelAttr) {
-					this.#boundElement[this.#elemAttr] = this.#resolvedModel.getAttribute(this.#modelAttr);
-				} else {
-					this._updateElement(event.detail.value);
-				}
-				this.#hasUpdated = true;
-			};
-			document.addEventListener('abind:update', handleModelUpdate, { signal: this.#abortController.signal });
+			document.addEventListener('abind:update', this._handleModelUpdate.bind(this), { signal: this.#abortController.signal });
 		}
 	}
 
