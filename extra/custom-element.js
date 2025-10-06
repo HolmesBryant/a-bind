@@ -121,7 +121,8 @@ export default class CustomElement extends HTMLElement {
    */
 	attributeChangedCallback(attr, oldval, newval) {
     if (this._connected && newval === oldval) return;
-    if (newval === null) return;
+    // if (newval === null) return;
+    const prop = attr.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 
     switch (attr) {
 	    case 'text': this._text = newval; break;
@@ -159,7 +160,7 @@ export default class CustomElement extends HTMLElement {
 			case 'editable': this._editable = newval; break;
     }
 
-    if (window.abind) abind.update(this, attr, newval)
+    if (window.abind) abind.update(this, prop, newval);
 	}
 
 	connectedCallback() {

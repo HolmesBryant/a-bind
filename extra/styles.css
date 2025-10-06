@@ -100,6 +100,9 @@ body {
 	.card
 	{ border: 1px solid var(--border-color); }
 
+	output
+	{ border: 1px dashed var(--border-color); }
+
   article,
   button,
   details,
@@ -186,10 +189,10 @@ body {
 	code
 	{ padding:  0 var(--pad); }
 
-	details
+	details#readme
 	{ overflow: auto; }
 
-	details[open] {
+	details#readme[open] {
 		height: 100%;
 		max-height: 80vh;
 	}
@@ -231,6 +234,14 @@ body {
 
 	option
 	{ padding: var(--pad); }
+
+	output
+	{
+		display: inline-block;
+		min-width: var(--min);
+		min-height: 1ch;
+		white-space: pre-wrap;
+	}
 
 	pre {
 		margin: 0;

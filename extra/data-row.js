@@ -50,8 +50,48 @@ export class DataRow extends HTMLElement {
 	render() {
 		const hasAttr = this._attr;
 		const isOpen = this._open;
-		const attrLive = ``;
-		const attrCode = ``;
+		const propCode = `
+			<a-code highlight slot="prop-code">
+        <textarea>
+          Property: ${this._prop}
+          <a-bind oneway
+            model="${this._model}"
+            property="${this._prop}">
+            <output></output>
+          </a-bind>
+
+          <a-bind
+            model="${this._model}"
+            func="${this._propFunc}"
+            event="click">
+            <button>
+              ...
+            </button>
+          </a-bind>
+        </textarea>
+      </a-code>`;
+
+		const attrCode = `
+			<a-code highlight slot="attr-code">
+	      <textarea>
+	        Attribute: ${this._attr}
+	        <a-bind oneway
+	          model="${this._model}"
+	          model-attr="${this.attr}">
+	          <output></output>
+	        </a-bind>
+
+	        <a-bind
+	          model="${this._model}"
+	          func="${this._attrFunc}"
+	          event="click">
+	          <button>
+	            ...
+	          </button>
+	        </a-bind>
+	      </textarea>
+	    </a-code>`;
+
 		const html = `
 			<link rel="stylesheet" href="extra/styles.css">
 
@@ -108,48 +148,12 @@ export class DataRow extends HTMLElement {
 			      <div class="flex column flex1">
 			      	${ hasAttr === 'false' || hasAttr === null ? `
 			      	` : `
-			      	<a-code highlight>
-			          <textarea>
-			            Attribute: ${this._attr}
-			            <a-bind oneway
-			              model="${this._model}"
-			              model-attr="${this.attr}">
-			              <output></output>
-			            </a-bind>
-
-			            <a-bind
-			              model="${this._model}"
-			              func="${this._attrFunc}"
-			              event="click">
-			              <button>
-			                ...
-			              </button>
-			            </a-bind>
-			          </textarea>
-			        </a-code>
+			      	<slot name="attr-code">attr-code</slot>
 			      	`}
 			      </div>
 
 			      <div class="flex column flex1">
-			        <a-code highlight>
-			          <textarea>
-			            Property: ${this._prop}
-			            <a-bind oneway
-			              model="${this._model}"
-			              property="${this._prop}">
-			              <output></output>
-			            </a-bind>
-
-			            <a-bind
-			              model="${this._model}"
-			              func="${this._propFunc}"
-			              event="click">
-			              <button>
-			                ...
-			              </button>
-			            </a-bind>
-			          </textarea>
-			        </a-code>
+			        <slot name="prop-code">prop-code</slot>
 			      </div>
 
 			      <div class="flex column flex1">
@@ -161,6 +165,8 @@ export class DataRow extends HTMLElement {
 			<p> </p>
 		`;
 
+		this.insertAdjacentHTML('beforeend', attrCode);
+		this.insertAdjacentHTML('beforeend', propCode);
 		this.shadowRoot.innerHTML = html;
 	}
 

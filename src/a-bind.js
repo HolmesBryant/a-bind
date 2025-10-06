@@ -189,7 +189,6 @@ export default class ABind extends HTMLElement {
 	}
 
 	_handleElementEvent(event) {
-		console.log(event.detail, event)
 		event.preventDefault();
 		let value;
 

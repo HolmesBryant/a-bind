@@ -5,7 +5,7 @@
   </a-bind>
 </aside>
 
-<details open name="component-props">
+<details name="component-props">
 <summary> Text-ish Inputs </summary>
   <!-- text-->
   <data-row
@@ -25,11 +25,12 @@
 
     <a-code highlight slot="input-code">
       <textarea>
-        Input - text
+        Input: text
         <a-bind
           model="custom-element"
           property="text">
           <input
+            type="text"
             id="text-input">
         </a-bind>
       </textarea>
@@ -115,7 +116,9 @@
       <a-bind
         model="custom-element"
         property="search">
-        <input type="search">
+        <input
+          id="search-input"
+          type="search">
       </a-bind>
     </div>
 
@@ -138,7 +141,7 @@
     attr="password"
     attr-func="setAttribute; password; foo"
     prop="password"
-    prop-func="password; foo">
+    prop-func="password; baaar">
 
     <div slot="input" class="flex column">
       <span>Input <code>password</code></span>
@@ -146,6 +149,7 @@
           model="custom-element"
           property="password">
           <input
+            id="password-input"
             type="password"
             autocomplete="new-password">
         </a-bind>
@@ -179,6 +183,7 @@
         model="custom-element"
         property="tel">
         <input
+          id="tel-input"
           type="tel">
       </a-bind>
     </div>
@@ -211,6 +216,7 @@
         model="custom-element"
         property="url">
         <input
+          id="url-input"
           type="url">
       </a-bind>
     </div>
@@ -243,6 +249,7 @@
         model="custom-element"
         property="email">
         <input
+          id="email-input"
           type="email">
       </a-bind>
     </div>
@@ -275,6 +282,7 @@
         model="custom-element"
         property="number">
         <input
+          id="umber-input"
           type="number">
       </a-bind>
     </div>
@@ -295,6 +303,7 @@
   <!-- textarea -->
   <data-row
     model="custom-element"
+    attr="false"
     prop="textarea"
     prop-func="textarea; Exercitation do aliqua">
 
@@ -304,7 +313,10 @@
       <a-bind
         model="custom-element"
         property="textarea">
-        <textarea></textarea>
+        <textarea
+          style="width:100%; height:100%"
+          id="textarea-input">
+         </textarea>
       </a-bind>
     </div>
 
@@ -338,6 +350,7 @@
         model="custom-element"
         property="date">
         <input
+          id="date-input"
           type="date">
       </a-bind>
     </div>
@@ -370,6 +383,7 @@
         model="custom-element"
         property="time">
         <input
+          id="time-input"
           type="time">
       </a-bind>
     </div>
@@ -387,7 +401,6 @@
     </a-code>
   </data-row>
 
-
   <!-- dateTime -->
   <data-row
     model="custom-element"
@@ -400,6 +413,7 @@
       <span>Input <code>datetime-local</code></span>
 
       <a-bind
+        id="datetime-input"
         model="custom-element"
         property="dateTime">
         <input
@@ -421,261 +435,399 @@
   </data-row>
 
   <!-- week -->
-  <!-- <data-bar
+  <data-row
     model="custom-element"
-    property="week"
-    model-attr="week"
-    inputid="week-input"
-    attrbtn="2000-W02",
-    propbtn="1995-W21">
-    <div slot="input">
-      <a-bind model="custom-element" property="week">
-        <input type="week" id="week-input">
+    attr="week"
+    attr-func="setAttribute; week; 2000-W02"
+    prop="week"
+    prop-func="week; 1995-W21">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>week</code></span>
+
+      <a-bind
+        model="custom-element"
+        property="week">
+        <input
+          id="week-input"
+          type="week">
       </a-bind>
     </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="week">
-            <input
-              type="week"
-              id="week-input">
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: week
+        <a-bind
+          model="custom-element"
+          property="week">
+          <input
+            type="week">
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 
   <!-- month -->
-  <!-- <data-bar
+  <data-row
     model="custom-element"
-    property="month"
-    model-attr="month"
-    inputid="month-input"
-    attrbtn="2000-02",
-    propbtn="1995-05">
-    <div slot="input">
-      <a-bind model="custom-element" property="month">
-        <input type="month" id="month-input">
+    attr="month"
+    attr-func="setAttribute; month; 2000-02"
+    prop="month"
+    prop-func="month; 1995-05">
+
+    <div slot="input" class="flex column">
+      <span>Input <code></code>month</span>
+
+      <a-bind
+        id="month-input"
+        model="custom-element"
+        property="month">
+        <input
+          type="month">
       </a-bind>
     </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="month">
-            <input
-              type="month"
-              id="month-input">
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: month
+        <a-bind
+          model="custom-element"
+          property="month">
+          <input
+            type="month">
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 </details>
 
-<details name="component-props">
+<details open name="component-props">
 <summary>Select Inputs</summary>
   <!-- select -->
-  <!-- <data-bar
+  <data-row open
     model="custom-element"
-    property="select"
-    model-attr="select"
-    inputid="select-input"
-    attrbtn="foo"
-    propbtn="bar">
-    <div slot="input">
-      <a-bind model="custom-element" property="select">
+    attr="select"
+    attr-func="setAttribute; select; foo"
+    prop="select"
+    prop-func="select; bar">
+
+    <div slot="input" class="flex column">
+      <label for="select-input">Input <code>select</code></label>
+
+      <a-bind
+        model="custom-element"
+        property="select"
+        event="change">
         <select id="select-input">
-          <option value="">Select...</option>
           <option>foo</option>
           <option>bar</option>
+          <option>baz</option>
+          <option value="">
+            nada
+          </option>
         </select>
       </a-bind>
     </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="select">
-            <select
-              id="select-input">
-              <option>foo</option>
-              <option>bar</option>
-            </select>
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: select
+
+        <a-bind
+          model="custom-element"
+          property="select">
+          <select>
+            <option>foo</option>
+            <option>bar</option>
+            <option>baz</option>
+            <option value="">
+              nada
+            </option>
+          </select>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 
   <!-- selectMulti -->
-  <!-- <data-bar
+  <data-row open
     model="custom-element"
-    property="selectMulti"
-    model-attr="select-multi"
-    inputid="selectmulti-input"
-    attrbtn="foo, bar",
-    propbtn="bar, baz">
-    <div slot="input">
-      <a-bind model="custom-element" property="selectMulti">
-        <select multiple size="3" id="selectmulti-input">
+    attr="select-multi"
+    attr-func="setAttribute; selectMulti; foo, bar"
+    prop="selectMulti"
+    prop-func="selectMulti; bar, baz">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>select multiple</code></span>
+
+      <a-bind
+        model="custom-element"
+        property="selectMulti">
+        <select
+          multiple
+          id="select-multi-input">
           <option>foo</option>
           <option>bar</option>
           <option>baz</option>
         </select>
       </a-bind>
     </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="selectMulti">
-            <select
-              multiple
-              size="3"
-              id="selectmulti-input">
-              <option>foo</option>
-              <option>bar</option>
-              <option>baz</option>
-            </select>
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: select multiple
+
+        <a-bind
+          model="custom-element"
+          property="selectMulti">
+          <select
+            multiple>
+            <option>foo</option>
+            <option>bar</option>
+            <option>baz</option>
+          </select>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 </details>
 
 <details name="component-props">
 <summary>Checkboxes</summary>
   <!-- checkboxFoo -->
-  <<!-- data-bar
+  <data-row
     model="custom-element"
-    property="checkboxFoo"
-    model-attr="checkbox-foo"
-    inputid="checka-input"
-    attrbtn="foo",
-    propbtn="bar">
+    attr="checkbox-foo"
+    attr-func="setAttribute; checkbox-foo; foo"
+    prop="checkboxFoo"
+    prop-func="checkboxFoo; bar">
 
-    <div slot="input">
-      <a-bind model="custom-element" property="checkboxFoo">
-        <input type="checkbox" value="foo" id="checka-input">
+    <div slot="input" class="flex column">
+      <span>Input <code>checkbox value="foo"</code></span>
+
+      <a-bind
+        model="custom-element"
+        property="checkboxFoo">
+        <input
+          type="checkbox"
+          id="checkboxfoo-input"
+          value="foo">
       </a-bind>
     </div>
 
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="checkboxFoo">
-            <input
-              type="checkbox"
-              value="foo"
-              id="checka-input">
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: checkbox value="foo"
+
+        <a-bind
+          model="custom-element"
+          property="checkboxFoo">
+          <input
+            type="checkbox"
+            value="foo">
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 
   <!-- checkboxBar -->
-  <!-- <data-bar
+  <data-row
     model="custom-element"
-    property="checkboxBar"
-    model-attr="checkbox-bar"
-    inputid="checkb-input"
-    attrbtn="foo",
-    propbtn="bar">
+    attr="checkbox-bar"
+    attr-func="setAttribute; checkbox-bar; foo"
+    prop="checkboxBar"
+    prop-func="checkboxBar; bar">
 
-    <div slot="input">
-      <a-bind model="custom-element" property="checkboxBar">
-        <input type="checkbox" value="bar" id="checkb-input">
+    <div slot="input" class="flex column">
+      <span>Input <code>checkbox value="bar"</code></span>
+
+      <a-bind
+        model="custom-element"
+        property="checkboxBar">
+        <input
+          type="checkbox"
+          id="checkbox-bar-input"
+          value="bar">
       </a-bind>
     </div>
 
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="checkboxBar">
-            <input
-              type="checkbox"
-              value="bar"
-              id="checkb-input">
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: checkbox value="bar"
+
+        <a-bind
+          model="custom-element"
+          property="checkboxBar">
+          <input
+            type="checkbox"
+            value="bar">
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 </details>
 
 <details name="component-props">
 <summary>Radio Inputs</summary>
   <!-- radioGroup -->
-  <!-- <data-bar
+  <data-row
     model="custom-element"
-    property="radioGroup"
-    model-attr="radio-group"
-    attrbtn="foo",
-    propbtn="bar">
-    <div slot="input">
-      <div>
-        <label for="rad-a">
-          value="foo"
-        </label>
-        <a-bind model="custom-element" property="radioGroup">
-          <input type="radio" value="foo" name="rads" id="rad-a">
-        </a-bind>
-      </div>
+    attr="radio-group"
+    attr-func="setAttribute; radio-group; foo"
+    prop="radioGroup"
+    prop-func="radioGroup; bar">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>radio group</code></span>
 
       <div>
-        <label for="rad-b">
-          value="bar"
-        </label>
-        <a-bind model="custom-element" property="radioGroup">
-          <input type="radio" value="bar" name="rads" id="rad-b">
-        </a-bind>
-      </div>
-    </div>
-
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
         <a-bind
           model="custom-element"
           property="radioGroup">
           <input
             type="radio"
-            value="foo"
+            id="radiofoo-input"
             name="rads"
-            id="rad-a">
+            value="foo">
         </a-bind>
+
+        <label for="radiofoo-input">
+          value = "foo"
+        </label>
+      </div>
+
+      <div>
+        <a-bind
+          model="custom-element"
+          property="radioGroup">
+          <input
+            type="radio"
+            id="radiobar-input"
+            name="rads"
+            value="bar">
+        </a-bind>
+
+        <label for="radiobar-input">
+          value = "bar"
+        </label>
+      </div>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: radio value = "foo"
 
         <a-bind
           model="custom-element"
           property="radioGroup">
           <input
             type="radio"
-            value="bar"
+            id="radiofoo-input"
             name="rads"
-            id="rad-b">
+            value="foo">
         </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
+
+        Input: radio value = "bar"
+
+        <a-bind
+          model="custom-element"
+          property="radioGroup">
+          <input
+            type="radio"
+            name="rads"
+            value="bar">
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 </details>
 
 <details name="component-props">
 <summary>Buttons</summary>
   <!-- button -->
+  <data-row open
+    model="custom-element"
+    attr="button"
+    attr-func="setAttribute; button; foo"
+    prop="button"
+    prop-func="button; bar">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>button</code></span>
+
+      <div class="flex column">
+        <label for="button-input">
+          button
+        </label>
+
+        <a-bind
+          model="custom-element"
+          property="button"
+          elem-attr="textContent"
+          event="click"
+          func="notify" >
+          <button
+            id="button-input">
+            ...
+          </button>
+        </a-bind>
+      </div>
+
+      <div class="flex column">
+        <label for="button-oneway-input">
+          button with oneway binding
+        </label>
+
+        <a-bind
+          oneway
+          model="custom-element"
+          property="button"
+          elem-attr="textContent"
+          event="click"
+          func="notify" >
+          <button
+            id="button-oneway-input">
+            ...
+          </button>
+        </a-bind>
+
+      </div>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: button
+
+        <a-bind
+          model="custom-element"
+          property="button"
+          elem-attr="textContent"
+          event="click"
+          func="notify" >
+          <button>
+            ...
+          </button>
+        </a-bind>
+
+        --------
+
+        Input: button with oneway binding
+
+        <a-bind
+          oneway
+          model="custom-element"
+          property="button"
+          elem-attr="textContent"
+          event="click"
+          func="notify" >
+          <button>
+            ...
+          </button>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
+
 <!--   <data-bar
     model="custom-element"
     property="button"
@@ -735,6 +887,60 @@
 <details name="component-props">
 <summary>Other Inputs</summary>
   <!-- color -->
+  <data-row open
+    model="custom-element"
+    attr="color"
+    attr-func="setAttribute; color; #ff00ff"
+    prop="color"
+    prop-func="color; #00ced1">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>color</code></span>
+
+      <a-bind
+        model="custom-element"
+        property="color"
+        elem-attr="value, style.background">
+        <output
+          for="color-input">
+        </output>
+      </a-bind>
+
+      <a-bind
+        model="custom-element"
+        property="color"
+        elem-attr="value, style.background">
+        <input
+          type="color"
+          id="color-input">
+      </a-bind>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: color
+
+        <a-bind
+          model="custom-element"
+          property="color"
+          elem-attr="value, style.background">
+          <output
+            for="color-input">
+          </output>
+        </a-bind>
+
+        <a-bind
+          model="custom-element"
+          property="color"
+          elem-attr="value, style.background">
+          <input
+            type="color"
+            id="color-input">
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
+
   <!-- <data-bar
     model="custom-element"
     property="color"
@@ -764,6 +970,39 @@
   </data-bar> -->
 
   <!-- range -->
+  <data-row open
+    model="custom-element"
+    attr="range"
+    attr-func="setAttribute; range; 25"
+    prop="range"
+    prop-func="range; 75">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>range</code></span>
+
+      <a-bind
+        model="custom-element"
+        property="range">
+        <input
+          type="range"
+          id="range-input">
+      </a-bind>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: range
+
+        <a-bind
+          model="custom-element"
+          property="range">
+          <input
+            type="range">
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
+
   <!-- <data-bar
     model="custom-element"
     property="range"
@@ -792,6 +1031,42 @@
   </data-bar> -->
 
   <!-- progress -->
+  <data-row open
+    model="custom-element"
+    attr="progress"
+    attr-func="setAttribute; progress; 25"
+    prop="progress"
+    prop-func="progress; 75">
+
+    <div slot="input" class="flex column">
+      <span>Input <code></code></span>
+
+      <a-bind
+        model="custom-element"
+        property="progress">
+        <progress
+          id="progress-input"
+          max="100">
+        </progress>
+      </a-bind>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: progress
+
+        <a-bind
+          model="custom-element"
+          property="progress">
+          <progress
+            id="progress-input"
+            max="100">
+          </progress>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
+
   <!-- <data-bar
     model="custom-element"
     property="progress"
@@ -824,6 +1099,47 @@
   </data-bar> -->
 
   <!-- meter -->
+  <data-row open
+    model="custom-element"
+    attr="meter"
+    attr-func="setAttribute; meter; 25"
+    prop="meter"
+    prop-func="meter; 75">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>meter</code></span>
+
+      <a-bind
+        model="custom-element"
+        property="meter">
+        <meter
+          id="meter-input"
+          max="100"
+          low="33",
+          high="66",
+          optimum="80">
+        </meter>
+      </a-bind>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: meter
+
+        <a-bind
+          model="custom-element"
+          property="meter">
+          <meter
+            max="100"
+            low="33",
+            high="66",
+            optimum="80">
+          </meter>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
+
   <!-- <data-bar
     model="custom-element"
     property="meter"
@@ -862,6 +1178,48 @@
   </data-bar> -->
 
   <!-- file -->
+  <data-row open
+    model="custom-element"
+    attr="file"
+    prop="file"
+    prop-func=";">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>file</code></span>
+
+      <a-bind
+        oneway
+        model="custom-element"
+        property="file"
+        event="change"
+        func="getFiles"
+        elem-attr="files">
+        <input
+          id="file-input"
+          type="file"
+          multiple>
+      </a-bind>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: file
+
+        <a-bind
+          oneway
+          model="custom-element"
+          property="file"
+          event="change"
+          func="getFiles"
+          elem-attr="files">
+          <input
+            type="file"
+            multiple>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
+
  <!--  <data-bar
     model="custom-element"
     property="file"
@@ -1000,7 +1358,7 @@
       </button>
     </form>
 
-    <!-- code -->
+    code
     <div class="card flex1">
       <h3>code</h3>
 
