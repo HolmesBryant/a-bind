@@ -43,14 +43,7 @@ This component exposes several custom css properties which affect the appearance
 
 ## Special Notes
 
-If you are binding to custom element attributes (`oa=` or `object-attribute=`) and you have not included a property (`p=` or `property=`) to which the attribute is associated, ABind will convert kebab-case attribute names to camelCase and set the property value to the camelCase version.
-
-If you do have kebab-case attributes, your `attributeChangedCallback` function might look like:
-
-    attributeChangedCallback(attr, oldval, newval) {
-        // Convert kebab-case attribute name to camelCase property name
-        const propertyName = attr.replace(/-(.)/g, (match, letter) => letter.toUpperCase());
-        this[propertyName] = newval;
-    }
+### Binding to properties having null values
+    If binding an element to an object property whose value is null does not result in the desired effect, try setting the value of the element to `"null"`. ie. `<input type="checkbox" value="null">`
 
 

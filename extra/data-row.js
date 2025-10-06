@@ -39,7 +39,7 @@ export class DataRow extends HTMLElement {
 	}
 
 	connectedCallback() {
-		// this.render();
+		this.render();
 		this.#connected = true;
 	}
 

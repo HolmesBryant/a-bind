@@ -364,14 +364,14 @@ export default class CustomElement extends HTMLElement {
 	}
 
 	get file() {
-		return JSON.stringify(this._file);
 		// const filesArray = Array.from(this._file);
   	// const fileDetails = filesArray.map((file) => ({
     // 	name: file.name,
     // 	type: file.type,
     // 	size: file.size,
   	// }));
-		return JSON.stringify(fileDetails, null, 2);
+		return JSON.stringify(this._file);
+		// return JSON.stringify(fileDetails, null, 2);
 	}
 	set file(fileList) {
 		this.setAttribute('file', JSON.stringify(fileList));
