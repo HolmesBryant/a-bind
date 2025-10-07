@@ -332,9 +332,9 @@ function testObject() {
 				return this._editableFormatted;
 			} else {
 				this._editableFormatted = this._editable
-																	.replace(this._editableRegex, "\n$1\n")
-																	.replace(/div/g, 'p')
-																	.trim();
+				.replace(this._editableRegex, "\n$1\n")
+				.replace(/div/g, 'p')
+				.trim();
 				return this._editableFormatted;
 			}
 		},

@@ -501,10 +501,10 @@
   </data-row>
 </details>
 
-<details open name="component-props">
+<details name="component-props">
 <summary>Select Inputs</summary>
   <!-- select -->
-  <data-row open
+  <data-row
     model="custom-element"
     attr="select"
     attr-func="setAttribute; select; foo"
@@ -516,8 +516,7 @@
 
       <a-bind
         model="custom-element"
-        property="select"
-        event="change">
+        property="select">
         <select id="select-input">
           <option>foo</option>
           <option>bar</option>
@@ -550,10 +549,10 @@
   </data-row>
 
   <!-- selectMulti -->
-  <data-row open
+  <data-row
     model="custom-element"
     attr="select-multi"
-    attr-func="setAttribute; selectMulti; foo, bar"
+    attr-func="setAttribute; select-multi; foo, bar"
     prop="selectMulti"
     prop-func="selectMulti; bar, baz">
 
@@ -722,7 +721,6 @@
           property="radioGroup">
           <input
             type="radio"
-            id="radiofoo-input"
             name="rads"
             value="foo">
         </a-bind>
@@ -744,8 +742,8 @@
 
 <details name="component-props">
 <summary>Buttons</summary>
-  <!-- button -->
-  <data-row open
+  <!-- button One-->
+  <data-row
     model="custom-element"
     attr="button"
     attr-func="setAttribute; button; foo"
@@ -754,44 +752,22 @@
 
     <div slot="input" class="flex column">
       <span>Input <code>button</code></span>
+      <ul>
+        <li>button text mirrors property value</li>
+        <li>invokes <code>notify()</code> method on click</li>
+      </ul>
 
-      <div class="flex column">
-        <label for="button-input">
-          button
-        </label>
-
-        <a-bind
-          model="custom-element"
-          property="button"
-          elem-attr="textContent"
-          event="click"
-          func="notify" >
-          <button
-            id="button-input">
-            ...
-          </button>
-        </a-bind>
-      </div>
-
-      <div class="flex column">
-        <label for="button-oneway-input">
-          button with oneway binding
-        </label>
-
-        <a-bind
-          oneway
-          model="custom-element"
-          property="button"
-          elem-attr="textContent"
-          event="click"
-          func="notify" >
-          <button
-            id="button-oneway-input">
-            ...
-          </button>
-        </a-bind>
-
-      </div>
+      <a-bind
+        model="custom-element"
+        property="button"
+        elem-attr="textContent"
+        event="click"
+        func="notify">
+        <button
+          id="button-input">
+          ...
+        </button>
+      </a-bind>
     </div>
 
     <a-code highlight slot="input-code">
@@ -803,23 +779,7 @@
           property="button"
           elem-attr="textContent"
           event="click"
-          func="notify" >
-          <button>
-            ...
-          </button>
-        </a-bind>
-
-        --------
-
-        Input: button with oneway binding
-
-        <a-bind
-          oneway
-          model="custom-element"
-          property="button"
-          elem-attr="textContent"
-          event="click"
-          func="notify" >
+          func="notify">
           <button>
             ...
           </button>
@@ -828,66 +788,142 @@
     </a-code>
   </data-row>
 
-<!--   <data-bar
+  <!-- button two -->
+  <data-row
     model="custom-element"
-    property="button"
-    model-attr="button"
-    attrbtn="foo",
-    propbtn="bar">
-    <div slot="input">
-      <div>
-        <a-bind model="custom-element" property="button" event="click" func="notify" elem-attr="textContent">
-          <button id="button"></button>
-        </a-bind>
+    attr="button"
+    attr-func="setAttribute; button; baz"
+    prop="button"
+    prop-func="button; boom">
 
-        <label for="button">button </label>
-      </div>
+    <div slot="input" class="flex column">
+      <span>Input <code>button</code></span>
+      <ul>
+        <li>button text does not mirror property value</li>
+        <li>invokes <code>notify</code> method on click</li>
+      </ul>
 
-      <div>
-        <a-bind oneway model="custom-element" property="button" event="click" func="notify">
-          <button value="some value" id="button-oneway">Click Me!</button>
-        </a-bind>
-
-        <label for="button-oneway">button oneway</label>
-      </div>
+      <a-bind
+        model="custom-element"
+        property="button"
+        event="click"
+        func="notify">
+        <button
+          id="button-input-2">
+          notify
+        </button>
+      </a-bind>
     </div>
 
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="button"
-            event="click"
-            func="notify"
-            elem-attr="textContent">
-            <button
-              id="button">
-            </button>
-        </a-bind>
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: button
 
         <a-bind
-          oneway
           model="custom-element"
           property="button"
           event="click"
           func="notify">
-          <button
-            value="some value"
-            id="button-oneway">
-            Click Me!
+          <button>
+            notify
           </button>
         </a-bind>
-        </textarea>
-      </a-code>
+      </textarea>
+    </a-code>
+  </data-row>
+
+  <!-- button three -->
+  <data-row
+    model="custom-element"
+    attr="button"
+    attr-func="setAttribute; button; bing"
+    prop="button"
+    prop-func="button; bang">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>button</code></span>
+      <ul>
+        <li>button text does not mirror property value</li>
+        <li>invokes <code>notify</code> method on click with <code>'button', 'something new'</code> as arguments</li>
+      </ul>
+
+      <a-bind
+        model="custom-element"
+        property="button"
+        event="click"
+        func="notify; something new">
+        <button
+          id="button-input-3">
+          notify; something new
+        </button>
+      </a-bind>
     </div>
-  </data-bar> -->
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: button
+
+        <a-bind
+          model="custom-element"
+          property="button"
+          event="click"
+          func="notify; something new">
+          <button
+            id="button-input-3">
+            notify; something new
+          </button>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
+
+  <!-- button four -->
+  <data-row
+    model="custom-element"
+    attr="button"
+    attr-func="setAttribute; button; fee"
+    prop="button"
+    prop-func="button; fie">
+
+    <div slot="input" class="flex column">
+      <span>Input <code>button</code></span>
+      <ul>
+        <li>button text does not mirror property value</li>
+        <li>invokes <code>notify</code> method on click with <code>'otherProperty', 'other value'</code> as arguments</li>
+      </ul>
+
+      <a-bind
+        model="custom-element"
+        event="click"
+        func="notify; otherProperty; other value">
+        <button
+          id="button-input-4">
+          notify; otherProperty; other value
+        </button>
+      </a-bind>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        Input: button
+
+        <a-bind
+          model="custom-element"
+          event="click"
+          func="notify; otherProperty; other value">
+          <button>
+            notify; otherProperty; other value
+          </button>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </data-row>
 </details>
 
 <details name="component-props">
 <summary>Other Inputs</summary>
   <!-- color -->
-  <data-row open
+  <data-row
     model="custom-element"
     attr="color"
     attr-func="setAttribute; color; #ff00ff"
@@ -908,8 +944,7 @@
 
       <a-bind
         model="custom-element"
-        property="color"
-        elem-attr="value, style.background">
+        property="color">
         <input
           type="color"
           id="color-input">
@@ -931,8 +966,7 @@
 
         <a-bind
           model="custom-element"
-          property="color"
-          elem-attr="value, style.background">
+          property="color">
           <input
             type="color"
             id="color-input">
@@ -941,36 +975,8 @@
     </a-code>
   </data-row>
 
-  <!-- <data-bar
-    model="custom-element"
-    property="color"
-    elem-attr="value, style.background"
-    model-attr="color"
-    inputid="color-input"
-    attrbtn="#ff00ff",
-    propbtn="#00ced1">
-    <div slot="input">
-      <a-bind model="custom-element" property="color">
-        <input type="color" id="color-input">
-      </a-bind>
-    </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="color">
-            <input
-              type="color"
-              id="color-input">
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
-
   <!-- range -->
-  <data-row open
+  <data-row
     model="custom-element"
     attr="range"
     attr-func="setAttribute; range; 25"
@@ -1003,35 +1009,8 @@
     </a-code>
   </data-row>
 
-  <!-- <data-bar
-    model="custom-element"
-    property="range"
-    model-attr="range"
-    inputid="range-input"
-    attrbtn="25",
-    propbtn="75">
-    <div slot="input">
-      <a-bind model="custom-element" property="range">
-        <input type="range" id="range-input">
-      </a-bind>
-    </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="range">
-            <input
-              type="range"
-              id="range-input">
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
-
   <!-- progress -->
-  <data-row open
+  <data-row
     model="custom-element"
     attr="progress"
     attr-func="setAttribute; progress; 25"
@@ -1059,7 +1038,6 @@
           model="custom-element"
           property="progress">
           <progress
-            id="progress-input"
             max="100">
           </progress>
         </a-bind>
@@ -1067,39 +1045,8 @@
     </a-code>
   </data-row>
 
-  <!-- <data-bar
-    model="custom-element"
-    property="progress"
-    model-attr="progress"
-    inputid="progress-input"
-    attrbtn="25",
-    propbtn="75">
-    <div slot="input">
-      <a-bind model="custom-element" property="progress">
-        <progress
-          id="progress-input"
-          max="100">
-        </progress>
-      </a-bind>
-    </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="progress">
-            <progress
-              id="progress-input"
-              max="100">
-            </progress>
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
-
   <!-- meter -->
-  <data-row open
+  <data-row
     model="custom-element"
     attr="meter"
     attr-func="setAttribute; meter; 25"
@@ -1140,59 +1087,18 @@
     </a-code>
   </data-row>
 
-  <!-- <data-bar
-    model="custom-element"
-    property="meter"
-    model-attr="meter"
-    inputid="meter-input"
-    attrbtn="25",
-    propbtn="80">
-    <div slot="input">
-      <a-bind model="custom-element" property="meter">
-        <meter
-          id="meter-input"
-          max="100"
-          low="33",
-          high="66",
-          optimum="80">
-      </meter>
-      </a-bind>
-    </div>
-    <div slot="code-input">
-      <a-code highlight>
-        <textarea>
-          <a-bind
-            model="custom-element"
-            property="meter">
-            <meter
-              id="meter-input"
-              max="100"
-              low="33",
-              high="66",
-              optimum="80">
-            </meter>
-          </a-bind>
-        </textarea>
-      </a-code>
-    </div>
-  </data-bar> -->
-
   <!-- file -->
-  <data-row open
+  <data-row
     model="custom-element"
-    attr="file"
-    prop="file"
-    prop-func=";">
+    prop="file">
 
     <div slot="input" class="flex column">
       <span>Input <code>file</code></span>
 
       <a-bind
-        oneway
         model="custom-element"
         property="file"
         event="change"
-        func="getFiles"
         elem-attr="files">
         <input
           id="file-input"
@@ -1206,11 +1112,9 @@
         Input: file
 
         <a-bind
-          oneway
           model="custom-element"
           property="file"
           event="change"
-          func="getFiles"
           elem-attr="files">
           <input
             type="file"
@@ -1261,100 +1165,150 @@
 
 <details name="component-props">
 <summary>Contenteditable</summary>
-  <!-- <section
-    class="flex stretch"
-    style="height:400px; overflow:auto;">
-    <div class="flex1">
-      <a-bind
-        once
-        model="custom-element"
-        property="editable"
-        elem-attr="innerHTML">
-        <div
-          contenteditable
-          id="content-editable"
-          class="card"
-          style="height:100%; border:2px dashed var(--border-color)">
-          Some content
-        </div>
-      </a-bind>
-    </div>
-
+  <section>
+    <aside>When binding to <code>contenteditable</code> elements, add the <code>once</code> attribute to a-bind to keep the edited content from being written back to the element.</aside>
     <div
-      class="flex1"
-      style="padding:var(--pad)">
-      <a-bind
-        model="custom-element"
-        property="editable"
-        elem-attr="textContent">
-        <a-code
-          style="--wrap:pre-wrap">
-          ...
-        </a-code>
-    </a-bind>
+      class="flex stretch">
+      <div class="flex1">
+        <a-bind
+          once
+          model="custom-element"
+          property="editable"
+          elem-attr="innerHTML">
+          <div
+            contenteditable
+            id="content-editable"
+            class="card"
+            style="height:100%">
+            Some content
+          </div>
+        </a-bind>
+      </div>
+
+      <div class="flex1">
+        <a-bind
+          model="custom-element"
+          property="editable">
+          <output
+            style="white-space:pre-wrap; padding:var(--pad"
+            for="content-editable">
+          </output>
+        </a-bind>
+      </div>
     </div>
-  </section> -->
+    <p> </p>
+    <details>
+    <summary class="card nofrills">Code</summary>
+      <section class="card flex stretch">
+        <div class="flex column flex1">
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                once
+                model="custom-element"
+                property="editable"
+                elem-attr="innerHTML">
+                <div
+                  contenteditable
+                  id="content-editable">
+                  ...
+                </div>
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+
+        <div class="flex column flex1">
+          <a-code highlight indent="6px">
+            <textarea>
+              <a-bind
+                model="custom-element"
+                property="editable">
+                <output
+                  for="content-editable">
+                </output>
+            </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+      </section>
+    </details>
+  </section>
 </details>
 
 <details name="component-props">
 <summary>Form Submission</summary>
-  <!-- <section class="flex vstart">
+  <section class="flex vstart">
     <form id="test-form" method="get" class="flex column center flex1">
 
       <h3>form id="test-form"</h3>
 
       <aside class="flex">
-        <a-bind model="custom-element" event="click" func="reset;">
-          <button>Reset; Properties</button>
+        <a-bind
+          model="custom-element"
+          event="click"
+          func="reset">
+          <button>Reset Properties</button>
         </a-bind>
 
-        <button type="reset" form="test-form">Reset; Form</button>
+        <button type="reset" form="test-form">Reset Form</button>
       </aside>
 
       <div class="flex column start gap0">
-        <label for="sub-name" name="name">Name</label>
+        <label for="form-name" name="name">Name</label>
 
         <a-bind model="custom-element" property="name">
-          <input id="sub-name" name="name">
+          <input id="form-name" name="name">
         </a-bind>
       </div>
 
       <div class="flex column start gap0">
-        <label for="sub-email">Email</label>
+        <label for="form-email">Email</label>
 
         <a-bind model="custom-element" property="email">
-          <input id="sub-email" name="email">
+          <input id="form-email" name="email">
         </a-bind>
       </div>
 
       <p>
-        <a-bind model="custom-element" property="name">
-          Name: <output for="sub-name"></output>
+        <a-bind
+          model="custom-element"
+          property="name">
+          Name:
+          <output
+            for="form-name">
+          </output>
         </a-bind>
 
         <br>
 
-        <a-bind model="custom-element" property="email">
-          Email: <output for="sub-email"></output>
+        <a-bind
+          model="custom-element"
+          property="email">
+          Email:
+          <output
+            for="form-email">
+          </output>
         </a-bind>
       </p>
 
-      <a-bind oneway model="custom-element" event="click" func="sendForm;">
+      <a-bind
+        model="custom-element"
+        event="click"
+        func="sendForm; test-form;">
         <button
-          type="submit"
-          value="test-form">
-          Submit button with binding
+          type="submit">
+          sendForm; test-form;
         </button>
       </a-bind>
 
       <button
-        name="onclick-submit"
         type="submit"
         onclick="document
         .querySelector('custom-element')
         .sendForm(this.form);
         return false">
-        Submit button with onclick
+        Submit button with onclick event
       </button>
     </form>
 
@@ -1369,16 +1323,16 @@
             <a-bind
               model="custom-element"
               event="click"
-              func="reset;">
+              func="reset">
               <button>
-                Reset: Properties
+                Reset Properties
               </button>
             </a-bind>
 
             <button
               type="reset"
               form="test-form">
-              Reset: Form
+              Reset Form
             </button>
           </textarea>
         </a-code>
@@ -1392,16 +1346,16 @@
               model="custom-element"
               property="name">
               <input
-                name="name"
-                id="sub-name">
+                id="form-name"
+                name="name">
             </a-bind>
 
             <a-bind
               model="custom-element"
               property="email">
               <input
-                name="email"
-                id="sub-email">
+                id="form-email"
+                name="email">
             </a-bind>
           </textarea>
         </a-code>
@@ -1415,7 +1369,7 @@
               model="custom-element"
               property="name">
               Name:
-              <output for="sub-name">
+              <output for="form-name">
               </output>
             </a-bind>
 
@@ -1423,7 +1377,7 @@
               model="custom-element"
               property="email">
               Email:
-              <output for="sub-email">
+              <output for="form-email">
               </output>
             </a-bind>
           </textarea>
@@ -1435,14 +1389,12 @@
         <a-code highlight>
           <textarea>
             <a-bind
-              oneway
               model="custom-element"
               event="click"
-              func="sendForm;">
+              func="sendForm; test-form;">
               <button
-                type="submit"
-                value="test-form">
-                Submit button with binding
+                type="submit">
+                sendForm; test-form;
               </button>
             </a-bind>
 
@@ -1452,20 +1404,19 @@
               .querySelector('custom-element')
               .sendForm(this.form);
               return false">
-              Submit button with onclick
+              Submit button with onclick event
             </button>
           </textarea>
         </a-code>
       </div>
     </div>
-  </section> -->
+  </section>
 </details>
 
 <details name="component-props">
 <summary>Example Component</summary>
-  <!-- <section>
+  <section>
     <div class="flex">
-
       <div class="flex1 flex column">
         <label for="foo-input">Foo Input</label>
 
@@ -1473,8 +1424,26 @@
           <input id="foo-input">
         </a-bind>
 
-        <details  style="position:relative; z-index:0">
-          <summary class="nofrills">Code</summary>
+      </div>
+      <p> </p>
+      <div class="flex1 flex column">
+        <label for="foo-output">Foo Output</label>
+
+        <a-bind
+          model="example-component"
+          property="foo">
+          <output
+            id="foo-output"
+            for="foo-input">
+          </output>
+        </a-bind>
+
+      </div>
+    </div>
+    <details>
+    <summary class="nofrills">code</summary>
+      <section class="flex">
+        <div class="flex1">
           <a-code highlight>
             <textarea>
               <a-bind
@@ -1484,40 +1453,34 @@
               </a-bind>
             </textarea>
           </a-code>
-        </details>
-      </div>
+        </div>
 
-      <div class="flex1 flex column">
-        <label for="foo-output">Foo Output</label>
-
-        <a-bind model="example-component" property="foo">
-          <output id="foo-output" for="foo-input"></output>
-        </a-bind>
-
-        <details style="position:relative; z-index:0">
-          <summary class="nofrills">Code</summary>
+        <div class="flex1">
           <a-code highlight>
-            <a-bind
-              model="example-component"
-              property="foo">
-              <output
-                id="foo-output"
-                for="foo-input">
-              </output>
-            </a-bind>
+            <textarea>
+              <a-bind
+                model="example-component"
+                property="foo">
+                <output
+                  for="foo-input">
+                </output>
+              </a-bind>
+            </textarea>
           </a-code>
-        </details>
-      </div>
-    </div>
+        </div>
+      </section>
+    </details>
 
     <hr>
 
-    <example-component foo="bar"></example-component>
+    <example-component foo="boom"></example-component>
 
     <hr>
     <a-code highlight="javascript" line-numbers>
-      <example-component foo="bar">
-      </example-component>
+      <textarea>
+        <example-component foo="boom">
+        </example-component>
+      </textarea>
     </a-code>
-  </section> -->
+  </section>
 </details>

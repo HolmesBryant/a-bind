@@ -1,6 +1,8 @@
 class ExampleComponent extends HTMLElement {
 
-	#foo = "foo";
+	#foo = "bar";
+
+	_notAnAttribute = true;
 
 	static observedAttributes = ['foo'];
 
@@ -9,7 +11,11 @@ class ExampleComponent extends HTMLElement {
 	}
 
 	attributeChangedCallback(attr, oldval, newval) {
-		this[attr] = newval;
+		switch (attr) {
+			case 'foo': this.#foo = newval; break;
+		}
+
+		if (window.abind) abind.update(this, attr, newval);
 	}
 
 	connectedCallback() {
@@ -19,8 +25,14 @@ class ExampleComponent extends HTMLElement {
 	get foo() { return this.#foo }
 
 	set foo(value) {
-		this.#foo = value;
-		if (window.abind) abind.update(this, 'foo', value);
+		this.setAttribute('foo', value);
+	}
+
+	get notAnAttribute() { return this._notAnAttribute }
+	set notAnAttribute(value) {
+		this._notAnAttribute = value;
+
+		if (window.abind) abind.update(this, 'notAnAttribute', value);
 	}
 }
 

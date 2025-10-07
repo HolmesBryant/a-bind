@@ -110,45 +110,69 @@ export default class ABind extends HTMLElement {
 	// Private
 
 	_executeFunction(value) {
-		let context, func;
+		let context, func, args;
+		let prop = this.#property;
 		const arr = value.split(';');
 		let funcPath = arr.shift();
-		let args = arr.pop().split(',').map(item => item.trim());
-		let prop = arr[0]?.trim();
 
+		if (arr.length > 0) {
+			args = arr.pop().split(',').map(item => item.trim());
+			if (arr[0]) prop = arr[0].trim();
+		}
+
+		if (!args) args = [this.#boundElement[this.elemAttr]];
 
 		// Case 1: The function path contains a dot (e.g., "console.log")
 		if (funcPath.includes('.')) {
-			const contextPath = funcPath.substring(0, funcPath.lastIndexOf('.'));
-			const funcName = funcPath.split('.').pop();
-
-			// First, try to resolve the context and function from the model.
-			context = this._getObjectProperty(this.#resolvedModel, contextPath);
-			func = context ? context[funcName] : undefined;
-
-			// If not found on the model, try the window object.
-			if (typeof func !== 'function') {
-				context = this._getObjectProperty(window, contextPath);
-				func = context ? context[funcName] : undefined;
-			}
+			this._executeFunctionPath(funcPath, contextPath, prop, args);
 		}
 		// Case 2: The function is a direct property of the model or window (e.g., "setAttribute")
 		else {
-			// Prioritize the model.
-			context = this.#resolvedModel;
+			this._executeFunctionProp(funcPath, prop, args);
+		}
 
-			if (typeof this.#resolvedModel[funcPath] === 'function') {
-				// If funcPath is a function
-				func = this.#resolvedModel[funcPath];
-			} else if (this.#resolvedModel[funcPath] !== undefined) {
-				// If funcPath is a property
-				context[funcPath] = args;
-			}
-			// Fall back to the window.
-			else if (typeof window[funcPath] === 'function') {
-				func = window[funcPath];
-				context = window;
-			}
+		if (typeof func === 'function') {
+			func.call(context, prop, args);
+		}
+	}
+
+	_executeFunctionPath(funcPath, prop, args) {
+		let context, func;
+		const contextPath = funcPath.substring(0, funcPath.lastIndexOf('.'));
+		const funcName = funcPath.split('.').pop();
+
+		// First, try to resolve the context and function from the model.
+		context = this._getObjectProperty(this.#resolvedModel, contextPath);
+		func = context ? context[funcName] : undefined;
+
+		// If not found on the model, try the window object.
+		if (typeof func !== 'function') {
+			context = this._getObjectProperty(window, contextPath);
+			func = context ? context[funcName] : undefined;
+		}
+
+		if (typeof func === 'function') {
+			func.call(context, prop, args);
+		}
+	}
+
+	_executeFunctionProp(funcPath, prop, args) {
+		let context, func;
+
+		// Prioritize the model.
+		context = this.#resolvedModel;
+
+		if (typeof this.#resolvedModel[funcPath] === 'function') {
+			// If funcPath is a function
+			func = this.#resolvedModel[funcPath];
+		} else if (this.#resolvedModel[funcPath] !== undefined) {
+			// If funcPath is a property
+			context[funcPath] = args;
+		}
+		// Fall back to the window.
+		else if (typeof window[funcPath] === 'function') {
+			func = window[funcPath];
+			context = window;
 		}
 
 		if (typeof func === 'function') {
@@ -202,9 +226,9 @@ export default class ABind extends HTMLElement {
 			}
 		}
 
-		const { localName, type, checked, selectedOptions, hasAttribute } = this.#boundElement;
+		const { localName, type, checked, selectedOptions } = this.#boundElement;
 
-		if (localName === 'select' && hasAttribute('multiple')) {
+		if (localName === 'select' && this.#boundElement.hasAttribute('multiple')) {
 			value = Array.from(selectedOptions).map(option => option.value);
 		} else if (type === 'checkbox') {
 			value = checked ? this.#boundElement.value : "";

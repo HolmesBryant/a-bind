@@ -71,7 +71,8 @@ body {
 	.card
 	{ background: var(--bg3-color) }
 
-	button.primary
+	button.primary,
+	hr
 	{ background: var(--accent-color); }
 
 	input,
@@ -92,7 +93,6 @@ body {
 /**** Borders ****/
 	button,
 	details,
-	hr,
 	input,
 	select,
 	option,
@@ -118,6 +118,9 @@ body {
   	border: none;
   	border-radius: 0;
   }
+
+  [contenteditable]:hover
+  { border-color: var(--accent-color); }
 
 /**** Text ****/
 	a
@@ -208,6 +211,9 @@ body {
 
 	header
 	{ min-height: 75px; }
+
+	hr
+	{ height: 1px; }
 
 	button,
 	input,

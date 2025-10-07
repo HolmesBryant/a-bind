@@ -1,11 +1,10 @@
 export class DataRow extends HTMLElement {
 
-	_attr = "";
+	_attr = null;
 	_attrFunc;
 	_model;
 	_prop;
-	_propFunc;
-	// _propValue;
+	_propFunc = null;
 	_open = false;
 
 	#connected = false;
@@ -33,7 +32,6 @@ export class DataRow extends HTMLElement {
 			case 'model': this._model = newval; break;
 			case 'prop': this._prop = newval; break;
 			case 'prop-func': this._propFunc = newval; break;
-			// case 'prop-value': this._propValue = newval; break;
 			case 'open': this._open = newval !== 'false' && newval !== false;
 		}
 	}
@@ -48,18 +46,21 @@ export class DataRow extends HTMLElement {
 	}
 
 	render() {
-		const hasAttr = this._attr;
-		const isOpen = this._open;
+		const hasAttr = this.attr;
+		const hasPropFunc = this.propFunc;
+		const isOpen = this.open;
 		const propCode = `
 			<a-code highlight slot="prop-code">
         <textarea>
           Property: ${this._prop}
-          <a-bind oneway
+          <a-bind
+          	oneway
             model="${this._model}"
             property="${this._prop}">
             <output></output>
           </a-bind>
 
+					${hasPropFunc ? `
           <a-bind
             model="${this._model}"
             func="${this._propFunc}"
@@ -67,15 +68,15 @@ export class DataRow extends HTMLElement {
             <button>
               ...
             </button>
-          </a-bind>
+          </a-bind>` : ''}
         </textarea>
       </a-code>`;
-
 		const attrCode = `
 			<a-code highlight slot="attr-code">
 	      <textarea>
 	        Attribute: ${this._attr}
-	        <a-bind oneway
+	        <a-bind
+	        	oneway
 	          model="${this._model}"
 	          model-attr="${this.attr}">
 	          <output></output>
@@ -103,53 +104,49 @@ export class DataRow extends HTMLElement {
 						` : hasAttr === null ? `
 						` : `
 						<span>
-				      Attribute <code>${this._attr}</code>
+				      Attribute <code>${this.attr}</code>
 						</span>
 			      <a-bind
 			      	oneway
-			      	model="${this._model}"
-			      	model-attr="${this._attr}">
+			      	model="${this.model}"
+			      	model-attr="${this.attr}">
 			        <output>...</output>
 			      </a-bind>
 
-			      <a-bind model="${this._model}" func="${this._attrFunc}" event="click">
-			        <button>${this._attrFunc}</button>
+			      <a-bind model="${this.model}" func="${this.attrFunc}" event="click">
+			        <button>${this.attrFunc}</button>
 			      </a-bind>
 						`}
 			    </div>
 
 			    <div class="flex column flex1">
 			      <span>
-			      	Property <code>${this._prop}</code>
+			      	Property <code>${this.prop}</code>
 						</span>
 
 			      <a-bind
 			      	oneway
-			      	model="${this._model}"
+			      	model="${this.model}"
 			      	property="${this.prop}">
 			        <output>...</output>
 			      </a-bind>
 
-			      <a-bind model="${this._model}" func="${this._propFunc}" event="click">
-			        <button>${this._propFunc}</button>
-			      </a-bind>
+						${hasPropFunc ? `
+			      <a-bind model="${this.model}" func="${this.propFunc}" event="click">
+			        <button>${this.propFunc}</button>
+			      </a-bind>` : ""}
 			    </div>
 
 			    <div class="flex column flex1">
-			      <a-bind model="${this._model}" property="${this._prop}">
-			        <slot name="input">input</slot>
-			      </a-bind>
+			       <slot name="input">input</slot>
 			    </div>
 			  </section>
 
 			  <details ${isOpen ? 'open':''} class="sticky">
-			    <summary class="nofrills">Code</summary>
+			    <summary class="card nofrills">Code</summary>
 			    <section class="card flex stretch">
 			      <div class="flex column flex1">
-			      	${ hasAttr === 'false' || hasAttr === null ? `
-			      	` : `
-			      	<slot name="attr-code">attr-code</slot>
-			      	`}
+			      	<slot name="attr-code"></slot>
 			      </div>
 
 			      <div class="flex column flex1">
@@ -162,10 +159,14 @@ export class DataRow extends HTMLElement {
 			    </section>
 			  </details>
 			</article>
-			<p> </p>
+			<p><hr></p>
+
 		`;
 
-		this.insertAdjacentHTML('beforeend', attrCode);
+		if (hasAttr) {
+			this.insertAdjacentHTML('beforeend', attrCode);
+		}
+
 		this.insertAdjacentHTML('beforeend', propCode);
 		this.shadowRoot.innerHTML = html;
 	}
@@ -182,8 +183,8 @@ export class DataRow extends HTMLElement {
 	get prop() {return this._prop }
 	set prop(value) { this.setAttribute('prop', value); }
 
-	get propLabel() {return this._proplabel }
-	set propLabel(value) { this.setAttribute('prop-func', value); }
+	get propFunc() {return this._propFunc }
+	set propFunc(value) { this.setAttribute('prop-func', value); }
 
 	get open() { return this._open }
 	set open(value) { this.toggleAttribute('open', (value !== 'false' && value !== false)) }

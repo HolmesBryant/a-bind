@@ -67,12 +67,11 @@ export default class CustomElement extends HTMLElement {
 		checkboxFoo: 'foo',
 		checkboxBar: 'foo',
 		radioGroup: 'foo',
-		button: "Click Me!",
-		color: "_cd5c5c",
+		button: "value of button property",
+		color: "#cd5c5c",
 		range: '50',
 		progress: '50',
 		meter: '50',
-		file: '" "',
 		name: 'My Name',
 		editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>"
 	}
@@ -103,7 +102,6 @@ export default class CustomElement extends HTMLElement {
 		'range',
 		'progress',
 		'meter',
-		'file',
 		'name',
 		'editable'
 	];
@@ -121,7 +119,7 @@ export default class CustomElement extends HTMLElement {
    */
 	attributeChangedCallback(attr, oldval, newval) {
     if (this._connected && newval === oldval) return;
-    // if (newval === null) return;
+    if (newval === null) return;
     const prop = attr.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 
     switch (attr) {
@@ -155,7 +153,6 @@ export default class CustomElement extends HTMLElement {
 			case 'range': this._range = newval; break;
 			case 'progress': this._progress = newval; break;
 			case 'meter': this._meter = newval; break;
-			case 'file': newval = JSON.parse(newval); this._file = newval; break;
 			case 'name': this._name = newval; break;
 			case 'editable': this._editable = newval; break;
     }
@@ -169,15 +166,17 @@ export default class CustomElement extends HTMLElement {
 	}
 
 	*datalistGenerator(str) {
-	  str = str.trim();
 	  if (!str) return;
+	  str = str.trim();
 
 	  for (const option of str.split(/[,\s]+/)) {
 	    if (option) yield `<option value="${option}"></option>`;
 	  }
 	}
 
-	getFiles(fileList) {
+	getFiles(prop, value) {
+		const fileList = value[0];
+		this._file = fileList;
 		const list = [];
 		for (const item of fileList) {
 			const obj ={
@@ -189,22 +188,25 @@ export default class CustomElement extends HTMLElement {
 			list.push(obj);
 		}
 
-		const str = '<pre>' + JSON.stringify(list, null, 2) + '</pre>';
-		this.notify(str);
+		const str = JSON.stringify(list, null, 2);
+		this.notify(prop, str);
 	}
 
-	notify(value) {
+	notify(prop, value) {
 		const html = `
 			<form method="dialog">
 				<button>X</button>
 			</form>
-			<p>The value is: ${value}</p>
+			<p>The first argument passed: <pre>${prop}</pre></p>
+			<p>The second argument passed: <pre>${value}</pre></p>
 		`;
 		const dialog = document.createElement('dialog');
 		const cleanup = function(evt) {
 			dialog.removeEventListener('close', cleanup);
 			dialog.remove();
 		}
+
+		// if (prop) this[prop] = value;
 
 		dialog.id = 'btn-dialog';
 		dialog.innerHTML = html;
@@ -225,9 +227,11 @@ export default class CustomElement extends HTMLElement {
 	}
 
 	sendForm(form) {
+		let formName = null;
 		const ret = [];
 		if (typeof form === 'string') {
-			const formName = form;
+			// attr `form` corresponds to a-bind property="test-form", which is the id of the form
+			formName = form;
 			form = document.getElementById(form);
 			if (!form) throw new Error(`${formName} is not a valid id for an existing form`);
 		}
@@ -236,7 +240,8 @@ export default class CustomElement extends HTMLElement {
 		for (const input of formdata) {
 			ret.push({ [input.shift()]: input.shift()});
 		}
-		this.notify(JSON.stringify(ret, null, 2));
+
+		this.notify(formName, JSON.stringify(ret, null, 2));
 	}
 
 	get text() { return this._text }
@@ -364,18 +369,11 @@ export default class CustomElement extends HTMLElement {
 		this.setAttribute('meter', value);
 	}
 
-	get file() {
-		// const filesArray = Array.from(this._file);
-  	// const fileDetails = filesArray.map((file) => ({
-    // 	name: file.name,
-    // 	type: file.type,
-    // 	size: file.size,
-  	// }));
-		return JSON.stringify(this._file);
-		// return JSON.stringify(fileDetails, null, 2);
-	}
-	set file(fileList) {
-		this.setAttribute('file', JSON.stringify(fileList));
+	get file() { return this._file; }
+	set file(value) {
+		console.log('file', value)
+		this._file = value;
+		// this.setAttribute('file', JSON.stringify(fileList));
 	}
 
 	get name() { return this._name }
