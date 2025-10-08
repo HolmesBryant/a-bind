@@ -78,7 +78,6 @@ export default class ABind extends HTMLElement {
 	// Public
 
 	static update(model, property, value) {
-		if (property === 'inline') console.trace(value)
 		const event = new CustomEvent('abind:update', { detail: { model, property, value } });
 		document.dispatchEvent(event);
 	}
@@ -116,7 +115,14 @@ export default class ABind extends HTMLElement {
 		let funcPath = arr.shift();
 
 		if (arr.length > 0) {
-			args = arr.pop().split(',').map(item => item.trim());
+			args = arr.pop().split(',').map(item => {
+				item = item.trim();
+				if (item === 'this') {
+					return this.#boundElement;
+				} else {
+					return item;
+				}
+			});
 			if (arr[0]) prop = arr[0].trim();
 		}
 
@@ -129,10 +135,6 @@ export default class ABind extends HTMLElement {
 		// Case 2: The function is a direct property of the model or window (e.g., "setAttribute")
 		else {
 			this._executeFunctionProp(funcPath, prop, args);
-		}
-
-		if (typeof func === 'function') {
-			func.call(context, prop, args);
 		}
 	}
 
@@ -175,8 +177,13 @@ export default class ABind extends HTMLElement {
 			context = window;
 		}
 
+		const newArgs = [];
+		newArgs.push(context);
+		newArgs.push(prop);
+		newArgs.push(...args);
+
 		if (typeof func === 'function') {
-			func.call(context, prop, args);
+			func.call(...newArgs);
 		}
 	}
 
@@ -243,10 +250,12 @@ export default class ABind extends HTMLElement {
 		if (this.#resolvedModel !== event.detail.model || this.#property !== event.detail.property) {
 			return;
 		}
+
 		if (this.#modelAttr && this.#resolvedModel instanceof HTMLElement) {
 			const observed = this.#resolvedModel.constructor.observedAttributes;
 			if (!observed || !observed.includes(this.#modelAttr)) return;
 		}
+
 		if (this.#once && this.#hasUpdated) return;
 
 		if (this.#modelAttr) {

@@ -183,8 +183,7 @@ body {
 	body *
 	{ box-sizing: border-box; }
 
-	aside
-	{ padding: var(--pad); }
+
 
 	button
 	{ padding: .5rem; }
@@ -244,6 +243,7 @@ body {
 	output
 	{
 		display: inline-block;
+		font-family: "Courier New" ui-monospace;
 		min-width: var(--min);
 		min-height: 1ch;
 		white-space: pre-wrap;
@@ -262,14 +262,16 @@ body {
 	select::-webkit-scrollbar
 	{ display: none; }
 
-	select
-	{ padding: 0; }
+	select {
+		min-width: 100px;
+	}
+
+	select[multiple] {
+		padding: 0;
+	}
 
 	summary {
 		padding: var(--pad);
-		position: sticky;
-		top: 0;
-		z-index: 1;
 	}
 
 	textarea
@@ -294,7 +296,7 @@ body {
 
 	.sticky {
 		position: sticky;
-		top: var(--min);
+		top: 0;
 	}
 
 	#instructions {
@@ -349,31 +351,28 @@ body {
 	{ justify-content: center; }
 
 	.vcenter,
-	.column.center
-	{ align-items: center; }
-
+	.middle
 	.column.center
 	{ align-items: center; }
 
 	.end
-	{ justify-content: end; }
+	{ justify-content: flex-end; }
 
-	.vend
-	{ align-items: flex-end; }
-
+	.vend,
+	.bottom,
 	.column.end
-	{ align-items: end; }
+	{ align-items: flex-end; }
 
 	.start
 	{ justify-content: start; }
 
+	.top,
+	.vstart,
 	.column.start
 	{ align-items: flex-start; }
 
-	.vstart
-	{ align-items: flex-start; }
-
-	.column.vstart
+	.column.vstart,
+	.column.top
 	{ justify-content: flex-start; }
 
 	.stretch

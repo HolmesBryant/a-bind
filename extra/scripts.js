@@ -19,11 +19,24 @@ function unstickIfNeeded (target, watched) {
 	});
 }
 
+/**
+ * Apply the css class 'stuck' to a sticky element when it reaches the top of the window
+ */
+function showOnScroll(targetId) {
+	const targetElem = document.getElementById(targetId);
+	const observer = new IntersectionObserver( ([evt]) => {
+  	evt.target.classList.toggle('stuck', evt.intersectionRatio < 1)
+  }, {threshold: [1], rootMargin: '-1px 0px 0px 0px'});
+
+	observer.observe(targetElem);
+}
+
 /*
  * Automatically selects the text in input elements on 'focus' and 'click'
  */
 function upgradeInputs () {
 	const inputs = document.querySelectorAll('input');
+	// console.log('inputs', inputs)
 	for (const input of inputs) {
 		input.addEventListener('focus', event => {
 			event.target.select();
@@ -51,6 +64,7 @@ function getReadme () {
 // const target = document.querySelector('#stick');
 // const watched = document.querySelector('#watched');
 // unstickIfNeeded(target, watched);
-upgradeInputs();
+// upgradeInputs();
+// showOnScroll('reset-container');
 getReadme();
 

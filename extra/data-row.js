@@ -98,11 +98,11 @@ export class DataRow extends HTMLElement {
 
 			<article>
 			  <section class="card flex stretch">
+					${hasAttr === null ? "" : `
 			    <div class="flex column flex1">
-						${hasAttr === 'false' ?`
-							Not recommended to use attributes with large strings.
-						` : hasAttr === null ? `
-						` : `
+						${hasAttr === 'false' ?
+						"Not recommended to use attributes with large strings."
+						: `
 						<span>
 				      Attribute <code>${this.attr}</code>
 						</span>
@@ -118,6 +118,7 @@ export class DataRow extends HTMLElement {
 			      </a-bind>
 						`}
 			    </div>
+					`}
 
 			    <div class="flex column flex1">
 			      <span>
@@ -145,9 +146,10 @@ export class DataRow extends HTMLElement {
 			  <details ${isOpen ? 'open':''} class="sticky">
 			    <summary class="card nofrills">Code</summary>
 			    <section class="card flex stretch">
+			      ${hasAttr === null ? "" : `
 			      <div class="flex column flex1">
 			      	<slot name="attr-code"></slot>
-			      </div>
+			      </div>`}
 
 			      <div class="flex column flex1">
 			        <slot name="prop-code">prop-code</slot>
