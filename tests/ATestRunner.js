@@ -140,7 +140,7 @@ export default class ATestRunner {
     const matches = strCode.matchAll(testRegex);
     for (const match of matches) {
       const func = match[1].trim();
-      let expected = match[2].replace('\\', '').trim();
+      let expected = match[2].trim();
       const line = (this.lineNumbers) ? this.#getLineNumber(match.index, strCode) : null;
       this.tests.add([func, expected, line]);
       if (!func.startsWith('mock') || !func.startsWith('info')) this.totalTests++;
@@ -395,9 +395,14 @@ export default class ATestRunner {
 
     for (const test of this.tests) {
       mod = a.mod;
-      // let strFunc = test[0].split("\n").map(x => x.trim()).join('');
       let strFunc = test[0];
       const line = test[2];
+
+      // stop processing tests
+      if (strFunc.startsWith('break')) {
+        this.printResult("Processing halted.", 'info', null, null, line);
+        return passing;
+      }
 
       // mock
       if (strFunc.startsWith('mock')) {
@@ -406,18 +411,27 @@ export default class ATestRunner {
           const mockFunc = new Function('a, mod', `${strFunc}`);
           result = await mockFunc(a, mod);
         } catch (error) {
-          passing = false;
-          msg = `Error parsing mock expression.`;
-          this.printResult(strFunc, 'error', `${msg} ${error.message}`, '', line)
+          msg = `Error parsing expression.`;
+          if (error.message === "Unexpected token '*'" || error.message === "Invalid or unexpected token") msg += ' Make sure expression ends with double backslash (\\\\): ';
+          this.printResult('', 'error', `${msg} ${error.message}`, '', line)
           console.error(`${msg} on line: ${line}`, error);
+          return false;
         }
 
-        this.printResult(strFunc, 'mock', null, null, line);
+        // don't print mock expressions, just execute them
+        // this.printResult(strFunc, 'mock', null, null, line);
         continue;
       }
 
       // info
       if (strFunc.startsWith('info')) {
+        if (strFunc.indexOf('@test') > -1) {
+          msg = `Error parsing info line. Make sure line ends with double backslash (\\\\)`;
+          this.printResult(strFunc, 'error', `${msg}`, '', line);
+          console.error (`${msg} on line: ${line} : ${strFunc}`);
+          return false;
+        }
+
         this.printResult(strFunc.replace("info", "").trim(), 'info', null, null, line);
         continue;
       }
@@ -431,11 +445,11 @@ export default class ATestRunner {
         const func = new Function('a, mod', funcStr);
         result = await func(a, mod);
       } catch (error) {
-        passing = false;
         msg = `Error parsing test.`;
-        this.printResult(strFunc, 'error', `${msg} ${error.message}`, null, line)
+        if (error.message === "Unexpected token '*'" || error.message === "Invalid or unexpected token") msg += ' Make sure expression ends with double backslash (\\\\): ';
+        this.printResult(strFunc, 'error', `${msg} ${error.message}`, '', line)
         console.error(`${msg} on line: ${line}`, error);
-        continue;
+        return false;
       }
 
       // expected
@@ -459,7 +473,7 @@ export default class ATestRunner {
 
       // pause on failed test
       if (verdict === 'fail' && this.pauseOnFail) {
-        this.printResult('', 'paused', 'Test runner has paused...', '', '');
+        this.printResult('', 'paused', 'Paused...', '', '');
       }
     }
 
@@ -510,11 +524,11 @@ class A {
 
   /**
    * @description Delays execution of scripts, most useful inside a loop
-   * @param {integer} ms  - The number of milliseconds to delay
+   * @param {integer} ms  - The number of milliseconds to wait
    * @returns {Promise}   - A Promise which resolves after ms milliseconds.
-   * @example for (const a of b) { console.log(a); a.delay(1000); }
+   * @example for (const a of b) { console.log(a); a.wait(1000); }
    */
-  async delay(ms) {
+  async wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
@@ -596,7 +610,35 @@ class A {
    */
   _init(testRunner) {
     this.testRunner = testRunner;
+    this.lineNumbers = testRunner.lineNumbers;
+    this.onlyFailed = testRunner.onlyFailed;
+    this.output = testRunner.output;
+    this.pauseOnFail = testRunner.pauseOnFail;
     return this;
+  }
+
+  spyOn(obj, methodName) {
+    const originalMethod = obj[methodName];
+
+    if (typeof originalMethod !== 'function') {
+      throw new Error(`${methodName} is not a function`);
+    }
+
+    const spy = {
+      callCount: 0,
+      calls: [],
+      restore: () => {
+        obj[methodName] = originalMethod;
+      },
+    };
+
+    obj[methodName] = function(...args) {
+      spy.callCount++;
+      spy.calls.push(args);
+      return originalMethod.apply(this, args);
+    };
+
+    return spy;
   }
 
   /**
@@ -610,7 +652,7 @@ class A {
     this.testNum++;
     let line = null;
     const verdict = (expression === expected)? "pass" : "fail";
-    if (this.testRunner.lineNumbers) {
+    if (this.lineNumbers) {
       try {
         throw new Error("");
       } catch (error) {
@@ -635,18 +677,20 @@ class A {
    * @returns {Promise<true>}                           - A Promise that resolves with `true` when the condition is met. Rejects if whenExpression throws/rejects, or if the timeout is reached.
    */
   // async when(whenExpression, { checkIntervalMs = 500, timeoutMs = 2000 } = {}) {
-  async when(whenExpression, timeoutMs = 2000, checkIntervalMs = 500) {
+  async when(whenExpression, timeoutMs = 500, checkIntervalMs = 50) {
     const startTime = Date.now();
     while (true) {
       if (timeoutMs !== null && (Date.now() - startTime) >= timeoutMs) {
-        throw new Error(`when() timed out after ${timeoutMs}ms waiting for condition to be true`);
+        // throw new Error(`when() timed out after ${timeoutMs}ms waiting for condition to be true`);
+        // console.warn(`when() timed out after ${timeoutMs}ms waiting for condition to be true`);
+        return whenExpression();
       }
 
       const conditionResult = await whenExpression();
       if (conditionResult === true) return true;
 
       // Condition not met, wait
-      await this.delay(checkIntervalMs);
+      await this.wait(checkIntervalMs);
       // Loop continues...
     }
   }

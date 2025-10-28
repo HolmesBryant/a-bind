@@ -6,7 +6,18 @@
 	<title>Simple UI Tests</title>
 
   <script type="module" src="../src/a-bind.js"></script>
+
+  <script type="module" src="t-runner.test.js"></script>
+
 	<link rel="stylesheet" href="../extra/styles.css">
+
+  <style>
+    [disabled] {
+      background: silver;
+      color: gray;
+      cursor: not-allowed;
+    }
+  </style>
 
   <script>
     class CustomElement extends HTMLElement {
@@ -17,18 +28,27 @@
       #myCheckbox = 'foo';
       #myRadiogroup = 'foo';
       #myButton = 'foo';
+      #someAttr = 'attr value';
 
       // Not Attributes
-      #myFileInput;
+      isDisabled = true;
+      myFileInput;
       options = ['foo', 'bar', 'baz'];
+      myColor = 'blue';
+      propA = 'Value A';
+      propB = 'Value B';
+      user = { name: 'Alice' };
+      _result;
+      _resultHandleFiles;
 
       static observedAttributes = [
-          'my-input',
-          'my-select',
-          'my-selectmulti',
-          'my-checkbox',
-          'my-radiogroup',
-          'my-button'
+        'my-input',
+        'my-select',
+        'my-selectmulti',
+        'my-checkbox',
+        'my-radiogroup',
+        'my-button',
+        'some-attr'
       ];
 
       constructor() { super(); }
@@ -40,48 +60,59 @@
           case "my-input": this.#myInput = newval; break;
           case "my-select": this.#mySelect = newval; break;
           case "my-selectmulti":
-              newval = newval.split(/[,\s]+/g);
-              this.#mySelectmulti = newval;
-              break;
+            newval = newval.split(/[,\s]+/g);
+            this.#mySelectmulti = newval;
+            break;
           case "my-checkbox": this.#myCheckbox = newval; break
           case "my-radiogroup": this.#myRadiogroup = newval; break;
           case "my-button": this.#myButton = newval; break;
+          case "some-attr": this.#someAttr = newval; break;
         }
-
-        if (window.abind) abind.update(this, property, newval);
       }
 
-      buildOptionList() {
+      buildOptionList(options) {
         let str = "";
-        for (const value of this.options) {
+        for (const value of options) {
           str += `<option value="${value}">${value}</option>\n`;
         }
 
         return str;
       }
 
-      doSomethingWithFiles(propertyName, fileList) {
+      handleFiles(event) {
+        const files = event.target.files;
         const arr = [];
-        this.myFileInput = fileList;
-        for (const file of fileList) arr.push(file.name);
-
-        alert(`Property: ${propertyName}\nValue: ${JSON.stringify(arr, null, 2)}`)
+        this.myFileInput = files;
+        for (const file of files) {
+          arr.push({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            modified: file.lastModified
+          })
+        };
+        this.resultHandleFiles = `Files: ${JSON.stringify(arr, null, 2)}`
       }
 
-      handleClick() {
-        let msg = "";
-        const args = Array.from(arguments);
-        for (let i=0; i < arguments.length; i++) {
-          msg += `Arg ${i+1}: ${args[i]}\n`
-        }
+      handleClick(event) {
+        const value = event.target.value;
+        const other = event.target.dataset.other;
+        const msg = `
+          Context (this): ${this.constructor.name}
+          Function: handleClick ( event )
+          Event passed: ${event}
+          event.target: ${event.target}
+          event.target.value: " ${value} "
+          event.target.dataset.other: " ${other} "
+        `;
 
-        alert(msg);
+        this.result = msg;
       }
 
-      setOption(property, elem) {
-        const value = elem.value;
+      setOption(event) {
+        const value = event.target.value;
+        const property = event.target.dataset.property;
         this[property] = value;
-        console.log(property, value)
       }
 
       get myInput() { return this.#myInput }
@@ -98,7 +129,26 @@
           this.setAttribute('my-selectmulti', value)
       }
 
-      get myDynamicOptions() { return this.buildOptionList(this.options)}
+      get myCheckbox() { return this.#myCheckbox }
+      set myCheckbox(value) { this.setAttribute('my-checkbox', value) }
+
+      get myRadiogroup() { return this.#myRadiogroup; }
+      set myRadiogroup(value) { this.setAttribute('my-radiogroup', value)}
+
+      get myButton() { return this.#myButton }
+      set myButton(value) {
+        value = value || this.#myButton;
+        this.setAttribute('my-button', value)
+      }
+
+      get someAttr() { return this.#someAttr }
+      set someAttr(value) { this.setAttribute('some-attribute', value) }
+
+      // not attributes
+      get myDynamicOptions() {
+        return this.buildOptionList(this.options)
+      }
+
       set myDynamicOptions(value) {
         const options1 = ['foo', 'bar', 'baz'];
         const options2 = ['one', 'two', 'three'];
@@ -109,23 +159,19 @@
           this.options = options1;
         }
 
-        if (window.abind) abind.update(this, 'myDynamicOptions', this.myDynamicOptions)
+        if (window.abind) abind.update(this, 'myDynamicOptions', this.myDynamicOptions);
       }
 
-      get myCheckbox() { return this.#myCheckbox }
-      set myCheckbox(value) { this.setAttribute('my-checkbox', value) }
+      get result() { return this._result }
+      set result(value) {
+        this._result = value;
+        if (window.abind) abind.update(this, 'result', value);
+      }
 
-      get myRadiogroup() { return this.#myRadiogroup; }
-      set myRadiogroup(value) { this.setAttribute('my-radiogroup', value)}
-
-      get myButton() { return this.#myButton }
-      set myButton(value) { this.setAttribute('my-button', value) }
-
-      // Not observed attributes
-      get myFileInput() { return this.#myFileInput }
-      set myFileInput(fileList) {
-          this.#myFileInput = fileList;
-          if (window.abind) abind.update(this, 'myFileInput', fileList);
+      get resultHandleFiles() { return this._resultHandleFiles }
+      set resultHandleFiles(value) {
+        this._resultHandleFiles = value;
+        if (window.abind) abind.update(this, 'resultHandleFiles', value);
       }
     }
 
@@ -135,28 +181,103 @@
   </script>
 </head>
 <body>
-  <custom-element></custom-element>
 
-  <h1>Integration Tests</h1>
+<custom-element some-attr="attr value"></custom-element>
+
+<h1>Integration Tests</h1>
+
+<!--
+  <div class="card">
+    <p><small>
+
+    </small></p>
+    <div class="flex space-around">
+      <a-bind
+        model="custom-element"
+        property="">
+        input
+      </a-bind>
+
+      <div class="flex column">
+        property
+        <a-bind
+          pull
+          model="custom-element"
+          property="">
+          <output></output>
+        </a-bind>
+      </div>
+    </div>
+  </div>
+-->
+
 
 <section>
 <h2>text-ish inputs</h2>
 
-  <div class="flex column">
-    <label for="my-input">myInput: 'foo'</label>
+  <div class="card">
+    <p>
+      <small>
+        input value is bound to property myInput
+      </small>
+    </p>
 
-    <div class="flex stretch">
+    <div class="flex space-around">
       <a-bind
         model="custom-element"
         property="myInput">
         <input id="my-input">
       </a-bind>
 
+      <div class="flex column">
+        myInput
+        <a-bind
+          pull
+          model="custom-element"
+          property="myInput">
+          <output>...</output>
+        </a-bind>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>
+      <small>
+        input value is bound to property myInput<br>
+        input is disabled when `isDisabled` is true;
+      </small>
+    </p>
+
+    <div class="flex space-around">
       <a-bind
+        pull
         model="custom-element"
-        property="myInput">
-        <output style="height:100%">...</output>
+        property="isDisabled"
+        elem-attr="disabled">
+        <a-bind
+          model="custom-element"
+          property="myInput">
+          <input id="my-input">
+        </a-bind>
       </a-bind>
+
+      <div class="flex column gap0">
+        myInput
+        <a-bind
+          pull
+          model="custom-element"
+          property="myInput">
+          <output>...</output>
+        </a-bind>
+        <hr>
+        isDisabled
+        <a-bind
+          model="custom-element"
+          property="isDisabled">
+          <input type="checkbox" value="true">
+        </a-bind>
+      </div>
     </div>
   </div>
 </section>
@@ -164,11 +285,15 @@
 <section>
 <h2>Select inputs</h2>
 
-  <div class="card flex column">
-    <h4>Simple select</h4>
-    <b>selected option is 'foo'</b>
+  <div class="card">
+    <p>
+      <small>
+        Simple select<br>
+        Initial selected option is "foo"
+      </small>
+    </p>
 
-    <div class="flex">
+    <div class="flex space-around">
       <a-bind
         model="custom-element"
         property="mySelect">
@@ -180,19 +305,24 @@
         </select>
       </a-bind>
 
-      <a-bind
-        model="custom-element"
-        property="mySelect">
-        <output></output>
-      </a-bind>
+      <div class="flex column">
+        mySelect
+        <a-bind
+          pull
+          model="custom-element"
+          property="mySelect">
+          <output></output>
+        </a-bind>
+      </div>
     </div>
   </div>
 
-  <div class="card flex column">
-    <h4>Select multiple</h4>
-    <b>selected options are 'foo' and 'bar'</b>
-
-    <div class="flex">
+  <div class="card">
+    <p><small>
+      select multiple<br>
+      Initial selected options are 'foo' and 'bar'
+    </small></p>
+    <div class="flex space-around">
       <a-bind
         model="custom-element"
         property="mySelectmulti"
@@ -204,65 +334,61 @@
         </select>
       </a-bind>
 
-      <a-bind
-        model="custom-element"
-        property="mySelectmulti">
-        <output>...</output>
-      </a-bind>
+      <div class="flex column">
+        mySelectmulti
+        <a-bind
+          pull
+          model="custom-element"
+          property="mySelectmulti">
+          <output></output>
+        </a-bind>
+      </div>
     </div>
   </div>
 
   <div class="card">
-    <h4 style="text-align:center">Dynamic option list</h4>
+    <p><small>
+      Dynamic Options
+    </small></p>
 
-    <div class="flex column stretch">
-    <b style="text-align:center">property="myDynamicOptions"</b>
-
-      <div class="flex">
-        <div class="flex column flex1">
-          <a-bind
-            model="custom-element"
-            event="click"
-            func="myDynamicOptions; one, two, three">
-            <button>Change Options</button>
-          </a-bind>
-
-          <a-bind
-            model="custom-element"
-            property="myDynamicOptions"
-            elem-attr="innerHTML"
-            func="setOption; mySelect; this">
-            <select id="dynamic-options"></select>
-          </a-bind>
-        </div>
-
-        <a-bind class="flex1"
-          oneway
+    <div class="flex space-around">
+      <div class="flex column">
+        <a-bind
           model="custom-element"
-          property="myDynamicOptions">
-          <output>...</output>
+          event="click"
+          func="myDynamicOptions">
+          <button>Change Options</button>
+        </a-bind>
+
+        <a-bind
+          pull
+          model="custom-element"
+          property="myDynamicOptions"
+          elem-attr="innerHTML">
+          <a-bind
+            push
+            model="custom-element"
+            property="mySelect">
+            <select></select>
+          </a-bind>
         </a-bind>
       </div>
-    </div>
 
-    <div class="flex column stretch">
-    <b style="text-align:center">property="mySelect"</b>
-
-      <div class="flex">
-        <a-bind class="flex column flex1"
+      <div class="flex column">
+        myDynamicOptions
+        <a-bind
           model="custom-element"
-          property="mySelect">
-          <select id="dynamic-options">
-            <option>foo</option>
-            <option>bar</option>
-            <option>baz</option>
-          </select>
+          property="myDynamicOptions">
+          <output></output>
         </a-bind>
+      </div>
 
-        <a-bind class="flex center flex1"
+      <div class="flex column">
+        mySelect
+        <a-bind
           model="custom-element"
           property="mySelect">
-          <output>...</output>
+          <output></output>
         </a-bind>
       </div>
     </div>
@@ -272,10 +398,11 @@
 <section>
 <h2>Checkbox inputs</h2>
 
-  <div class="flex">
-    <div class="flex column flex1">
-      <b>Checkbox is checked</b>
-
+  <div class="card">
+    <p><small>
+      Checkbox is checked
+    </small></p>
+    <div class="flex space-around">
       <a-bind
         model="custom-element"
         property="myCheckbox">
@@ -284,25 +411,29 @@
           type="checkbox"
           value="foo">
       </a-bind>
-    </div>
 
-    <div class="flex column flex1">
-      <b>myCheckbox</b>
-      <a-bind
-        model="custom-element"
-        property="myCheckbox">
-        <output>...</output>
-      </a-bind>
+      <div class="flex column">
+        myCheckbox
+        <a-bind
+          pull
+          model="custom-element"
+          property="myCheckbox">
+          <output></output>
+        </a-bind>
+      </div>
     </div>
   </div>
-
 </section>
 
 <section>
 <h2>Radio Group</h2>
 
-  <div class="flex">
-    <div class="flex column start flex1">
+  <div class="card">
+    <p><small>
+      simple radio inputs
+    </small></p>
+    <div class="flex space-around">
+      <div class="flex column start flex1">
       <div class="flex start">
         <a-bind
           model="custom-element"
@@ -330,13 +461,15 @@
       </div>
     </div>
 
-    <div class="flex column flex1">
-      <b>myRadioGroup</b>
-      <a-bind
-        model="custom-element"
-        property="myRadiogroup">
-        <output>...</output>
-      </a-bind>
+      <div class="flex column">
+        myRadiogroup
+        <a-bind
+          pull
+          model="custom-element"
+          property="myRadiogroup">
+          <output></output>
+        </a-bind>
+      </div>
     </div>
   </div>
 </section>
@@ -346,159 +479,211 @@
 
   <div class="card">
     <p>
-      <small>Button text mirrors property value.<br>
-      Invokes handleClick(property, propertyValue) on click.
+      <small>
+        Invokes console.log(event) on click.
+      </small>
+    </p>
+
+    <div class="flex gap2">
+      <a-bind
+        model="custom-element"
+        event="click"
+        func="console.log">
+        <button
+          id="button1"
+          value="button.value"
+          data-other="other value">
+          Click Me!
+        </button>
+      </a-bind>
+
+      <label for="button1">
+        <small>func = "console.log"</small>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>
+      <small>
+        Changes the value of attribute <code>some-attr</code> on click.
+      </small>
+    </p>
+
+    <div class="flex gap2 space-around">
+      <a-bind
+        push
+        model="custom-element"
+        model-attr="some-attr"
+        event="click">
+        <button id="button2" value="updated by button">
+          Change the Attribute
+        </button>
+      </a-bind>
+
+      <label for="button2">
+        <small>
+          push<br>
+          model-attr="some-attr"<br>
+          event="click"
+        </small>
+      </label>
+
+      <a-bind
+        pull
+        model="custom-element"
+        model-attr="some-attr"
+        id="pull-test">
+        <output>...</output>
+      </a-bind>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>
+      <small>
+        Button text mirrors property value.<br>
+        Property value is updated from the button.value.<br>
+        myButton === "foo"
     </small></p>
 
-    <div class="flex middle">
-    <a-bind
+    <div class="flex gap2">
+      <a-bind
         model="custom-element"
         property="myButton"
         elem-attr="textContent"
+        event="click">
+
+        <button
+          id="button3"
+          value="new value"
+          data-other="other value">
+          ...
+        </button>
+      </a-bind>
+
+      <label for="button3">
+        <small>
+          property = "myButton"<br>
+          elem-attr = "textContent"<br>
+          event = "click"
+        </small>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>
+      <small>
+        Button text mirrors property value.<br>
+        Button value also mirrors property value.<br>
+        Invokes handleClick(event) on click.<br>
+        myButton === <a-bind model="custom-element" property="myButton" elem-attr="textContent">"<span></span>"</a-bind>
+      </small>
+    </p>
+
+    <div class="flex gap2">
+      <a-bind
+        model="custom-element"
+        property="myButton"
+        elem-attr="textContent, value"
         event="click"
         func="handleClick">
-        <button id="my-button1">...</button>
+
+        <button
+          id="button4"
+          value="button.value"
+          data-other="other value">
+          ...
+        </button>
       </a-bind>
 
-      <label for="my-button1">elem-attr="textContent" func="handleClick"</label>
+      <label for="button4"><small>
+        property="myButton"<br>
+        elem-attr = "textContent, value"<br>
+        event = "click"<br>
+        func = "handleClick"
+      </small></label>
+
+      <a-bind
+        pull
+        model="custom-element"
+        property="result">
+        <output></output>
+      </a-bind>
     </div>
   </div>
 
   <div class="card">
-    <p><small>
-      Invokes handleClick(property, propertyValue) on click.
-    </small></p>
+    <p>
+      <small>
+        Button text does NOT mirror property value.<br>
+        Button value DOES mirror property value.<br>
+        Invokes handleClick(event) on click.<br>
+        myButton === <a-bind model="custom-element" property="myButton" elem-attr="textContent">"<span></span>"</a-bind>
+      </small>
+    </p>
 
-    <div class="flex">
+    <div class="flex gap2">
       <a-bind
         model="custom-element"
         property="myButton"
         event="click"
         func="handleClick">
-        <button id="my-button2">
+        <button
+          id="button5"
+          value="button.value"
+          data-other="other value">
           Click Me!
         </button>
       </a-bind>
 
-      <label for="my-button2">func="handleClick"</label>
-    </div>
-  </div>
+      <label for="button5"><small>
+        property = "myButton"<br>
+        event="click"<br>
+        func = "handleClick"
+      </small></label>
 
-  <div class="card">
-    <p><small>
-    Invokes handleClick(propery, 'something else') on click.
-    </small></p>
-
-    <div class="flex">
-    <a-bind
-      model="custom-element"
-      property="myButton"
-      event="click"
-      func="handleClick; something else">
-      <button id="my-button3">
-        Click Me!
-      </button>
-    </a-bind>
-
-    <label for="my-button3">func="handleClick; something else"</label>
-    </div>
-  </div>
-
-  <div class="card">
-    <p><small>
-      Invokes handleClick(propery, 'value one', 'value two') on click.
-    </small></p>
-
-    <div class="flex">
       <a-bind
+        pull
         model="custom-element"
-        property="myButton"
-        event="click"
-        func="handleClick; value one, value two">
-        <button id="my-button4">
-          Click Me!
-        </button>
+        property="result">
+        Result: <output>...</output>
       </a-bind>
-
-      <label for="my-button4">func="handleClick; value one, value two"</label>
     </div>
   </div>
 
   <div class="card">
-    <p><small>
-      Invokes handleClick(propery, 'one two') on click.
-    </small></p>
+    <p>
+      <small>
+        Button is NOT bound to any property.<br>
+        Invokes handleClick(event) on click.
+      </small>
+    </p>
 
-    <div class="flex">
-      <a-bind
-        model="custom-element"
-        property="myButton"
-        event="click"
-        func="handleClick; one two">
-        <button id="my-button5">
-          Click Me!
-        </button>
-      </a-bind>
-
-      <label for="my-button5">func="handleClick; one two"</label>
-    </div>
-  </div>
-
-  <div class="card">
-    <p><small>
-      Invokes handleClick(propery, HTMLButtonElement) on click.
-    </small></p>
-
-    <div class="flex">
-      <a-bind
-        model="custom-element"
-        property="myButton"
-        event="click"
-        func="handleClick; this">
-        <button id="my-button6">
-          Click Me!
-        </button>
-      </a-bind>
-
-      <label for="my-button6">func="handleClick; this"</label>
-    </div>
-  </div>
-
-  <div class="card">
-    <p><small>
-      Invokes handleClick('otherProperty', 'other value') on click.
-    </small></p>
-
-    <div class="flex">
+    <div class="flex gap2">
       <a-bind
         model="custom-element"
         event="click"
-        func="handleClick; otherProperty; other value">
-        <button id="my-button7">
+        func="handleClick">
+        <button
+          id="button6"
+          value="button.value"
+          data-other="other value">
           Click Me!
         </button>
       </a-bind>
 
-      <label for="my-button7">func="handleClick; otherProperty; other value"</label>
-    </div>
-  </div>
+      <label for="button6">
+        <small>func = "handleClick"</small>
+      </label>
 
-  <div class="card">
-    <p><small>
-      Invokes handleClick('otherProperty', HTMLButtonElement) on click.
-    </small></p>
-
-    <div class="flex">
       <a-bind
+        pull
         model="custom-element"
-        event="click"
-        func="handleClick; otherProperty; this">
-        <button id="my-button7">
-          Click Me!
-        </button>
+        property="result">
+        <output>...</output>
       </a-bind>
-
-      <label for="my-button7">func="handleClick; otherProperty; this"</label>
     </div>
   </div>
 </section>
@@ -507,21 +692,95 @@
 <h2>File input</h2>
 
   <div class="flex">
-    <a-bind class="flex1"
+    <a-bind
       model="custom-element"
-      property="myFileInput"
-      event="change"
-      func="doSomethingWithFiles"
-      elem-attr="files">
-      <input type="file" multiple>
+      func="handleFiles">
+      <input type="file" multiple id="file-input">
     </a-bind>
 
-    <div  class="flex column flex1">
-      <b>myFileInput</b>
+    <label for="my-button3">
+      <small> func = "handleFiles" </small>
+    </label>
+
+    <a-bind
+      pull
+      model="custom-element"
+      property="resultHandleFiles">
+      <output></output>
+    </a-bind>
+  </div>
+</section>
+
+<section>
+<h2>Other Tests</h2>
+  <div class="card">
+    <p><small>
+      For testing the `once` attribute
+    </small></p>
+
+    <div class="flex space-around">
+      <a-bind
+        once
+        model="custom-element"
+        property="myInput">
+        <output id="once-output">...</output>
+      </a-bind>
+
+      <a-bind
+        push
+        model="custom-element"
+        property="myInput"
+        event="click">
+        <button
+          id="button7"
+          value="new value">
+            Attempt to change the value
+          </button>
+      </a-bind>
+    </div>
+  </div>
+
+  <div class="card">
+    <p><small>
+      For testing `style.*` binding
+    </small></p>
+
+      <a-bind
+        pull
+        model="custom-element"
+        property="myColor"
+        elem-attr="style.color">
+        <div id="style-binding-div">This text should change from blue to red.</div>
+      </a-bind>
+    </div>
+  </div>
+
+  <div class="card">
+    <p><small>
+      For testing dynamic re-binding via attributeChangedCallback
+    </small></p>
+
+    <div class="flex space-around">
+      <a-bind
+        pull
+        id="rebind-test"
+        model="custom-element"
+        property="propA">
+        <output>...</output>
+      </a-bind>
+    </div>
+  </div>
+
+  <div class="card">
+    <p><small>
+      For testing nested property binding (ie. user.name)
+    </small></p>
+
+    <div class="flex space-around">
       <a-bind
         model="custom-element"
-        property="myFileInput">
-        <output>...</output>
+        property="user.name">
+        <input id="nested-prop-input">
       </a-bind>
     </div>
   </div>

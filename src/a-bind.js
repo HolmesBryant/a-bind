@@ -1,20 +1,11 @@
 /**
  * @class ABind
  * @extends HTMLElement
- * @description A custom element that performs one-way and two-way data binding for custom elements and javascript objects.
- * @author Holmes Bryant <https://github.com/HolmesBryant> (Refactored for robustness)
+ * @description A custom element that performs one-way and two-way data binding and function execution on events.
+ * @author Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
  */
 export default class ABind extends HTMLElement {
-	// Attributes
-	#elemAttr = 'value';
-	#event = 'input';
-	#func = null;
-	#model;
-	#modelAttr = null;
-	#once = false;
-	#oneway = false;
-	#property;
 
 	// Private properties
 	#abortController;
@@ -23,8 +14,6 @@ export default class ABind extends HTMLElement {
 	#isConnected = false;
 	#resolvedModel;
 
-	// Public properties
-
 	static observedAttributes = [
 		'model',
 		'property',
@@ -32,8 +21,10 @@ export default class ABind extends HTMLElement {
 		'event',
 		'elem-attr',
 		'func',
-		'one-way',
-		'once'
+		'pull',
+		'push',
+		'once',
+		'debug'
 	];
 
 	constructor() {
@@ -41,153 +32,88 @@ export default class ABind extends HTMLElement {
 		if (!window.abind) window.abind = ABind;
 	}
 
-	// Lifecycle
+	// Lifecycle Callbacks
 
 	attributeChangedCallback(attr, oldval, newval) {
 		if (oldval === newval) return;
-		const rebind = ['model', 'property', 'model-attr'];
 
-		switch (attr) {
-			case 'model':     this.#model = newval; break;
-			case 'property':  this.#property = newval; break;
-			case 'model-attr':this.#modelAttr = newval; break;
-			case 'event':     this.#event = newval; break;
-			case 'elem-attr': this.#elemAttr = newval; break;
-			case 'func':      this.#func = newval; break;
-			case 'one-way':   this.#oneway = newval !== 'false' && newval !== false; break;
-			case 'once':      this.#once = newval !== 'false' && newval !== false; break;
-		}
-
-		// If a core binding attribute changes after the component is already live,
-		// we must tear down the old bindings and create new ones.
-		if (rebind.includes(attr) && this.#isConnected) {
-			this._teardown();
-			this._initialize();
+		// If a core binding attribute changes, tear down old bindings and create new ones.
+		if (['model', 'property', 'model-attr'].includes(attr) && this.#isConnected) {
+			this.#teardown();
+			this.#initialize();
 		}
 	}
 
 	connectedCallback() {
-		this._initialize();
+		if (this.debug) { console.debug('Debugging:', this)}
 		this.#isConnected = true;
+		this.#initialize();
 	}
 
 	disconnectedCallback() {
-		this._teardown();
+		this.#isConnected = false;
+		this.#teardown();
 	}
 
-	// Public
+	// Public Static Method
 
 	static update(model, property, value) {
 		const event = new CustomEvent('abind:update', { detail: { model, property, value } });
 		document.dispatchEvent(event);
 	}
 
-	formatForJson(str) {
-		let match;
-		str = str.trim();
+	// Private Methods
 
-		const simple = /^(\p{L}+)$/u;
-		const quoted = /["'](\p{L}+)["']/gu;
-		const arr = /(?<=[\s,\[])(?:true|false|null|undefined|-?\d+(?:\.\d+)?|\p{L}+)(?=[\s,\]])/gu;
-		const obj = /(?<=[\s,{:])(?:true|false|null|undefined|-?\d+(?:\.\d+)?|[\p{L}\p{N}_$]+)(?=[\s,}:])/gu;
+	#executeFunction(event) {
+    const funcPath = this.func;
+    if (this.debug) { console.debug('#executeFunction', {
+    	funcPath: funcPath,
+    	Bail: !funcPath
+    } )}
 
-		match = str.match(simple);
-		if (match) return str.replace(simple, `"$1"`);
+    if (!funcPath) return;
 
-		match = str.match(obj);
-		if (match) return str.replaceAll(obj, '"$&"');
+    let context = null;
+    let func = null;
+    const pathParts = funcPath.split('.');
+    const funcName = pathParts.pop();
+    const contextPath = pathParts.join('.');
+    let potentialContext = this.#getObjectProperty(this.#resolvedModel, contextPath);
 
-		match = str.match(quoted);
-		if (match) return str.replace(quoted, `"$1"`);
+    if (potentialContext && typeof potentialContext[funcName] === 'function') {
+      context = potentialContext;
+      func = potentialContext[funcName];
+    } else if (potentialContext && potentialContext[funcName]) {
+      context = potentialContext;
+  		func = funcName;
+    } else {
+      potentialContext = this.#getObjectProperty(window, contextPath);
+      if (potentialContext && typeof potentialContext[funcName] === 'function') {
+        context = potentialContext;
+        func = potentialContext[funcName];
+      }
+    }
 
-		match = str.match(arr);
-		if (match) return JSON.stringify(match);
+    if (typeof func === 'function') {
+    	func.call(context, event);
+    } else if (typeof func === 'string') {
+	  	const proto = Object.getPrototypeOf(this.#resolvedModel);
+	  	const descriptor = Object.getOwnPropertyDescriptor(proto, func);
+	  	descriptor.set.call(context, event);
+    } else {
+      console.warn(`a-bind: Function "${funcPath}" not found on model or window.`, this);
+    }
 
-		return str;
-	}
+    if (this.debug) {
+    	console.debug('#executeFunction', {
+    		event: event,
+    		context: context,
+    		func: func,
+    	});
+    }
+  }
 
-	// Private
-
-	_executeFunction(value) {
-		let context, func, args;
-		let prop = this.#property;
-		const arr = value.split(';');
-		let funcPath = arr.shift();
-
-		if (arr.length > 0) {
-			args = arr.pop().split(',').map(item => {
-				item = item.trim();
-				if (item === 'this') {
-					return this.#boundElement;
-				} else {
-					return item;
-				}
-			});
-			if (arr[0]) prop = arr[0].trim();
-		}
-
-		if (!args) args = [this.#boundElement[this.elemAttr]];
-
-		// Case 1: The function path contains a dot (e.g., "console.log")
-		if (funcPath.includes('.')) {
-			this._executeFunctionPath(funcPath, contextPath, prop, args);
-		}
-		// Case 2: The function is a direct property of the model or window (e.g., "setAttribute")
-		else {
-			this._executeFunctionProp(funcPath, prop, args);
-		}
-	}
-
-	_executeFunctionPath(funcPath, prop, args) {
-		let context, func;
-		const contextPath = funcPath.substring(0, funcPath.lastIndexOf('.'));
-		const funcName = funcPath.split('.').pop();
-
-		// First, try to resolve the context and function from the model.
-		context = this._getObjectProperty(this.#resolvedModel, contextPath);
-		func = context ? context[funcName] : undefined;
-
-		// If not found on the model, try the window object.
-		if (typeof func !== 'function') {
-			context = this._getObjectProperty(window, contextPath);
-			func = context ? context[funcName] : undefined;
-		}
-
-		if (typeof func === 'function') {
-			func.call(context, prop, args);
-		}
-	}
-
-	_executeFunctionProp(funcPath, prop, args) {
-		let context, func;
-
-		// Prioritize the model.
-		context = this.#resolvedModel;
-
-		if (typeof this.#resolvedModel[funcPath] === 'function') {
-			// If funcPath is a function
-			func = this.#resolvedModel[funcPath];
-		} else if (this.#resolvedModel[funcPath] !== undefined) {
-			// If funcPath is a property
-			context[funcPath] = args;
-		}
-		// Fall back to the window.
-		else if (typeof window[funcPath] === 'function') {
-			func = window[funcPath];
-			context = window;
-		}
-
-		const newArgs = [];
-		newArgs.push(context);
-		newArgs.push(prop);
-		newArgs.push(...args);
-
-		if (typeof func === 'function') {
-			func.call(...newArgs);
-		}
-	}
-
-	async _getModel(modelName, wait = 0.5) {
+	async #getModel(modelName, wait = 0.5) {
 		return new Promise((resolve) => {
 			const timeoutId = setTimeout(() => {
 				console.error(`Timeout: ${modelName} not found.`);
@@ -200,108 +126,148 @@ export default class ABind extends HTMLElement {
 			};
 
 			if (window[modelName]) {
+				// Assume its an object
 				resolvePromise(window[modelName]);
 			} else {
-				const [elementName, ...id] = modelName.split('#');
-				const selector = id.length ? `${elementName}#${id.join('#')}` : elementName;
-				customElements.whenDefined(elementName)
-					.then(() => resolvePromise(document.querySelector(selector)))
-					.catch(() => {
-						console.error(`${modelName} is not a valid JavaScript object or custom element.`);
-						resolvePromise(null);
-					});
+				// Assume its a custom element
+				const elem = document.querySelector(modelName);
+				modelName = elem.localName;
+				customElements.whenDefined(modelName)
+				.then(() => resolvePromise(elem))
+				.catch(() => resolvePromise(null));
 			}
 		});
 	}
 
-	_getObjectProperty(obj, path) {
-		if (!path) return obj;
-		return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+	#getObjectProperty(obj, path) {
+		return !path ?
+			obj :
+			path.split('.').reduce((acc, part) => acc && acc[part], obj);
 	}
 
-	_handleElementEvent(event) {
-		event.preventDefault();
+	#handleElementEvent(event) {
+    if (this.func) this.#executeFunction(event);
+
+    // Do not update the model if this.pull is true, or if no binding target is specified.
+		if (this.pull || (!this.property && !this.modelAttr)) return;
+
 		let value;
-
-		if (this.#oneway || this.#func) {
-			// In oneway mode, we still allow function calls, just not model property updates.
-			// value = this.#boundElement[this.#elemAttr] || this.#func;
-			if (this.#func) {
-				return this._executeFunction(this.#func);
-			} else {
-				return;
-			}
-		}
-
 		const { localName, type, checked, selectedOptions } = this.#boundElement;
 
-		if (localName === 'select' && this.#boundElement.hasAttribute('multiple')) {
+		if (localName === 'select' && this.#boundElement.multiple) {
 			value = Array.from(selectedOptions).map(option => option.value);
 		} else if (type === 'checkbox') {
-			value = checked ? this.#boundElement.value : "";
+			value = checked ? this.#boundElement.value : false;
+		} else if (event.target.value) {
+			value = event.target.value;
 		} else {
-			value = this.#boundElement[this.#elemAttr];
+			value = this.#boundElement[this.elemAttr];
 		}
 
-		this._updateModel(value);
+		if (this.debug) {
+			console.debug('#handleElementEvent', {
+				event: event,
+				value: value
+			});
+		}
+
+		this.#updateModel(value);
 	}
 
-	_handleModelUpdate(event) {
-		if (this.#resolvedModel !== event.detail.model || this.#property !== event.detail.property) {
-			return;
-		}
+	#handleModelUpdate(event) {
+    const isBoundToProperty = this.property && this.property === event.detail.property;
 
-		if (this.#modelAttr && this.#resolvedModel instanceof HTMLElement) {
-			const observed = this.#resolvedModel.constructor.observedAttributes;
-			if (!observed || !observed.includes(this.#modelAttr)) return;
-		}
+    // For model-attr, we must infer the property name to check against the event.
+    const inferredProperty = this.modelAttr ? this.modelAttr.replace(/-(.)/g, (_, letter) => letter.toUpperCase()) : null;
+    const isBoundToAttr = this.modelAttr && inferredProperty === event.detail.property;
+    const bail = () => {
+    	return ((this.once && this.#hasUpdated) || (this.#resolvedModel !== event.detail.model || !(isBoundToProperty || isBoundToAttr)))
+    };
 
-		if (this.#once && this.#hasUpdated) return;
+    if (this.debug) {
+    	console.debug('#handleModelUpdate', {
+    		event: event,
+    		event_detail: event.detail,
+    		isBoundToProperty: isBoundToProperty,
+    		isBoundToAttr: isBoundToAttr,
+    		once: this.once,
+    		hasUpdated: this.#hasUpdated,
+    		Bail: bail()
+    	});
+    }
 
-		if (this.#modelAttr) {
-			this.#boundElement[this.#elemAttr] = this.#resolvedModel.getAttribute(this.#modelAttr);
-		} else {
-			this._updateElement(event.detail.value);
-		}
-		this.#hasUpdated = true;
+    if (bail()) return;
+
+		this.#updateElement(event.detail.value);
 	}
 
-	/**
-	 * Finds the model, sets up the element, and attaches all necessary listeners.
-	 */
-	async _initialize() {
-		this.#model = this.getAttribute('model');
-		if (!this.#model) {
-			return console.error('a-bind requires a model to bind to: model="..."', this);
+	async #initialize() {
+		const modelName = this.model;
+		if (!modelName) {
+			return console.error('a-bind: "model" attribute is required.', this);
 		}
 
-		this.#boundElement = this.children[0];
+		// Allows for nested a-bind instances
+		let element = this.children[0];
+		while (element && element.localName === 'a-bind') {
+			element = element.children[0];
+		}
+
+		this.#boundElement = element;
+
 		if (!this.#boundElement) {
-			return console.error('a-bind element must have one child which is an HTML element', this);
+			console.error('a-bind: Must have one child element.', this);
+			throw new Error('a-bind: Must have one child element.')
 		}
 
-		this.#resolvedModel = await this._getModel(this.#model);
+		this.#resolvedModel = await this.#getModel(modelName);
+
 		if (!this.#resolvedModel) {
-			return console.error(`The model "${this.#model}" could not be found.`);
-		}
-
-		if (this.#modelAttr) {
-			if (/[\p{Lu}]/u.test(this.#modelAttr)) {
-				console.warn(`a-bind: The 'model-attr' value "${this.#modelAttr}" contains uppercase characters. HTML attributes are typically lower-kebab-case.`, this);
-			}
-			if (!this.#property) {
-				this.#property = this.#modelAttr.replace(/-(.)/g, (match, letter) => letter.toUpperCase());
-			}
+			return console.error(`a-bind: Model "${modelName}" not found.`, this);
 		}
 
 		this.#abortController = new AbortController();
-		this._setupListeners();
-		this._updateElement();
+
+		if (this.debug) {
+			console.debug("#initialize", {
+				'boundElement': this.#boundElement,
+				'model': this.#resolvedModel,
+			});
+		}
+		this.#setupListeners();
+		this.#updateElement();
 	}
 
-	_setElementAttribute(element, attribute, value) {
-		if (!value || value === 'undefined') value = "";
+	#setObjectProperty(obj, path, value) {
+		const pathParts = path.split('.');
+		const lastPart = pathParts.pop();
+		const target = pathParts.length ? this.#getObjectProperty(obj, pathParts.join('.')) : obj;
+		if (target && typeof target === 'object') {
+			target[lastPart] = value;
+		}
+
+		if (this.debug) {
+			console.debug('#setObjectProperty', {
+				obj: obj,
+				path: path,
+				value: value,
+				target: target,
+				lastPart: lastPart
+			});
+		}
+	}
+
+	#setElementAttribute(element, attribute, value) {
+		if (value === undefined || value === null) value = '';
 		const { localName, type } = element;
+
+		if (this.debug) {
+			console.debug('#setElementAttribute', {
+				element: element,
+				attribute: attribute,
+				value: value
+			});
+		}
 
 		if (attribute.startsWith('style.')) {
 			element.style[attribute.split('.')[1]] = value;
@@ -317,8 +283,8 @@ export default class ABind extends HTMLElement {
 				}
 				break;
 			case 'select':
-				if (element.hasAttribute('multiple')) {
-					const values = Array.isArray(value) ? value : String(value).split(/[,\s]+/);
+				if (element.multiple) {
+					const values = Array.isArray(value) ? value.map(String) : String(value).split(/[,\s]+/);
 					for (const option of element.options) option.selected = values.includes(option.value);
 				} else {
 					element[attribute] = value;
@@ -329,110 +295,122 @@ export default class ABind extends HTMLElement {
 		}
 	}
 
-	_setupListeners() {
-		if (!this.#property && !this.#func) return;
-		if (!this.#boundElement) return;
+	#setupListeners() {
+		if (!this.property && !this.func && !this.modelAttr) return;
 
-		this.#boundElement.addEventListener(this.#event, this._handleElementEvent.bind(this), { signal: this.#abortController.signal });
+		const { signal } = this.#abortController;
+		this.#boundElement.addEventListener(this.event, (e) => this.#handleElementEvent(e), { signal });
 
-		if (this.#property) {
-			document.addEventListener('abind:update', this._handleModelUpdate.bind(this), { signal: this.#abortController.signal });
+		if (this.property || this.modelAttr) {
+			document.addEventListener('abind:update', (e) => this.#handleModelUpdate(e), { signal });
 		}
 	}
 
-	_setObjectProperty(obj, path, value) {
-		const pathParts = path.split('.');
-		const lastPart = pathParts.pop();
-		const target = pathParts.length ? this._getObjectProperty(obj, pathParts.join('.')) : obj;
-		if (target && typeof target === 'object') {
-			target[lastPart] = value;
-		}
-	}
-
-	/**
-	 * Tears down all active bindings and event listeners to prevent memory leaks.
-	 */
-	_teardown() {
-		if (this.#abortController) {
-			this.#abortController.abort();
-			this.#abortController = null;
-		}
+	#teardown() {
+		this.#abortController?.abort();
+		this.#abortController = null;
 		this.#boundElement = null;
 		this.#resolvedModel = null;
 	}
 
-	_updateElement(value) {
-		if (!this.#property && !this.#modelAttr) return;
-		if (this.#oneway && this.#hasUpdated) return;
+	#updateElement(value) {
+		const bail = () => {
+			return (!this.property && !this.modelAttr) || (this.once && this.#hasUpdated) || (this.push);
+		}
+
+		if (this.debug) {
+			console.debug('#updateElement', {
+				property: this.property,
+				modelAttr: this.modelAttr,
+				once: this.once,
+				hasUpdated: this.#hasUpdated,
+				push: this.push,
+				Bail: bail()
+			});
+		}
+
+		if (bail()) return;
 
 		if (value === undefined) {
-			if (this.#modelAttr) {
-				value = this.#resolvedModel.getAttribute(this.#modelAttr) ?? "";
-			} else if (this.#property.startsWith('--') && this.#resolvedModel instanceof HTMLElement) {
-				value = getComputedStyle(this.#resolvedModel).getPropertyValue(this.#property);
-			} else {
-				value = this._getObjectProperty(this.#resolvedModel, this.#property);
-			}
+			value = this.modelAttr ?
+				this.#resolvedModel.getAttribute(this.modelAttr) ?? '' :
+				this.#getObjectProperty(this.#resolvedModel, this.property);
 		}
 
-		const attributes = this.#elemAttr.split(/[,\s]+/);
-		for (const attribute of attributes) {
-			this._setElementAttribute(this.#boundElement, attribute.trim(), value);
-		}
+		if (this.debug) { console.debug('#updateElement', {value: value})}
+
+		this.elemAttr.split(/[,\s]+/).forEach(attribute => {
+			this.#setElementAttribute(this.#boundElement, attribute.trim(), value);
+		});
 		this.#hasUpdated = true;
 	}
 
-	_updateModel(value) {
-		if (this.#property) {
-			const oldValue = this._getObjectProperty(this.#resolvedModel, this.#property);
+	#updateModel(value) {
+		let oldValue;
+    // Determine the old value from either the attribute or the property.
+    if (this.modelAttr) {
+        oldValue = this.#resolvedModel.getAttribute(this.modelAttr);
+    } else {
+        oldValue = this.#getObjectProperty(this.#resolvedModel, this.property);
+    }
 
-			// Only update the model and dispatch an event if the value has actually changed.
-			if (oldValue !== value) {
-				if (this.#modelAttr) {
-					this.#resolvedModel.setAttribute(this.#modelAttr, value);
-				} else if (this.#property.startsWith('--')) {
-					this.#resolvedModel.style.setProperty(this.#property, value);
-				} else {
-					this._setObjectProperty(this.#resolvedModel, this.#property, value);
-				}
+    const bail = () => String(oldValue) === String(value);
 
-				ABind.update(this.#resolvedModel, this.#property, value);
-			}
+    if (this.debug) {
+    	console.debug('#updateModel', {
+    		value: value,
+    		oldValue: oldValue,
+    		Bail: bail()
+    	});
+    }
+
+    if (bail()) return;
+
+    // Only update if the value has changed.
+		if (this.modelAttr) {
+			this.#resolvedModel.setAttribute(this.modelAttr, value);
+		} else {
+			this.#setObjectProperty(this.#resolvedModel, this.property, value);
 		}
 
-		// A function call should always execute regardless of whether the model's state has changed.
-		if (this.#func) this._executeFunction(value);
+    // For dispatching, we need a property name. Infer from model-attr if necessary.
+    const propertyName = this.property || this.modelAttr.replace(/-(.)/g, (_, letter) => letter.toUpperCase());
+		ABind.update(this.#resolvedModel, propertyName, value);
 	}
 
 	// --- Getters/Setters ---
 
-	get elemAttr() { return this.#elemAttr; }
+	get elemAttr() { return this.getAttribute('elem-attr') || 'value'; }
 	set elemAttr(value) { this.setAttribute('elem-attr', value); }
 
-	get event() { return this.#event; }
+	get event() { return this.getAttribute('event') || 'input'; }
 	set event(value) { this.setAttribute('event', value); }
 
-	get func() { return this.#func; }
+	get func() { return this.getAttribute('func'); }
 	set func(value) { this.setAttribute('func', value); }
 
-	get model() { return this.#model; }
+	get model() { return this.getAttribute('model'); }
 	set model(value) { this.setAttribute('model', value); }
 
-	get modelAttr() { return this.#modelAttr; }
+	get modelAttr() { return this.getAttribute('model-attr'); }
 	set modelAttr(value) { this.setAttribute('model-attr', value); }
 
-	get once() { return this.#once; }
-	set once(value) { this.setAttribute('once', String(value)); }
+	get once() { return this.hasAttribute('once'); }
+	set once(value) { this.toggleAttribute('once', Boolean(value)); }
 
-	get oneWay() { return this.#oneway; }
-	set oneWay(value) { this.setAttribute('one-way', String(value)); }
+	get pull() { return this.hasAttribute('pull'); }
+	set pull(value) { this.toggleAttribute('pull', Boolean(value)); }
 
-	get property() { return this.#property; }
+	get push() { return this.hasAttribute('push'); }
+	set push(value) { this.toggleAttribute('push', Boolean(value)); }
+
+	get property() { return this.getAttribute('property'); }
 	set property(value) { this.setAttribute('property', value); }
+
+	get debug() { return this.hasAttribute('debug') }
+	set debug(value) { this.toggleAttribute('debug', Boolean(value)); }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-	if (!customElements.get('a-bind')) {
-		customElements.define('a-bind', ABind);
-	}
-});
+if (!customElements.get('a-bind')) {
+	customElements.define('a-bind', ABind);
+}

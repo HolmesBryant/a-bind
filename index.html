@@ -6,7 +6,9 @@
 	<title>a-bind Web Component</title>
   <meta description="A web component that performs one-way and two-way data binding for javascript objects and custom elements.">
 
-	<script type="module" src="extra/custom-element.js"></script>
+	<script type="module" src="extra/a-markdown.min.js"></script>
+
+  <script type="module" src="extra/custom-element.js"></script>
 
   <!-- <script type="module" src="src/a-bind.js"></script> -->
   <script type="module" src="dist/a-bind.min.js"></script>
@@ -45,9 +47,10 @@
 	</header>
 
 	<details
+    open
     id="readme">
 		<summary>README</summary>
-		<div id="instructions"></div>
+		<a-markdown file="README.md"></a-markdown>
 	</details>
 
 

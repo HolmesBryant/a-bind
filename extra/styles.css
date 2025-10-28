@@ -183,8 +183,6 @@ body {
 	body *
 	{ box-sizing: border-box; }
 
-
-
 	button
 	{ padding: .5rem; }
 
@@ -380,6 +378,9 @@ body {
 
 	.space-between
 	{ justify-content: space-between; }
+
+	.space-around
+	{ justify-content: space-around; }
 
 	.gap0
 	{ gap: 0; }
