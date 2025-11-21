@@ -10,7 +10,7 @@ Demo: [https://holmesbryant.github.io/a-bind/](https://holmesbryant.github.io/a-
 
 ## Features
 
-- Provides a lightweight yet powerful solution for adding reactivity to web pages without the overhead of a large framework.
+- Provides a lightweight solution for adding reactivity to web pages without the overhead of a large framework.
 
 - Two-Way Data Binding: Synchronizes data between a model and a UI element. Changes in one are automatically reflected in the other.
 
@@ -23,6 +23,8 @@ Demo: [https://holmesbryant.github.io/a-bind/](https://holmesbryant.github.io/a-
 - Declarative API: All configuration is done through HTML attributes on the `<a-bind>` element, making the code clean and easy to understand.
 
 - Bound UI elements can be anywhere in the page.
+
+- You can bind a UI element to a property or an attribute of a custom element.
 
 - You can bind to multiple attributes/properties of the same HTML element at once.
 
@@ -79,14 +81,16 @@ Include the tag in the body with a single HTML element as its child.
 | **once**              | If present, the element only receives the model's value once and never again.             | `false`   |
 | **debug**             | If present, enables verbose console logging for the instance.                             | `false`   |
 
+### Important!
 
-## Description
+The `debug` messages are logged using `console.debug()`. In order to see those messages, you must enable verbose logging in the console.
 
-### Data Flow and Binding Types
+
+## Data Flow and Binding Types
 
 The direction of data flow is controlled by the `pull` and `push` boolean attributes.
 
-#### Two-Way Binding (Default Behavior)
+### Two-Way Binding (Default Behavior)
 
 If neither `pull` nor `push` is present, the binding is two-way.
 
@@ -94,7 +98,7 @@ If neither `pull` nor `push` is present, the binding is two-way.
 
 - **Element to Model:** When the user interacts with the child element (e.g., types in an `<input>`), the `<a-bind>` element listens for a DOM event (defaulting to "input"). It triggers a method reads the new value from the element, updates the JavaScript object, and then calls `ABind.update()` to broadcast the change to any other elements that might be bound to the same data.
 
-#### One-Way Binding (Model to Element)
+### One-Way Binding (Model to Element)
 
 This is achieved by adding the `pull` attribute.
 
@@ -102,49 +106,79 @@ The element will pull data from the model and update itself when the model chang
 
 Use Case: Displaying data that should not be editable by this specific element (e.g., showing a user's name in a `<span>`).
 
-#### One-Way Binding (Element to Model)
-
-This is achieved by adding the `push` attribute.
-
-The element will push its changes to the model. It will not pull data from the model to update itself.
-
-Use Case: An input field used only to set or change a value, without needing to reflect the current state (e.g., a "reset password" field).
-
-#### One-Time Binding
+### One-Time Binding
 
 This is achieved with the `once` attribute. The element will pull the initial value from the model **once** and will not listen for any subsequent updates.
 
 Use Case: A contentEditable element, which would reset the caret to the beginning of the element every time the user types something if `once` were not set.
 
-#### Decoupled Binding
+### Decoupled Binding
 
-`static update(model, property, value)`: This public static method provides a simple and decoupled way for any other part of the application to programmatically trigger a data update. By dispatching a global event, it allows the ABind components to react without being directly referenced.
+A-Bind provides a couple of public static methods which provide simple and decoupled ways for any other part of the application to programmatically trigger a data update. The component registers a variable in the global scope named `abind`, so you can call the methods like: `if (window.abind) abind.update(...)`
 
-##### Use Case:
+Both methods take as their first two arguments: 'model' and 'property'.
 
-    // javascript
-    var someObject = {
-        doAction(value) {
-            const model = otherObject; // the target object
-            const property = 'foo'; // the target property
-            ...
-            // update the property, which will cascade to all elements bound to it
-            if (window.abind) abind.update(model, property, value);
+- **model:** A reference to a javascript object; can be `this`.
+
+- **property** A (string) name of a property on the target model.
+
+#### update(model, property, value)
+
+Use this when you already know what the value is or if you want to send an explicit value to the bound elements.
+
+- `value` is the new value sent to all bound elements.
+
+##### Example
+
+```javascript
+    var myObj = {
+        _foo = 'foo';
+        get foo() { return this._foo }
+        set foo(value) {
+            this._foo = value;
+            if ( window.abind) abind.update(this, '_foo', value);
         }
     }
-    var otherObject = {
-        foo: 'bar'
+
+    class myClass {
+        // Private property
+        #foo = 'foo';
+
+        get foo() { return this.#foo }
+        set foo(value) {
+            this.#foo = value;
+            if (window.abind) abind.update(this, 'foo', value);
+        }
     }
 
-    <!-- HTML -->
-    <a-bind model="otherObject" property="foo">
-        <output></output>
-    </a-bind>
+```
 
-## Examples
+#### updateDefer(model, property, waitMs = 0)
 
-    <!-- index.html -->
-    <custom-element></custom-element>
+Use this if it might take a little while to set the final value on the property. When **waitMs** is `0`, the method simply waits for the current thread of execution to complete before it retrieves the property's value and dispatches the event.
+
+- `waitMs` is the number of milliseconds to wait before retrieving the value and dispatching the event.
+
+##### Example
+
+```javascript
+    const App = {
+        _foo: 'foo',
+
+        transformFoo(value) {
+            const newValue = '// takes a few milliseconds to transform the data';
+            return newValue;
+        },
+
+        get foo() { return this._foo },
+        set foo(value) {
+            this._foo = this.transformFoo(value);
+            if (window.abind) abind.updateDeferred(this, 'foo');
+        }
+    };
+```
+
+## Binding Elements
 
 ### Text-ish inputs
 
@@ -315,8 +349,6 @@ For example, if you have an input element that is bound to the model property `m
             <input id="my-input">
         </a-bind>
     </a-bind>
-
-## Notes
 
 ### Func
 

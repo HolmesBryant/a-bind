@@ -1,21 +1,21 @@
 export class DataRow extends HTMLElement {
 
-	_attr = null;
-	_attrFunc;
-	_model;
-	_prop;
-	_propFunc = null;
+	#attr = null;
+	#attrVal;
+	#model;
+	#prop;
+	#propVal = null;
 	_open = false;
 
 	#connected = false;
 
 	static observedAttributes = [
 		'attr',
-		'attr-func',
+		'attr-val',
 		'model',
 		'prop',
-		'prop-func',
-		'open'
+		'prop-val',
+		'open',
 	];
 
 	constructor() {
@@ -27,12 +27,13 @@ export class DataRow extends HTMLElement {
 		if (this.#connected && oldval === newval) return;
 
 		switch (attr) {
-			case 'attr': this._attr = newval; break;
-			case 'attr-func': this._attrFunc = newval; break;
-			case 'model': this._model = newval; break;
-			case 'prop': this._prop = newval; break;
-			case 'prop-func': this._propFunc = newval; break;
+			case 'attr': this.#attr = newval; break;
+			case 'attr-val': this.#attrVal = newval; break;
+			case 'model': this.#model = newval; break;
+			case 'prop': this.#prop = newval; break;
+			case 'prop-val': this.#propVal = newval; break;
 			case 'open': this._open = newval !== 'false' && newval !== false;
+			case 'val': this._val = newval; break;
 		}
 	}
 
@@ -47,51 +48,55 @@ export class DataRow extends HTMLElement {
 
 	render() {
 		const hasAttr = this.attr;
-		const hasPropFunc = this.propFunc;
+		const hasPropVal = this.propVal;
 		const isOpen = this.open;
+
 		const propCode = `
-			<a-code highlight slot="prop-code">
-        <textarea>
-          Property: ${this._prop}
-          <a-bind
-          	oneway
-            model="${this._model}"
-            property="${this._prop}">
-            <output></output>
-          </a-bind>
+		<a-code highlight slot="prop-code">
+		  <textarea>
+		    Property: ${this.#prop}
+		    <a-bind
+		    	pull
+		      model="${this.#model}"
+		      property="${this.#prop}">
+		      <output></output>
+		    </a-bind>
 
-					${hasPropFunc ? `
-          <a-bind
-            model="${this._model}"
-            func="${this._propFunc}"
-            event="click">
-            <button>
-              ...
-            </button>
-          </a-bind>` : ''}
-        </textarea>
-      </a-code>`;
+				${hasPropVal ? `
+		    <a-bind
+					push
+		      model="${this.#model}"
+		      property="${this.prop}"
+		      event="click">
+		      <button value="${this.propVal}">
+		        ...
+		      </button>
+		    </a-bind>` : ''}
+		  </textarea>
+		</a-code>`;
+
 		const attrCode = `
-			<a-code highlight slot="attr-code">
-	      <textarea>
-	        Attribute: ${this._attr}
-	        <a-bind
-	        	oneway
-	          model="${this._model}"
-	          model-attr="${this.attr}">
-	          <output></output>
-	        </a-bind>
+		<a-code highlight slot="attr-code">
+	    <textarea>
+	      Attribute: ${this.attr}
+	      <a-bind
+	      	pull
+	        model="${this.#model}"
+	        model-attr="${this.attr}">
+	        <output></output>
+	      </a-bind>
 
-	        <a-bind
-	          model="${this._model}"
-	          func="${this._attrFunc}"
-	          event="click">
-	          <button>
-	            ...
-	          </button>
-	        </a-bind>
-	      </textarea>
-	    </a-code>`;
+	      <a-bind
+	      	push
+	        model="${this.#model}"
+					model-attr="${this.attr}"
+	        event="click">
+	        <button>
+	          ...
+	        </button>
+	      </a-bind>
+	    </textarea>
+	  </a-code>`;
 
 		const html = `
 			<link rel="stylesheet" href="extra/styles.css">
@@ -107,14 +112,20 @@ export class DataRow extends HTMLElement {
 				      Attribute <code>${this.attr}</code>
 						</span>
 			      <a-bind
-			      	oneway
 			      	model="${this.model}"
 			      	model-attr="${this.attr}">
 			        <output>...</output>
 			      </a-bind>
 
-			      <a-bind model="${this.model}" func="${this.attrFunc}" event="click">
-			        <button>${this.attrFunc}</button>
+			      <a-bind
+							push
+			      	model="${this.model}"
+			      	model-attr="${this.attr}"
+			      	event="click">
+			        <button
+			        	value="${this.attrVal}">
+			        	Change to ${this.attrVal}
+			        </button>
 			      </a-bind>
 						`}
 			    </div>
@@ -126,15 +137,19 @@ export class DataRow extends HTMLElement {
 						</span>
 
 			      <a-bind
-			      	oneway
+			      	pull
 			      	model="${this.model}"
 			      	property="${this.prop}">
 			        <output>...</output>
 			      </a-bind>
 
-						${hasPropFunc ? `
-			      <a-bind model="${this.model}" func="${this.propFunc}" event="click">
-			        <button>${this.propFunc}</button>
+						${hasPropVal ? `
+			      <a-bind
+							push
+			      	model="${this.model}"
+			      	property="${this.prop}"
+			      	event="click">
+			        <button value="${this.propVal}">Change to ${this.propVal}</button>
 			      </a-bind>` : ""}
 			    </div>
 
@@ -173,23 +188,24 @@ export class DataRow extends HTMLElement {
 		this.shadowRoot.innerHTML = html;
 	}
 
-	get attr() {return this._attr}
+	get attr() {return this.#attr}
 	set attr(value) { this.setAttribute('attr', value); }
 
-	get attrFunc() {return this._attrFunc }
-	set attrFunc(value) { this.setAttribute('attr-func', value); }
+	get attrVal() { return this.#attrVal }
+	set attrVal(value) { this.setAttribute('attr-val', value) }
 
-	get model() {return this._model }
+	get model() {return this.#model }
 	set model(value) { this.setAttribute('model', value); }
 
-	get prop() {return this._prop }
+	get prop() {return this.#prop }
 	set prop(value) { this.setAttribute('prop', value); }
 
-	get propFunc() {return this._propFunc }
-	set propFunc(value) { this.setAttribute('prop-func', value); }
+	get propVal() {return this.#propVal }
+	set propVal(value) { this.setAttribute('prop-val', value); }
 
 	get open() { return this._open }
 	set open(value) { this.toggleAttribute('open', (value !== 'false' && value !== false)) }
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {

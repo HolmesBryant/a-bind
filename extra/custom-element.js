@@ -2,34 +2,34 @@ export default class CustomElement extends HTMLElement {
 
 	// Attributes
 
-	_text;
-	_datalist;
-	_datalistInput;
-	_search;
-	_password;
-	_tel;
-	_url;
-	_email;
-	_number;
-	_textarea;
-	_date;
-	_time;
-	_dateTime;
-	_week;
-	_month;
-	_select;
-	_selectMulti;
-	_checkboxFoo;
-	_checkboxBar;
-	_radioGroup;
-	_button;
-	_color;
-	_range;
-	_progress;
-	_meter;
-	_file;
-	_name;
-	_editable
+	#text;
+	#datalist;
+	#datalistInput;
+	#search;
+	#password;
+	#tel;
+	#url;
+	#email;
+	#number;
+	#textarea;
+	#date;
+	#time;
+	#dateTime;
+	#week;
+	#month;
+	#select;
+	#selectMulti;
+	#checkboxFoo;
+	#checkboxBar;
+	#radioGroup;
+	#button;
+	#color;
+	#range;
+	#progress;
+	#meter;
+	#file;
+	#name;
+	#editable;
 
 	// Private
 
@@ -50,6 +50,7 @@ export default class CustomElement extends HTMLElement {
 	defaults = {
 		text: "Initial Text",
 		datalist: ['One', 'Two', 'Three'],
+		datalistInput: '',
 		search: "Search Term",
 		password: "password",
 		tel: "123-456-7890",
@@ -65,7 +66,7 @@ export default class CustomElement extends HTMLElement {
 		select: "",
 		selectMulti: 'foo, baz',
 		checkboxFoo: 'foo',
-		checkboxBar: 'foo',
+		checkboxBar: 'bar',
 		radioGroup: 'foo',
 		button: "value of button property",
 		color: "#cd5c5c",
@@ -123,41 +124,40 @@ export default class CustomElement extends HTMLElement {
     const prop = attr.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 
     switch (attr) {
-	    case 'text': this._text = newval; break;
+	    case 'text': this.#text = newval; break;
 			case 'datalist':
 				let options = "";
-				for (const option of this.datalistGenerator(newval)) options += option;
-				newval = options;
-				this._datalist = newval;
+				for (const option of this.optionGenerator(newval)) options += option;
+				this.#datalist = options;
 				break;
-			case 'datalist-input': this._datalistInput = newval;
-			case 'search': this._search = newval; break;
-			case 'password': this._password = newval; break;
-			case 'tel': this._tel = newval; break;
-			case 'url': this._url = newval; break;
-			case 'email': this._email = newval; break;
-			case 'number': this._number = newval; break;
-			case 'textarea': this._textarea = newval; break;
-			case 'date': this._date = newval; break;
-			case 'time': this._time = newval; break;
-			case 'date-time': this._dateTime = newval; break;
-			case 'week': this._week = newval; break;
-			case 'month': this._month = newval; break;
-			case 'select': this._select = newval; break;
-			case 'select-multi': this._selectMulti = newval; break;
-			case 'checkbox-foo': this._checkboxFoo = newval; break;
-			case 'checkbox-bar': this._checkboxBar = newval; break;
-			case 'radio-group': this._radioGroup = newval; break;
-			case 'button': this._button = newval; break;
-			case 'color': this._color = newval; break;
-			case 'range': this._range = newval; break;
-			case 'progress': this._progress = newval; break;
-			case 'meter': this._meter = newval; break;
-			case 'name': this._name = newval; break;
-			case 'editable': this._editable = newval; break;
+			case 'datalist-input': this.#datalistInput = newval;
+			case 'search': this.#search = newval; break;
+			case 'password': this.#password = newval; break;
+			case 'tel': this.#tel = newval; break;
+			case 'url': this.#url = newval; break;
+			case 'email': this.#email = newval; break;
+			case 'number': this.#number = newval; break;
+			case 'textarea': this.#textarea = newval; break;
+			case 'date': this.#date = newval; break;
+			case 'time': this.#time = newval; break;
+			case 'date-time': this.#dateTime = newval; break;
+			case 'week': this.#week = newval; break;
+			case 'month': this.#month = newval; break;
+			case 'select': this.#select = newval; break;
+			case 'select-multi': this.#selectMulti = newval; break;
+			case 'checkbox-foo': this.#checkboxFoo = newval; break;
+			case 'checkbox-bar': this.#checkboxFoo = newval; break;
+			case 'radio-group': this.#radioGroup = newval; break;
+			case 'button': this.#button = newval; break;
+			case 'color': this.#color = newval; break;
+			case 'range': this.#range = newval; break;
+			case 'progress': this.#progress = newval; break;
+			case 'meter': this.#meter = newval; break;
+			case 'name': this.#name = newval; break;
+			case 'editable': this.#editable = newval; break;
     }
 
-    if (window.abind) abind.update(this, prop, newval);
+    if (window.abind) abind.updateDefer(this, attr);
 	}
 
 	connectedCallback() {
@@ -165,7 +165,7 @@ export default class CustomElement extends HTMLElement {
 		this._connected = true;
 	}
 
-	*datalistGenerator(str) {
+	*optionGenerator(str) {
 	  if (!str) return;
 	  str = str.trim();
 
@@ -174,39 +174,49 @@ export default class CustomElement extends HTMLElement {
 	  }
 	}
 
-	getFiles(prop, value) {
-		const fileList = value[0];
-		this._file = fileList;
-		const list = [];
-		for (const item of fileList) {
-			const obj ={
-				name: item.name,
-				modified: item.lastModifiedDate,
-				size: item.size,
-				type: item.type
-			};
-			list.push(obj);
-		}
+	getFiles(event) {
+    const fileList = event.target.files;
+    this.file = fileList;
+    const list = [];
+    const elem = document.createElement('output');
 
-		const str = JSON.stringify(list, null, 2);
-		this.notify(prop, str);
-	}
+    for (const item of fileList) {
+      const obj = {
+        name: item.name,
+        modified: item.lastModifiedDate,
+        size: item.size,
+        type: item.type
+      };
 
-	notify(prop, value) {
+      list.push(obj);
+    }
+
+    const str = JSON.stringify(list, null, 2);
+    elem.value = str;
+
+    const fakeEvent = {
+      type: 'change',
+      target: elem
+    };
+
+    this.notify(fakeEvent);
+}
+
+	notify(event) {
 		const html = `
 			<form method="dialog">
 				<button>X</button>
 			</form>
-			<p>The first argument passed: <pre>${prop}</pre></p>
-			<p>The second argument passed: <pre>${value}</pre></p>
+			<p><b>Argument passed:</b> Event</p>
+			<p><b>Event type:</b> ${event.type}</p>
+			<p><b>Event target:</b> ${event.target.localName}</p>
+			<p><b>Event target value:</b> <pre>${event.target.value}</pre></p>
 		`;
 		const dialog = document.createElement('dialog');
 		const cleanup = function(evt) {
 			dialog.removeEventListener('close', cleanup);
 			dialog.remove();
 		}
-
-		// if (prop) this[prop] = value;
 
 		dialog.id = 'btn-dialog';
 		dialog.innerHTML = html;
@@ -215,7 +225,7 @@ export default class CustomElement extends HTMLElement {
 		dialog.showModal();
 	}
 
-	reset() {
+	reset(event) {
 		const attrs = CustomElement.observedAttributes;
 
 		for (const attr of attrs) {
@@ -226,173 +236,173 @@ export default class CustomElement extends HTMLElement {
 		}
 	}
 
-	sendForm(form) {
-		let formName = null;
-		const ret = [];
-		if (typeof form === 'string') {
-			// attr `form` corresponds to a-bind property="test-form", which is the id of the form
-			formName = form;
-			form = document.getElementById(form);
-			if (!form) throw new Error(`${formName} is not a valid id for an existing form`);
-		}
-
+	sendForm(event) {
+		const form = event.target.localName === 'form' ? event.target : event.target.form;
 		const formdata = new FormData(form);
+		const data = [];
+		const elem = document.createElement('form');
+
 		for (const input of formdata) {
-			ret.push({ [input.shift()]: input.shift()});
+			data.push({ [input.shift()]: input.shift() });
 		}
 
-		this.notify(formName, JSON.stringify(ret, null, 2));
+		const str = JSON.stringify(data, null, 2);
+    elem.value = str;
+
+    const fakeEvent = {
+      type: 'submit',
+      target: elem
+    };
+
+    this.notify(fakeEvent);
 	}
 
-	get text() { return this._text }
+	get text() { return this.#text }
 	set text(value) {
 		this.setAttribute("text", value);
 	}
 
-	get datalist() { return this._datalist; }
-	set datalist(value) {
-		this.setAttribute("datalist", value);
-	}
+	get datalist() { return this.#datalist }
+	set datalist(value) { this.setAttribute("datalist", value) }
 
-	get datalistInput() { return this._datalistInput }
+	get datalistInput() { return this.#datalistInput }
 	set datalistInput(value) {
 		this.setAttribute('datalist-input', value);
 	}
 
-	get search() { return this._search }
+	get search() { return this.#search }
 	set search(value) {
 		this.setAttribute("search", value);
 	}
 
-	get password() { return this._password}
+	get password() { return this.#password}
 	set password(value) {
 		this.setAttribute("password", value);
 	}
 
-	get tel() { return this._tel }
+	get tel() { return this.#tel }
 	set tel(value) {
 		this.setAttribute("tel", value);
 	}
 
-	get url() { return this._url }
+	get url() { return this.#url }
 	set url(value) {
 		this.setAttribute("url", value);
 	}
 
-	get email() { return this._email }
+	get email() { return this.#email }
 	set email(value) {
 		this.setAttribute("email", value);
 	}
 
-	get number() { return this._number }
+	get number() { return this.#number }
 	set number(value) {
 		this.setAttribute("number", value);
 	}
 
-	get textarea() { return this._textarea }
+	get textarea() { return this.#textarea }
 	set textarea(value) {
 		this.setAttribute("textarea", value);
 	}
 
-	get date() { return this._date }
+	get date() { return this.#date }
 	set date(value) {
 		this.setAttribute("date", value);
 	}
 
-	get time() { return this._time }
+	get time() { return this.#time }
 	set time(value) {
 		this.setAttribute("time", value);
 	}
 
-	get dateTime() { return this._dateTime }
+	get dateTime() { return this.#dateTime }
 	set dateTime(value) {
 		this.setAttribute("date-time", value);
 	}
 
-	get week() { return this._week }
+	get week() { return this.#week }
 	set week(value) {
 		this.setAttribute("week", value);
 	}
 
-	get month() { return this._month }
+	get month() { return this.#month }
 	set month(value) {
 		this.setAttribute("month", value);
 	}
 
-	get select() { return this._select }
+	get select() { return this.#select }
 	set select(value) {
 		this.setAttribute("select", value);
 	}
 
-	get selectMulti() { return this._selectMulti }
+	get selectMulti() { return this.#selectMulti }
 	set selectMulti(value) {
 		this.setAttribute("select-multi", value);
 	}
 
-	get checkboxFoo() { return this._checkboxFoo }
+	get checkboxFoo() { return this.#checkboxFoo }
 	set checkboxFoo(value) {
 		this.setAttribute('checkbox-foo', value);
 	}
 
-	get checkboxBar() { return this._checkboxBar }
+	get checkboxBar() { return this.#checkboxBar }
 	set checkboxBar(value) {
 		this.setAttribute('checkbox-bar', value);
 	}
 
-	get radioGroup() { return this._radioGroup }
+	get radioGroup() { return this.#radioGroup }
 	set radioGroup(value) {
 		this.setAttribute('radio-group', value);
 	}
 
-	get button() { return this._button }
+	get button() { return this.#button }
 	set button(value) {
 		this.setAttribute('button', value);
 	}
 
-	get color() { return this._color }
+	get color() { return this.#color }
 	set color(value) {
 		this.setAttribute('color', value);
 	}
 
-	get range() { return this._range }
+	get range() { return this.#range }
 	set range(value) {
 		this.setAttribute('range', value);
 	}
 
-	get progress() { return this._progress }
+	get progress() { return this.#progress }
 	set progress(value) {
 		this.setAttribute('progress', value);
 	}
 
-	get meter() { return this._meter }
+	get meter() { return this.#meter }
 	set meter(value) {
 		this.setAttribute('meter', value);
 	}
 
-	get file() { return this._file; }
+	get file() { return this.#file; }
 	set file(value) {
-		console.log('file', value)
-		this._file = value;
-		// this.setAttribute('file', JSON.stringify(fileList));
+		this.#file = value;
+		if (window.abind) abind.update(this, 'file', value);
 	}
 
-	get name() { return this._name }
+	get name() { return this.#name }
 	set name(value) {
 		this.setAttribute('name', value);
 	}
 
 	get editable() {
-		if (!this._editable) return "";
+		if (!this.#editable) return "";
 		if (this.#editableFormatted) {
 			return this.#editableFormatted;
 		} else {
-			this.#editableFormatted = this._editable.replace(this.#editableRegex, "\n$1\n").trim();
+			this.#editableFormatted = this.#editable.replace(this.#editableRegex, "\n$1\n").trim();
 			return this.#editableFormatted;
 		}
 	}
 
 	set editable(value) {
-		// if (value === this._editable) return;
+		// if (value === this.#editable) return;
 		this.setAttribute('editable', value);
 		setTimeout(() => { this.#editableFormatted = null; });
 	}

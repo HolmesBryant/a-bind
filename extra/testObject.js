@@ -31,7 +31,7 @@ var testObj = {
 
 	defaults: {
 		text: "Initial Text",
-		datalist: ['One', 'Two', 'Three'],
+		datalist: 'One, Two, Three',
 		search: "Search Term",
 		password: "password",
 		tel: "123-456-7890",
@@ -54,7 +54,7 @@ var testObj = {
 		range: '50',
 		progress: '50',
 		meter: '50',
-		file: '" "',
+		file: null,
 		name: 'My Name',
 		editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>"
 	},
@@ -67,37 +67,49 @@ var testObj = {
 	  }
 	},
 
-	getFiles(fileList) {
-		const list = [];
-		for (const item of fileList) {
-			const obj ={
-				name: item.name,
-				modified: item.lastModifiedDate,
-				size: item.size,
-				type: item.type
-			};
-			list.push(obj);
-		}
+	getFiles(event) {
+		const fileList = event.target.files;
+    this.file = fileList;
+    const list = [];
+    const elem = document.createElement('output');
 
-		const str = '<pre>' + JSON.stringify(list, null, 2) + '</pre>';
-		this.notify(str);
+    for (const item of fileList) {
+      const obj = {
+        name: item.name,
+        modified: item.lastModifiedDate,
+        size: item.size,
+        type: item.type
+      };
+
+      list.push(obj);
+    }
+
+    const str = JSON.stringify(list, null, 2);
+    elem.value = str;
+
+    const fakeEvent = {
+      type: 'change',
+      target: elem
+    };
+
+    this.notify(fakeEvent);
 	},
 
-	notify(prop, value) {
+	notify(event) {
 		const html = `
 			<form method="dialog">
 				<button>X</button>
 			</form>
-			<p>The first argument passed: <pre>${prop}</pre></p>
-			<p>The second argument passed: <pre>${value}</pre></p>
+			<p><b>Argument passed:</b> Event</p>
+			<p><b>Event type:</b> ${event.type}</p>
+			<p><b>Event target:</b> ${event.target.localName}</p>
+			<p><b>Event target value:</b> <pre>${event.target.value}</pre></p>
 		`;
 		const dialog = document.createElement('dialog');
 		const cleanup = function(evt) {
 			dialog.removeEventListener('close', cleanup);
 			dialog.remove();
 		}
-
-		// if (prop) this[prop] = value;
 
 		dialog.id = 'btn-dialog';
 		dialog.innerHTML = html;
@@ -106,7 +118,7 @@ var testObj = {
 		dialog.showModal();
 	},
 
-	reset() {
+	reset(event) {
 		const props = Object.keys(this.defaults);
 
 		for (const prop of props) {
@@ -114,19 +126,25 @@ var testObj = {
 		}
 	},
 
-	sendForm(form) {
-		const ret = [];
-		if (typeof form === 'string') {
-			const formName = form;
-			form = document.getElementById(form);
-			if (!form) throw new Error(`${formName} is not a valid id for an existing form`);
+	sendForm(event) {
+		const form = event.target.localName === 'form' ? event.target : event.target.form;
+		const formdata = new FormData(form);
+		const data = [];
+		const elem = document.createElement('form');
+
+		for (const input of formdata) {
+			data.push({ [input.shift()]: input.shift() });
 		}
 
-		const formdata = new FormData(form);
-		for (const input of formdata) {
-			ret.push({ [input.shift()]: input.shift()});
-		}
-		this.notify(JSON.stringify(ret, null, 2));
+		const str = JSON.stringify(data, null, 2);
+    elem.value = str;
+
+    const fakeEvent = {
+      type: 'submit',
+      target: elem
+    };
+
+    this.notify(fakeEvent);
 	},
 
 	get text() { return this._text },
@@ -141,10 +159,11 @@ var testObj = {
 	},
 
 	set datalist(value) {
-		if (value === this._datalist) return;
-		this._datalist = "";
-		for (const option of this.datalistGenerator(value)) this._datalist += option;
-		if (window.abind) abind.update(this, 'datalist', this._datalist);
+		this._datalist = value.split(',')
+		.map(item => `<option>${item}</option>`)
+		.join("\n");
+
+		if (window.abind) abind.updateDefer(this, 'datalist');
 	},
 
 	get search() { return this._search },
@@ -304,15 +323,7 @@ var testObj = {
 		if (window.abind) abind.update(this, 'meter', value);
 	},
 
-	get file() {
-		const filesArray = Array.from(this._file);
-  	const fileDetails = filesArray.map((file) => ({
-    	name: file.name,
-    	type: file.type,
-    	size: file.size,
-  	}));
-		return JSON.stringify(fileDetails, null, 2);
-	},
+	get file() { return this._file; },
 
 	set file(fileList) {
 		this._file = fileList;

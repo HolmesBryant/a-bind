@@ -1,6 +1,6 @@
 <!-- reset -->
-<aside class="flex sticky center">
-  <a-bind model="custom-element" event="click" func="reset;">
+<aside class="flex sticky center" style="z-index:1">
+  <a-bind model="custom-element" event="click" func="reset">
     <button>Reset Model</button>
   </a-bind>
 </aside>
@@ -11,9 +11,9 @@
   <data-row
     model="custom-element"
     attr="text"
-    attr-func="setAttribute; text; foo"
+    attr-val="foo"
     prop="text"
-    prop-func="text; bar">
+    prop-val="bar">
     <div slot="input" class="flex column">
       <span>Input <code>text</code></span>
       <a-bind
@@ -40,9 +40,10 @@
   <!-- datalist -->
   <data-row
     model="custom-element"
-    attr="false"
+    attr="datalist",
+    attr-val="foo, bar, baz"
     prop="datalist"
-    prop-func="datalist; foo, bar, baz, boom, bing, bang">
+    prop-val="boom, bing, bang">
 
     <div slot="input" class="flex column">
       <span>Input with <code>datalist</code></span>
@@ -64,11 +65,11 @@
         </datalist>
       </a-bind>
 
-      <span>Property: <code>datalistInput</code></span>
+      input value:
       <a-bind
         model="custom-element"
         property="datalistInput">
-        <output>...</output>
+        <output></output>
       </a-bind>
     </div>
 
@@ -106,9 +107,9 @@
   <data-row
     model="custom-element"
     attr="search"
-    attr-func="setAttribute; search; foo"
+    attr-val="foo"
     prop="search"
-    prop-func="search; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>search</code></span>
@@ -139,9 +140,9 @@
   <data-row
     model="custom-element"
     attr="password"
-    attr-func="setAttribute; password; foo"
+    attr-val="foo"
     prop="password"
-    prop-func="password; baaar">
+    prop-val="baaar">
 
     <div slot="input" class="flex column">
       <span>Input <code>password</code></span>
@@ -172,9 +173,9 @@
   <data-row
     model="custom-element"
     attr="tel"
-    attr-func="setAttribute; tel; 08 958-8746"
+    attr-val="08 958-8746"
     prop="tel"
-    prop-func="tel; 25 45-79-72-01">
+    prop-val="25 45-79-72-01">
 
     <div slot="input" class="flex column">
       <span>Input <code>tel</code></span>
@@ -205,9 +206,9 @@
   <data-row
     model="custom-element"
     attr="url"
-    attr-func="setAttribute; url; http://foo.com"
+    attr-val="http://foo.com"
     prop="url"
-    prop-func="url; http://bar.org">
+    prop-val="http://bar.org">
 
     <div slot="input" class="flex column">
       <span>Input <code>url</code></span>
@@ -238,9 +239,9 @@
   <data-row
     model="custom-element"
     attr="email"
-    attr-func="setAttribute; email; foo@bar.com"
+    attr-val="foo@bar.com"
     prop="email"
-    prop-func="email; bar@baz.org">
+    prop-val="bar@baz.org">
 
     <div slot="input" class="flex column">
       <span>Input <code>email</code></span>
@@ -271,9 +272,9 @@
   <data-row
     model="custom-element"
     attr="number"
-    attr-func="setAttribute; number; 42"
+    attr-val="42"
     prop="number"
-    prop-func="number; 3.69">
+    prop-val="3.69">
 
     <div slot="input" class="flex column">
       <span>Input <code>number</code></span>
@@ -305,7 +306,7 @@
     model="custom-element"
     attr="false"
     prop="textarea"
-    prop-func="textarea; Exercitation do aliqua">
+    prop-val="Exercitation do aliqua">
 
     <div slot="input" class="flex column">
       <span>Input <code>textarea</code></span>
@@ -339,9 +340,9 @@
   <data-row
     model="custom-element"
     attr="date"
-    attr-func="setAttribute; date; 2000-02-05"
+    attr-val="2000-02-05"
     prop="date"
-    prop-func="date; 2025-05-01">
+    prop-val="2025-05-01">
 
     <div slot="input" class="flex column">
       <span>Input <code>date</code></span>
@@ -372,9 +373,9 @@
   <data-row
     model="custom-element"
     attr="time"
-    attr-func="setAttribute; time; 14:30"
+    attr-val="14:30"
     prop="time"
-    prop-func="time; 06:00">
+    prop-val="06:00">
 
     <div slot="input" class="flex column">
       <span>Input <code>time</code></span>
@@ -405,9 +406,9 @@
   <data-row
     model="custom-element"
     attr="date-time"
-    attr-func="setAttribute; date-time; 2000-02-06T01:00"
+    attr-val="2000-02-06T01:00"
     prop="dateTime"
-    prop-func="dateTime; 1995-01-01T05:00">
+    prop-val="1995-01-01T05:00">
 
     <div slot="input" class="flex column">
       <span>Input <code>datetime-local</code></span>
@@ -438,9 +439,9 @@
   <data-row
     model="custom-element"
     attr="week"
-    attr-func="setAttribute; week; 2000-W02"
+    attr-val="2000-W02"
     prop="week"
-    prop-func="week; 1995-W21">
+    prop-val="1995-W21">
 
     <div slot="input" class="flex column">
       <span>Input <code>week</code></span>
@@ -471,9 +472,9 @@
   <data-row
     model="custom-element"
     attr="month"
-    attr-func="setAttribute; month; 2000-02"
+    attr-val="2000-02"
     prop="month"
-    prop-func="month; 1995-05">
+    prop-val="1995-05">
 
     <div slot="input" class="flex column">
       <span>Input <code></code>month</span>
@@ -507,9 +508,9 @@
   <data-row
     model="custom-element"
     attr="select"
-    attr-func="setAttribute; select; foo"
+    attr-val="foo"
     prop="select"
-    prop-func="select; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <label for="select-input">Input <code>select</code></label>
@@ -552,9 +553,9 @@
   <data-row
     model="custom-element"
     attr="select-multi"
-    attr-func="setAttribute; select-multi; foo, bar"
+    attr-val="bar"
     prop="selectMulti"
-    prop-func="selectMulti; bar, baz">
+    prop-val="bar, baz">
 
     <div slot="input" class="flex column">
       <span>Input <code>select multiple</code></span>
@@ -597,9 +598,9 @@
   <data-row
     model="custom-element"
     attr="checkbox-foo"
-    attr-func="setAttribute; checkbox-foo; foo"
+    attr-val="foo"
     prop="checkboxFoo"
-    prop-func="checkboxFoo; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>checkbox value="foo"</code></span>
@@ -633,9 +634,9 @@
   <data-row
     model="custom-element"
     attr="checkbox-bar"
-    attr-func="setAttribute; checkbox-bar; foo"
+    attr-val="foo"
     prop="checkboxBar"
-    prop-func="checkboxBar; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>checkbox value="bar"</code></span>
@@ -672,9 +673,9 @@
   <data-row
     model="custom-element"
     attr="radio-group"
-    attr-func="setAttribute; radio-group; foo"
+    attr-val="foo"
     prop="radioGroup"
-    prop-func="radioGroup; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>radio group</code></span>
@@ -746,21 +747,20 @@
   <data-row
     model="custom-element"
     attr="button"
-    attr-func="setAttribute; button; foo"
+    attr-val="foo"
     prop="button"
-    prop-func="button; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>button</code></span>
       <ul>
         <li>button text mirrors property value</li>
-        <li>invokes <code>notify()</code> method on click</li>
       </ul>
 
       <a-bind
         model="custom-element"
         property="button"
-        elem-attr="textContent"
+        elem-attr="textContent, value"
         event="click"
         func="notify">
         <button
@@ -777,7 +777,7 @@
         <a-bind
           model="custom-element"
           property="button"
-          elem-attr="textContent"
+          elem-attr="textContent, value"
           event="click"
           func="notify">
           <button>
@@ -792,15 +792,14 @@
   <data-row
     model="custom-element"
     attr="button"
-    attr-func="setAttribute; button; baz"
+    attr-val="baz"
     prop="button"
-    prop-func="button; boom">
+    prop-val="boom">
 
     <div slot="input" class="flex column">
       <span>Input <code>button</code></span>
       <ul>
         <li>button text does not mirror property value</li>
-        <li>invokes <code>notify</code> method on click</li>
       </ul>
 
       <a-bind
@@ -831,93 +830,6 @@
       </textarea>
     </a-code>
   </data-row>
-
-  <!-- button three -->
-  <data-row
-    model="custom-element"
-    attr="button"
-    attr-func="setAttribute; button; bing"
-    prop="button"
-    prop-func="button; bang">
-
-    <div slot="input" class="flex column">
-      <span>Input <code>button</code></span>
-      <ul>
-        <li>button text does not mirror property value</li>
-        <li>invokes <code>notify</code> method on click with <code>'button', 'something new'</code> as arguments</li>
-      </ul>
-
-      <a-bind
-        model="custom-element"
-        property="button"
-        event="click"
-        func="notify; something new">
-        <button
-          id="button-input-3">
-          notify; something new
-        </button>
-      </a-bind>
-    </div>
-
-    <a-code highlight slot="input-code">
-      <textarea>
-        Input: button
-
-        <a-bind
-          model="custom-element"
-          property="button"
-          event="click"
-          func="notify; something new">
-          <button
-            id="button-input-3">
-            notify; something new
-          </button>
-        </a-bind>
-      </textarea>
-    </a-code>
-  </data-row>
-
-  <!-- button four -->
-  <data-row
-    model="custom-element"
-    attr="button"
-    attr-func="setAttribute; button; fee"
-    prop="button"
-    prop-func="button; fie">
-
-    <div slot="input" class="flex column">
-      <span>Input <code>button</code></span>
-      <ul>
-        <li>button text does not mirror property value</li>
-        <li>invokes <code>notify</code> method on click with <code>'otherProperty', 'other value'</code> as arguments</li>
-      </ul>
-
-      <a-bind
-        model="custom-element"
-        event="click"
-        func="notify; otherProperty; other value">
-        <button
-          id="button-input-4">
-          notify; otherProperty; other value
-        </button>
-      </a-bind>
-    </div>
-
-    <a-code highlight slot="input-code">
-      <textarea>
-        Input: button
-
-        <a-bind
-          model="custom-element"
-          event="click"
-          func="notify; otherProperty; other value">
-          <button>
-            notify; otherProperty; other value
-          </button>
-        </a-bind>
-      </textarea>
-    </a-code>
-  </data-row>
 </details>
 
 <details name="component-props">
@@ -926,9 +838,9 @@
   <data-row
     model="custom-element"
     attr="color"
-    attr-func="setAttribute; color; #ff00ff"
+    attr-val="#ff00ff"
     prop="color"
-    prop-func="color; #00ced1">
+    prop-val="#00ced1">
 
     <div slot="input" class="flex column">
       <span>Input <code>color</code></span>
@@ -979,9 +891,9 @@
   <data-row
     model="custom-element"
     attr="range"
-    attr-func="setAttribute; range; 25"
+    attr-val="25"
     prop="range"
-    prop-func="range; 75">
+    prop-val="75">
 
     <div slot="input" class="flex column">
       <span>Input <code>range</code></span>
@@ -1013,12 +925,12 @@
   <data-row
     model="custom-element"
     attr="progress"
-    attr-func="setAttribute; progress; 25"
+    attr-val="25"
     prop="progress"
-    prop-func="progress; 75">
+    prop-val="75">
 
     <div slot="input" class="flex column">
-      <span>Input <code></code></span>
+      <span>Input <code>progress</code></span>
 
       <a-bind
         model="custom-element"
@@ -1049,9 +961,9 @@
   <data-row
     model="custom-element"
     attr="meter"
-    attr-func="setAttribute; meter; 25"
+    attr-val="25"
     prop="meter"
-    prop-func="meter; 75">
+    prop-val="75">
 
     <div slot="input" class="flex column">
       <span>Input <code>meter</code></span>
@@ -1096,10 +1008,10 @@
       <span>Input <code>file</code></span>
 
       <a-bind
+        push
         model="custom-element"
-        property="file"
-        event="change"
-        elem-attr="files">
+        func="getFiles"
+        event="change">
         <input
           id="file-input"
           type="file"
@@ -1112,14 +1024,14 @@
         Input: file
 
         <a-bind
-          model="custom-element"
-          property="file"
-          event="change"
-          elem-attr="files">
-          <input
-            type="file"
-            multiple>
-        </a-bind>
+        push
+        model="custom-element"
+        func="getFiles"
+        event="change">
+        <input
+          type="file"
+          multiple>
+      </a-bind>
       </textarea>
     </a-code>
   </data-row>
@@ -1128,7 +1040,7 @@
 <details name="component-props">
 <summary>Contenteditable</summary>
   <section>
-    <aside>When binding to <code>contenteditable</code> elements, add the <code>once</code> attribute to a-bind to keep the edited content from being written back to the element.</aside>
+    <p>When binding to <code>contenteditable</code> elements, add the <code>once</code> attribute to a-bind to keep the edited content from being written back to the element.</p>
     <div
       class="flex stretch">
       <div class="flex1">
@@ -1142,7 +1054,7 @@
             id="content-editable"
             class="card"
             style="height:100%">
-            Some content
+            no content...
           </div>
         </a-bind>
       </div>
@@ -1201,11 +1113,11 @@
 <details name="component-props">
 <summary>Form Submission</summary>
   <section class="flex vstart">
-    <form id="test-form" method="get" class="flex column center flex1">
+    <form id="test-form" class="flex column center flex1" onsubmit="return false">
 
       <h3>form id="test-form"</h3>
 
-      <aside class="flex">
+      <aside class="flex" style="border-radius:var(--border-radius)">
         <a-bind
           model="custom-element"
           event="click"
@@ -1257,10 +1169,10 @@
       <a-bind
         model="custom-element"
         event="click"
-        func="sendForm; test-form;">
+        func="sendForm">
         <button
           type="submit">
-          sendForm; test-form;
+          Bound to sendForm method
         </button>
       </a-bind>
 
@@ -1268,7 +1180,7 @@
         type="submit"
         onclick="document
         .querySelector('custom-element')
-        .sendForm(this.form);
+        .sendForm(event);
         return false">
         Submit button with onclick event
       </button>

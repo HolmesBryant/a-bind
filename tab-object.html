@@ -1,6 +1,6 @@
 <!-- reset -->
-<aside class="flex sticky center nofrills">
-  <a-bind model="testObj" event="click" func="reset;">
+<aside class="flex sticky center" style="z-index:1">
+  <a-bind model="testObj" event="click" func="reset">
     <button>Reset Model</button>
   </a-bind>
 </aside>
@@ -11,7 +11,7 @@
   <data-row
     model="testObj"
     prop="text"
-    prop-func="text; bar">
+    prop-val="bar">
     <div slot="input" class="flex column">
       <span>Input <code>text</code></span>
       <a-bind
@@ -40,7 +40,7 @@
   <data-row
     model="testObj"
     prop="datalist"
-    prop-func="datalist; foo, bar, baz, boom, bing, bang">
+    prop-val="foo, bar, baz">
 
     <div slot="input" class="flex column">
       <span>Input with <code>datalist</code></span>
@@ -50,7 +50,7 @@
         property="datalistInput">
         <input
           id="o-datalist-input"
-          list="test-datalist">
+          list="o-test-datalist">
       </a-bind>
 
       <a-bind
@@ -104,7 +104,7 @@
   <data-row
     model="testObj"
     prop="search"
-    prop-func="search; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>search</code></span>
@@ -135,7 +135,7 @@
   <data-row
     model="testObj"
     prop="password"
-    prop-func="password; baaar">
+    prop-val="baaar">
 
     <div slot="input" class="flex column">
       <span>Input <code>password</code></span>
@@ -166,7 +166,7 @@
   <data-row
     model="testObj"
     prop="tel"
-    prop-func="tel; 25 45-79-72-01">
+    prop-val="25 45-79-72-01">
 
     <div slot="input" class="flex column">
       <span>Input <code>tel</code></span>
@@ -197,7 +197,7 @@
   <data-row
     model="testObj"
     prop="url"
-    prop-func="url; http://bar.org">
+    prop-val="http://bar.org">
 
     <div slot="input" class="flex column">
       <span>Input <code>url</code></span>
@@ -228,7 +228,7 @@
   <data-row
     model="testObj"
     prop="email"
-    prop-func="email; bar@baz.org">
+    prop-val="bar@baz.org">
 
     <div slot="input" class="flex column">
       <span>Input <code>email</code></span>
@@ -259,7 +259,7 @@
   <data-row
     model="testObj"
     prop="number"
-    prop-func="number; 3.69">
+    prop-val="3.69">
 
     <div slot="input" class="flex column">
       <span>Input <code>number</code></span>
@@ -290,7 +290,7 @@
   <data-row
     model="testObj"
     prop="textarea"
-    prop-func="textarea; Exercitation do aliqua">
+    prop-val="Exercitation do aliqua">
 
     <div slot="input" class="flex column">
       <span>Input <code>textarea</code></span>
@@ -324,7 +324,7 @@
   <data-row
     model="testObj"
     prop="date"
-    prop-func="date; 2025-05-01">
+    prop-val="2025-05-01">
 
     <div slot="input" class="flex column">
       <span>Input <code>date</code></span>
@@ -355,7 +355,7 @@
   <data-row
     model="testObj"
     prop="time"
-    prop-func="time; 06:00">
+    prop-val="06:00">
 
     <div slot="input" class="flex column">
       <span>Input <code>time</code></span>
@@ -386,7 +386,7 @@
   <data-row
     model="testObj"
     prop="dateTime"
-    prop-func="dateTime; 1995-01-01T05:00">
+    prop-val="1995-01-01T05:00">
 
     <div slot="input" class="flex column">
       <span>Input <code>datetime-local</code></span>
@@ -417,7 +417,7 @@
   <data-row
     model="testObj"
     prop="week"
-    prop-func="week; 1995-W21">
+    prop-val="1995-W21">
 
     <div slot="input" class="flex column">
       <span>Input <code>week</code></span>
@@ -448,7 +448,7 @@
   <data-row
     model="testObj"
     prop="month"
-    prop-func="month; 1995-05">
+    prop-val="1995-05">
 
     <div slot="input" class="flex column">
       <span>Input <code></code>month</span>
@@ -482,7 +482,7 @@
   <data-row
     model="testObj"
     prop="select"
-    prop-func="select; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <label for="select-input">Input <code>select</code></label>
@@ -525,7 +525,7 @@
   <data-row
     model="testObj"
     prop="selectMulti"
-    prop-func="selectMulti; bar, baz">
+    prop-val="bar, baz">
 
     <div slot="input" class="flex column">
       <span>Input <code>select multiple</code></span>
@@ -568,7 +568,7 @@
   <data-row
     model="testObj"
     prop="checkboxFoo"
-    prop-func="checkboxFoo; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>checkbox value="foo"</code></span>
@@ -602,7 +602,7 @@
   <data-row
     model="testObj"
     prop="checkboxBar"
-    prop-func="checkboxBar; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>checkbox value="bar"</code></span>
@@ -639,7 +639,7 @@
   <data-row
     model="testObj"
     prop="radioGroup"
-    prop-func="radioGroup; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>radio group</code></span>
@@ -711,19 +711,18 @@
   <data-row
     model="testObj"
     prop="button"
-    prop-func="button; bar">
+    prop-val="bar">
 
     <div slot="input" class="flex column">
       <span>Input <code>button</code></span>
       <ul>
         <li>button text mirrors property value</li>
-        <li>invokes <code>notify()</code> method on click</li>
       </ul>
 
       <a-bind
         model="testObj"
         property="button"
-        elem-attr="textContent"
+        elem-attr="textContent, value"
         event="click"
         func="notify">
         <button
@@ -740,7 +739,7 @@
         <a-bind
           model="testObj"
           property="button"
-          elem-attr="textContent"
+          elem-attr="textContent, value"
           event="click"
           func="notify">
           <button>
@@ -755,13 +754,12 @@
   <data-row
     model="testObj"
     prop="button"
-    prop-func="button; boom">
+    prop-val="boom">
 
     <div slot="input" class="flex column">
       <span>Input <code>button</code></span>
       <ul>
         <li>button text does not mirror property value</li>
-        <li>invokes <code>notify</code> method on click</li>
       </ul>
 
       <a-bind
@@ -792,89 +790,6 @@
       </textarea>
     </a-code>
   </data-row>
-
-  <!-- button three -->
-  <data-row
-    model="testObj"
-    prop="button"
-    prop-func="button; bang">
-
-    <div slot="input" class="flex column">
-      <span>Input <code>button</code></span>
-      <ul>
-        <li>button text does not mirror property value</li>
-        <li>invokes <code>notify</code> method on click with <code>'button', 'something new'</code> as arguments</li>
-      </ul>
-
-      <a-bind
-        model="testObj"
-        property="button"
-        event="click"
-        func="notify; something new">
-        <button
-          id="o-button-input-3">
-          notify; something new
-        </button>
-      </a-bind>
-    </div>
-
-    <a-code highlight slot="input-code">
-      <textarea>
-        Input: button
-
-        <a-bind
-          model="testObj"
-          property="button"
-          event="click"
-          func="notify; something new">
-          <button
-            id="o-button-input-3">
-            notify; something new
-          </button>
-        </a-bind>
-      </textarea>
-    </a-code>
-  </data-row>
-
-  <!-- button four -->
-  <data-row
-    model="testObj"
-    prop="button"
-    prop-func="button; fie">
-
-    <div slot="input" class="flex column">
-      <span>Input <code>button</code></span>
-      <ul>
-        <li>button text does not mirror property value</li>
-        <li>invokes <code>notify</code> method on click with <code>'otherProperty', 'other value'</code> as arguments</li>
-      </ul>
-
-      <a-bind
-        model="testObj"
-        event="click"
-        func="notify; otherProperty; other value">
-        <button
-          id="o-button-input-4">
-          notify; otherProperty; other value
-        </button>
-      </a-bind>
-    </div>
-
-    <a-code highlight slot="input-code">
-      <textarea>
-        Input: button
-
-        <a-bind
-          model="testObj"
-          event="click"
-          func="notify; otherProperty; other value">
-          <button>
-            notify; otherProperty; other value
-          </button>
-        </a-bind>
-      </textarea>
-    </a-code>
-  </data-row>
 </details>
 
 <details name="component-props">
@@ -883,7 +798,7 @@
   <data-row
     model="testObj"
     prop="color"
-    prop-func="color; #00ced1">
+    prop-val="#00ced1">
 
     <div slot="input" class="flex column">
       <span>Input <code>color</code></span>
@@ -934,7 +849,7 @@
   <data-row
     model="testObj"
     prop="range"
-    prop-func="range; 75">
+    prop-val="75">
 
     <div slot="input" class="flex column">
       <span>Input <code>range</code></span>
@@ -966,7 +881,7 @@
   <data-row
     model="testObj"
     prop="progress"
-    prop-func="progress; 75">
+    prop-val="75">
 
     <div slot="input" class="flex column">
       <span>Input <code></code></span>
@@ -1000,7 +915,7 @@
   <data-row
     model="testObj"
     prop="meter"
-    prop-func="meter; 75">
+    prop-val="75">
 
     <div slot="input" class="flex column">
       <span>Input <code>meter</code></span>
@@ -1046,7 +961,7 @@
 
       <a-bind
         model="testObj"
-        property="file"
+        func="getFiles"
         event="change"
         elem-attr="files">
         <input
@@ -1098,6 +1013,7 @@
 
       <div class="flex1">
         <a-bind
+          pull
           model="testObj"
           property="editable">
           <output
@@ -1133,6 +1049,7 @@
           <a-code highlight indent="6px">
             <textarea>
               <a-bind
+                pull
                 model="testObj"
                 property="editable">
                 <output
@@ -1150,7 +1067,7 @@
 <details name="component-props">
 <summary>Form Submission</summary>
   <section class="flex vstart">
-    <form id="o-test-form" method="get" class="flex column center flex1">
+    <form id="o-test-form" method="get" class="flex column center flex1" onsubmit="return false">
 
       <h3>form id="o-test-form"</h3>
 
@@ -1204,18 +1121,19 @@
       </p>
 
       <a-bind
+        push
         model="testObj"
         event="click"
-        func="sendForm; o-test-form;">
+        func="sendForm">
         <button
           type="submit">
-          sendForm; test-form;
+          bound to object's sendForm()
         </button>
       </a-bind>
 
       <button
         type="submit"
-        onclick="testObj.sendForm(this.form);
+        onclick="testObj.sendForm(event);
         return false">
         Submit button with onclick event
       </button>
@@ -1298,20 +1216,21 @@
         <a-code highlight>
           <textarea>
             <a-bind
+              push
               model="testObj"
               event="click"
-              func="sendForm; o-test-form;">
+              func="sendForm">
               <button
                 type="submit">
-                sendForm; test-form;
+                ...
               </button>
             </a-bind>
 
             <button
               type="submit"
-              onclick="testObj.sendForm(this.form);
+              onclick="testObj.sendForm(event);
               return false">
-              Submit button with onclick event
+              ...
             </button>
           </textarea>
         </a-code>
@@ -1324,52 +1243,76 @@
 <summary onclick="getExampleCode()">Example Object</summary>
   <section>
     <div class="flex">
+
       <div class="flex1 flex column">
-        <label for="foo-input">Foo Input</label>
+      <label for="foo-input">Foo Input</label>
 
         <a-bind
-          model="testObj"
+          model="exampleObject"
           property="foo">
           <input id="o-foo-input">
         </a-bind>
-
       </div>
-      <p> </p>
+
+      <a-bind
+        push
+        model="exampleObject"
+        property="foo"
+        event="click">
+        <button value="Bar!">Bar!</button>
+      </a-bind>
+
       <div class="flex1 flex column">
-        <label>Foo Output</label>
+      <label>Foo Output</label>
 
         <a-bind
-          model="testObj"
+          model="exampleObject"
           property="foo">
           <output for="o-foo-input">
           </output>
         </a-bind>
-
       </div>
     </div>
     <p> </p>
     <details open>
     <summary class="nofrills">code</summary>
-      <section class="flex">
-        <div class="flex1">
+      <section class="flex stretch">
+        <div>
           <a-code highlight>
             <textarea>
               <a-bind
-                model="testObj"
+                model="exampleObject"
                 property="foo">
-                <input id="o-foo-input">
+                <input
+                  type="text">
               </a-bind>
             </textarea>
           </a-code>
         </div>
 
-        <div class="flex1">
+        <div>
           <a-code highlight>
             <textarea>
               <a-bind
-                model="testObj"
+                push
+                model="exampleObject"
+                property="foo"
+                event="click">
+                <button value="Bar">
+                  Bar
+                </button>
+              </a-bind>
+            </textarea>
+          </a-code>
+        </div>
+
+        <div>
+          <a-code highlight>
+            <textarea>
+              <a-bind
+                model="exampleObject"
                 property="foo">
-                <output for="o-foo-input">
+                <output>
                 </output>
               </a-bind>
             </textarea>

@@ -55,11 +55,25 @@ export default class ABind extends HTMLElement {
 		this.#teardown();
 	}
 
-	// Public Static Method
+	// Public Static Methods
 
 	static update(model, property, value) {
 		const event = new CustomEvent('abind:update', { detail: { model, property, value } });
 		document.dispatchEvent(event);
+	}
+
+	static updateDefer(model, property, waitMs = 1) {
+		setTimeout(() => {
+			let value;
+			if (this.property) {
+				value = model[property];
+			} else if (this.modelAttr) {
+				value = model.getAttribute(property);
+			}
+
+			const event = new CustomEvent('abind:update', { detail: { model, property, value } });
+			document.dispatchEvent(event);
+		}, waitMs);
 	}
 
 	// Private Methods
@@ -176,10 +190,8 @@ export default class ABind extends HTMLElement {
 
 	#handleModelUpdate(event) {
     const isBoundToProperty = this.property && this.property === event.detail.property;
+    const isBoundToAttr = this.modelAttr && this.modelAttr === event.detail.property;
 
-    // For model-attr, we must infer the property name to check against the event.
-    const inferredProperty = this.modelAttr ? this.modelAttr.replace(/-(.)/g, (_, letter) => letter.toUpperCase()) : null;
-    const isBoundToAttr = this.modelAttr && inferredProperty === event.detail.property;
     const bail = () => {
     	return ((this.once && this.#hasUpdated) || (this.#resolvedModel !== event.detail.model || !(isBoundToProperty || isBoundToAttr)))
     };

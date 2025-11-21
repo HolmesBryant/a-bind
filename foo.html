@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Foo</title>
+	<script src="extra/exampleObject.js"></script>
+	<script type="module" src="src/a-bind.js"></script>
+</head>
+<body>
+	<h1>Foo!</h1>
+
+	 <a-bind
+    model="exampleObject"
+    property="foo">
+    <input id="o-foo-input">
+  </a-bind>
+
+  <a-bind
+    model="exampleObject"
+    property="foo">
+    <output for="o-foo-input">
+    </output>
+  </a-bind>
+</body>
+</html>
