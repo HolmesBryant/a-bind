@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "browser-sync start --server --files \"src/*.*\"",
+    "dev": "browser-sync start --server --files \"src/*.*, index.html\"",
     "test": "tests/tests.js",
     "build": "rollup -c"
   },

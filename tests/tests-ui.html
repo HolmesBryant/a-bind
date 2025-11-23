@@ -7,7 +7,7 @@
 
   <script type="module" src="../src/a-bind.js"></script>
 
-  <script type="module" src="t-runner.test.js"></script>
+  <!-- <script type="module" src="t-runner.test.js"></script> -->
 
 	<link rel="stylesheet" href="../extra/styles.css">
 
@@ -30,16 +30,18 @@
       #myButton = 'foo';
       #someAttr = 'attr value';
 
-      // Not Attributes
+      // Public Properties
       isDisabled = true;
-      myFileInput;
-      options = ['foo', 'bar', 'baz'];
-      myColor = 'blue';
       propA = 'Value A';
       propB = 'Value B';
+      myColor = 'red';
+      options = 'foo, bar, baz';
       user = { name: 'Alice' };
-      _result;
-      _resultHandleFiles;
+
+      // Private Properties
+      #myFileInput;
+      #result;
+      #resultHandleFiles;
 
       static observedAttributes = [
         'my-input',
@@ -54,8 +56,6 @@
       constructor() { super(); }
 
       attributeChangedCallback(attr, oldval, newval) {
-        const property = attr.replace(/-(\w)/g, (_, c) => c.toUpperCase());
-
         switch (attr) {
           case "my-input": this.#myInput = newval; break;
           case "my-select": this.#mySelect = newval; break;
@@ -68,21 +68,21 @@
           case "my-button": this.#myButton = newval; break;
           case "some-attr": this.#someAttr = newval; break;
         }
+
+        if (window.abind) abind.updateDefer(this, attr);
       }
 
-      buildOptionList(options) {
-        let str = "";
-        for (const value of options) {
-          str += `<option value="${value}">${value}</option>\n`;
-        }
-
-        return str;
+      buildOptionList(optionStr) {
+        return optionStr
+        .split(',')
+        .map(option => `<option>${option}</option>`)
+        .join("\n");
       }
 
       handleFiles(event) {
         const files = event.target.files;
         const arr = [];
-        this.myFileInput = files;
+        this.#myFileInput = files;
         for (const file of files) {
           arr.push({
             name: file.name,
@@ -115,19 +115,18 @@
         this[property] = value;
       }
 
+      /***************************************************
+      * Attributes
+      * abind update happens in attributeChangedCallback()
+      ***************************************************/
       get myInput() { return this.#myInput }
       set myInput(value) { this.setAttribute('my-input', value) }
 
       get mySelect() { return this.#mySelect }
-      set mySelect(value) {
-        this.setAttribute('my-select', value)
-      }
+      set mySelect(value) { this.setAttribute('my-select', value) }
 
       get mySelectmulti() { return this.#mySelectmulti }
-      set mySelectmulti(value) {
-          value = value.join(',');
-          this.setAttribute('my-selectmulti', value)
-      }
+      set mySelectmulti(value) { this.setAttribute('my-selectmulti', value) }
 
       get myCheckbox() { return this.#myCheckbox }
       set myCheckbox(value) { this.setAttribute('my-checkbox', value) }
@@ -136,42 +135,35 @@
       set myRadiogroup(value) { this.setAttribute('my-radiogroup', value)}
 
       get myButton() { return this.#myButton }
-      set myButton(value) {
-        value = value || this.#myButton;
-        this.setAttribute('my-button', value)
-      }
+      set myButton(value) { this.setAttribute('my-button', value) }
 
       get someAttr() { return this.#someAttr }
-      set someAttr(value) { this.setAttribute('some-attribute', value) }
+      set someAttr(value) { this.setAttribute('some-attr', value) }
 
-      // not attributes
-      get myDynamicOptions() {
+      /*****************************************
+       * not attributes
+       * abind updates happen in the setter
+       ****************************************/
+      get dynamicOptions() {
         return this.buildOptionList(this.options)
       }
-
-      set myDynamicOptions(value) {
-        const options1 = ['foo', 'bar', 'baz'];
-        const options2 = ['one', 'two', 'three'];
-
-        if (JSON.stringify(this.options) === JSON.stringify(options1)) {
-          this.options = options2;
-        } else {
-          this.options = options1;
-        }
-
-        if (window.abind) abind.update(this, 'myDynamicOptions', this.myDynamicOptions);
+      set dynamicOptions(value) {
+        const options1 = 'foo, bar, baz';
+        const options2 = 'one, two, three';
+        this.options = (this.options === options1) ? options2 : options1;
+        if (window.abind) abind.updateDefer(this, 'dynamicOptions');
       }
 
-      get result() { return this._result }
+      get result() { return this.#result }
       set result(value) {
-        this._result = value;
+        this.#result = value;
         if (window.abind) abind.update(this, 'result', value);
       }
 
-      get resultHandleFiles() { return this._resultHandleFiles }
+      get resultHandleFiles() { return this.#resultHandleFiles }
       set resultHandleFiles(value) {
-        this._resultHandleFiles = value;
-        if (window.abind) abind.update(this, 'resultHandleFiles', value);
+        this.#resultHandleFiles = value;
+        if (window.abind) abind.updateDefer(this, 'resultHandleFiles');
       }
     }
 
@@ -356,14 +348,14 @@
         <a-bind
           model="custom-element"
           event="click"
-          func="myDynamicOptions">
+          func="dynamicOptions">
           <button>Change Options</button>
         </a-bind>
 
         <a-bind
           pull
           model="custom-element"
-          property="myDynamicOptions"
+          property="dynamicOptions"
           elem-attr="innerHTML">
           <a-bind
             push
@@ -375,10 +367,10 @@
       </div>
 
       <div class="flex column">
-        myDynamicOptions
+        dynamicOptions
         <a-bind
           model="custom-element"
-          property="myDynamicOptions">
+          property="dynamicOptions">
           <output></output>
         </a-bind>
       </div>
@@ -750,30 +742,14 @@
         model="custom-element"
         property="myColor"
         elem-attr="style.color">
-        <div id="style-binding-div">This text should change from blue to red.</div>
+        <div id="style-binding-div">This text should be red.</div>
       </a-bind>
     </div>
   </div>
 
   <div class="card">
     <p><small>
-      For testing dynamic re-binding via attributeChangedCallback
-    </small></p>
-
-    <div class="flex space-around">
-      <a-bind
-        pull
-        id="rebind-test"
-        model="custom-element"
-        property="propA">
-        <output>...</output>
-      </a-bind>
-    </div>
-  </div>
-
-  <div class="card">
-    <p><small>
-      For testing nested property binding (ie. user.name)
+      Testing nested property binding (ie. user.name)
     </small></p>
 
     <div class="flex space-around">

@@ -1,428 +1,565 @@
 /**
- * @class ABind
- * @extends HTMLElement
- * @description A custom element that performs one-way and two-way data binding and function execution on events.
+ * @file a-bind.js
+ * @description data-binding for Custom Elements and ESM Modules.
+ *              Includes <a-bind> for individual element binding and <a-bindgroup>
+ *              for providing a model to a group of a-bind elements.
  * @author Holmes Bryant <https://github.com/HolmesBryant>
+ * @version 2.0.0
  * @license GPL-3.0
  */
+
+// --- Pub/Sub ---
+const modelObservers = new WeakMap();
+
+class ModelObserver {
+  #subscribers = new Map();
+
+  subscribe(property, callback) {
+    if (!this.#subscribers.has(property)) {
+      this.#subscribers.set(property, new Set());
+    }
+    this.#subscribers.get(property).add(callback);
+  }
+
+  unsubscribe(property, callback) {
+    if (this.#subscribers.has(property)) {
+      this.#subscribers.get(property).delete(callback);
+      if (this.#subscribers.get(property).size === 0) {
+        this.#subscribers.delete(property);
+      }
+    }
+  }
+
+  publish(property, value) {
+    if (this.#subscribers.has(property)) {
+      this.#subscribers.get(property).forEach(callback => callback(value));
+    }
+  }
+}
+
+// --- Update Manager ---
+class UpdateManager {
+  #pendingUpdates = new Map();
+  #frameRequested = false;
+
+  scheduleUpdate(element, value) {
+    this.#pendingUpdates.set(element, value);
+    if (!this.#frameRequested) {
+      this.#frameRequested = true;
+      requestAnimationFrame(() => this.#flushUpdates());
+    }
+  }
+
+  #flushUpdates() {
+    this.#pendingUpdates.forEach((value, element) => {
+      if (element.isConnected) {
+        element.applyUpdate(value);
+      }
+    });
+    this.#pendingUpdates.clear();
+    this.#frameRequested = false;
+  }
+}
+const updateManager = new UpdateManager();
+
+
 export default class ABind extends HTMLElement {
 
-	// Private properties
-	#abortController;
-	#boundElement;
-	#hasUpdated = false;
-	#isConnected = false;
-	#resolvedModel;
+  // --- Private properties ---
+  #debug = false;
+  #elemAttr = 'value';
+  #event = 'input';
+  #func = null;
+  #model = null;
+  #modelAttr = null;
+  #once = false;
+  #property = null;
+  #pull = false;
+  #push = false;
+  #throttle = 0;
 
-	static observedAttributes = [
-		'model',
-		'property',
-		'model-attr',
-		'event',
-		'elem-attr',
-		'func',
-		'pull',
-		'push',
-		'once',
-		'debug'
-	];
+  // --- Internal State ---
+  #abortController;
+  #boundElement;
+  #hasUpdated = false;
+  #isConnected = false;
+  #isInitializing;
+  #scheduledTimeout = null;
+  #subscriptionCallback = null;
+  #subscribedProperty = null;
 
-	constructor() {
-		super();
-		if (!window.abind) window.abind = ABind;
-	}
+  static observedAttributes = [
+    'debug',
+    'elem-attr',
+    'event',
+    'func',
+    'model',
+    'model-attr',
+    'once',
+    'property',
+    'pull',
+    'push',
+    'throttle'
+  ];
 
-	// Lifecycle Callbacks
+  constructor() {
+    super();
+    this.#initializeStateFromAttributes();
+  }
 
-	attributeChangedCallback(attr, oldval, newval) {
-		if (oldval === newval) return;
+  // --- Static Helper Methods ---
 
-		// If a core binding attribute changes, tear down old bindings and create new ones.
-		if (['model', 'property', 'model-attr'].includes(attr) && this.#isConnected) {
-			this.#teardown();
-			this.#initialize();
-		}
-	}
+  static #getObserver(model, createIfMissing = false) {
+    if (!model || typeof model !== 'object') return null;
 
-	connectedCallback() {
-		if (this.debug) { console.debug('Debugging:', this)}
-		this.#isConnected = true;
-		this.#initialize();
-	}
+    if (!modelObservers.has(model) && createIfMissing) {
+      modelObservers.set(model, new ModelObserver());
+    }
+    return modelObservers.get(model) || null;
+  }
 
-	disconnectedCallback() {
-		this.#isConnected = false;
-		this.#teardown();
-	}
+  static #getObjectProperty(obj, path) {
+    return !path ? obj : path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  }
 
-	// Public Static Methods
+  #initializeStateFromAttributes() {
+    for (const attr of ABind.observedAttributes) {
+      if (this.hasAttribute(attr)) {
+        this.#updatePropertyFromAttribute(attr, this.getAttribute(attr));
+      }
+    }
+  }
 
-	static update(model, property, value) {
-		const event = new CustomEvent('abind:update', { detail: { model, property, value } });
-		document.dispatchEvent(event);
-	}
+  // --- Lifecycle Callbacks ---
 
-	static updateDefer(model, property, waitMs = 1) {
-		setTimeout(() => {
-			let value;
-			if (this.property) {
-				value = model[property];
-			} else if (this.modelAttr) {
-				value = model.getAttribute(property);
-			}
+  attributeChangedCallback(attr, oldval, newval) {
+    if (oldval === newval) return;
+    this.#updatePropertyFromAttribute(attr, newval);
+    if (this.#isConnected && ['model', 'property', 'model-attr'].includes(attr)) {
+      this.#teardown();
+      this.#initialize();
+    }
+  }
 
-			const event = new CustomEvent('abind:update', { detail: { model, property, value } });
-			document.dispatchEvent(event);
-		}, waitMs);
-	}
+  #updatePropertyFromAttribute(attr, value) {
+    switch (attr) {
+      case 'model':      this.#model = value; break;
+      case 'property':   this.#property = value; break;
+      case 'model-attr': this.#modelAttr = value; break;
+      case 'event':      this.#event = value || 'input'; break;
+      case 'elem-attr':  this.#elemAttr = value || 'value'; break;
+      case 'func':       this.#func = value; break;
+      case 'throttle':   this.#throttle = parseInt(value) || 0; break;
+      case 'pull':       this.#pull = value !== null && value !== 'false'; break;
+      case 'push':       this.#push = value !== null && value !== 'false'; break;
+      case 'once':       this.#once = value !== null && value !== 'false'; break;
+      case 'debug':      this.#debug = value !== null && value !== 'false'; break;
+    }
+  }
 
-	// Private Methods
+  connectedCallback() {
+    this.style.display = 'contents';
+    this.#isConnected = true;
+    this.#initialize();
+  }
 
-	#executeFunction(event) {
-    const funcPath = this.func;
-    if (this.debug) { console.debug('#executeFunction', {
-    	funcPath: funcPath,
-    	Bail: !funcPath
-    } )}
+  disconnectedCallback() {
+    this.#isConnected = false;
+    this.#teardown();
+  }
 
+  // --- Public Static API Methods ---
+
+  static update(model, property, value) {
+    const observer = ABind.#getObserver(model, true);
+    if (observer) {
+      observer.publish(property, value);
+    } else if (model !== undefined) {
+      const modelType = model === null ? 'null' : typeof model;
+      console.warn(
+        `a-bind: Invalid model argument for ABind.update(). Expected an object, but received type '${modelType}'. The correct signature is 'ABind.update(model, property, value)'.`,
+        model
+      );
+    }
+  }
+
+  static updateDefer(model, property, waitMs = 0) {
+    if (!model || typeof model !== 'object') {
+      const modelType = model === null ? 'null' : typeof model;
+      console.warn(
+        `a-bind: Invalid model argument for ABind.updateDefer(). Expected an object, but received type '${modelType}'.`,
+        model
+      );
+      return;
+    }
+
+    setTimeout(() => {
+      const value = ABind.#getObjectProperty(model, property);
+      ABind.update(model, property, value);
+    }, waitMs);
+  }
+
+  // --- Public Instance Methods ---
+
+  applyUpdate(value) { this.#updateElement(value); }
+
+  // --- Private Instance Methods ---
+
+  async #initialize() {
+    if (this.#isInitializing) return;
+    this.#isInitializing = true;
+    try {
+      const modelIdentifier = this.#model;
+      if (!modelIdentifier) return;
+      let resolvedModel = null;
+      if (typeof modelIdentifier === 'object' && modelIdentifier !== null) {
+        resolvedModel = modelIdentifier;
+      } else if (typeof modelIdentifier === 'string') {
+        const potentialElement = document.querySelector(modelIdentifier);
+        if (potentialElement) {
+          if (potentialElement.localName.includes('-')) {
+            await customElements.whenDefined(potentialElement.localName);
+          }
+          resolvedModel = potentialElement;
+        } else {
+          resolvedModel = ABind.#getObjectProperty(window, modelIdentifier);
+        }
+      }
+      if (!resolvedModel) {
+        if (this.#debug) console.debug('a-bind: Model not found yet, will retry if attributes change.', this);
+        this.#isInitializing = false;
+        return;
+      }
+      this.#model = resolvedModel;
+      if (!this.children[0]) await this.#waitForBoundElement();
+      let element = this.children[0];
+      while (element && element.localName === 'a-bind') {
+        element = element.children[0];
+      }
+      this.#boundElement = element;
+      if (!this.#boundElement) throw new Error('a-bind: Must have one child element.');
+      this.#abortController = new AbortController();
+      this.#setupListeners();
+      this.#updateElement();
+    } catch (error) {
+      console.error(error, this);
+    } finally {
+      this.#isInitializing = false;
+    }
+  }
+
+  #executeFunction(event) {
+    const funcPath = this.#func;
     if (!funcPath) return;
-
     let context = null;
     let func = null;
     const pathParts = funcPath.split('.');
     const funcName = pathParts.pop();
     const contextPath = pathParts.join('.');
-    let potentialContext = this.#getObjectProperty(this.#resolvedModel, contextPath);
-
+    let potentialContext = ABind.#getObjectProperty(this.#model, contextPath);
     if (potentialContext && typeof potentialContext[funcName] === 'function') {
       context = potentialContext;
       func = potentialContext[funcName];
-    } else if (potentialContext && potentialContext[funcName]) {
-      context = potentialContext;
-  		func = funcName;
     } else {
-      potentialContext = this.#getObjectProperty(window, contextPath);
+      potentialContext = ABind.#getObjectProperty(window, contextPath);
       if (potentialContext && typeof potentialContext[funcName] === 'function') {
         context = potentialContext;
         func = potentialContext[funcName];
       }
     }
-
     if (typeof func === 'function') {
-    	func.call(context, event);
-    } else if (typeof func === 'string') {
-	  	const proto = Object.getPrototypeOf(this.#resolvedModel);
-	  	const descriptor = Object.getOwnPropertyDescriptor(proto, func);
-	  	descriptor.set.call(context, event);
+      func.call(context, event);
     } else {
       console.warn(`a-bind: Function "${funcPath}" not found on model or window.`, this);
     }
+  }
 
-    if (this.debug) {
-    	console.debug('#executeFunction', {
-    		event: event,
-    		context: context,
-    		func: func,
-    	});
+  #handleElementEvent(event) {
+    if (this.#func) this.#executeFunction(event);
+    if (this.#pull || (!this.#property && !this.#modelAttr)) return;
+    let value;
+    const { localName, type, checked, selectedOptions } = this.#boundElement;
+    if (localName === 'select' && this.#boundElement.multiple) {
+      value = Array.from(selectedOptions).map(option => option.value);
+    } else if (type === 'checkbox') {
+      value = checked ? this.#boundElement.value : false;
+    } else if (event.target.value !== undefined) {
+      value = event.target.value;
+    } else {
+      value = this.#boundElement[this.#elemAttr];
+    }
+    this.#updateModel(value);
+  }
+
+  #setObjectProperty(obj, path, value) {
+    const pathParts = path.split('.');
+    const lastPart = pathParts.pop();
+    const target = pathParts.length ? ABind.#getObjectProperty(obj, pathParts.join('.')) : obj;
+    if (target && typeof target === 'object') {
+      target[lastPart] = value;
     }
   }
 
-	async #getModel(modelName, wait = 0.5) {
-		return new Promise((resolve) => {
-			const timeoutId = setTimeout(() => {
-				console.error(`Timeout: ${modelName} not found.`);
-				resolve(null);
-			}, wait * 1000);
-
-			const resolvePromise = (model) => {
-				clearTimeout(timeoutId);
-				resolve(model);
-			};
-
-			if (window[modelName]) {
-				// Assume its an object
-				resolvePromise(window[modelName]);
-			} else {
-				// Assume its a custom element
-				const elem = document.querySelector(modelName);
-				modelName = elem.localName;
-				customElements.whenDefined(modelName)
-				.then(() => resolvePromise(elem))
-				.catch(() => resolvePromise(null));
-			}
-		});
-	}
-
-	#getObjectProperty(obj, path) {
-		return !path ?
-			obj :
-			path.split('.').reduce((acc, part) => acc && acc[part], obj);
-	}
-
-	#handleElementEvent(event) {
-    if (this.func) this.#executeFunction(event);
-
-    // Do not update the model if this.pull is true, or if no binding target is specified.
-		if (this.pull || (!this.property && !this.modelAttr)) return;
-
-		let value;
-		const { localName, type, checked, selectedOptions } = this.#boundElement;
-
-		if (localName === 'select' && this.#boundElement.multiple) {
-			value = Array.from(selectedOptions).map(option => option.value);
-		} else if (type === 'checkbox') {
-			value = checked ? this.#boundElement.value : false;
-		} else if (event.target.value) {
-			value = event.target.value;
-		} else {
-			value = this.#boundElement[this.elemAttr];
-		}
-
-		if (this.debug) {
-			console.debug('#handleElementEvent', {
-				event: event,
-				value: value
-			});
-		}
-
-		this.#updateModel(value);
-	}
-
-	#handleModelUpdate(event) {
-    const isBoundToProperty = this.property && this.property === event.detail.property;
-    const isBoundToAttr = this.modelAttr && this.modelAttr === event.detail.property;
-
-    const bail = () => {
-    	return ((this.once && this.#hasUpdated) || (this.#resolvedModel !== event.detail.model || !(isBoundToProperty || isBoundToAttr)))
-    };
-
-    if (this.debug) {
-    	console.debug('#handleModelUpdate', {
-    		event: event,
-    		event_detail: event.detail,
-    		isBoundToProperty: isBoundToProperty,
-    		isBoundToAttr: isBoundToAttr,
-    		once: this.once,
-    		hasUpdated: this.#hasUpdated,
-    		Bail: bail()
-    	});
+  #setElementAttribute(element, attribute, value) {
+    if (value === undefined || value === null) value = '';
+    const { localName, type } = element;
+    if (attribute.startsWith('style.')) {
+      element.style[attribute.split('.')[1]] = value;
+      return;
     }
+    switch (localName) {
+      case 'input':
+        if (type === 'checkbox' || type === 'radio') {
+          element.checked = element.value === String(value);
+        } else if (type !== 'file') {
+          element[attribute] = value;
+        }
+        break;
+      case 'select':
+        if (element.multiple) {
+          const values = Array.isArray(value) ? value.map(String) : String(value).split(/[,\s]+/);
+          for (const option of element.options) option.selected = values.includes(option.value);
+        } else {
+          element[attribute] = value;
+        }
+        break;
+      default:
+        if (attribute in element) {
+          element[attribute] = value;
+        } else {
+          element.setAttribute(attribute, value);
+        }
+    }
+  }
 
-    if (bail()) return;
+  #setupListeners() {
+    if (!this.#property && !this.#func && !this.#modelAttr) return;
+    const { signal } = this.#abortController;
+    this.#boundElement.addEventListener(this.#event, (e) => this.#handleElementEvent(e), { signal });
+    const observer = ABind.#getObserver(this.#model, true);
+    this.#subscribedProperty = this.#property || this.#modelAttr;
+    if (observer && this.#subscribedProperty) {
+      this.#subscriptionCallback = (value) => {
+        if (this.#once && this.#hasUpdated) return;
+        updateManager.scheduleUpdate(this, value);
+      };
+      observer.subscribe(this.#subscribedProperty, this.#subscriptionCallback);
+    }
+  }
 
-		this.#updateElement(event.detail.value);
-	}
+  #teardown() {
+    this.#abortController?.abort();
+    if (this.#scheduledTimeout) {
+      clearTimeout(this.#scheduledTimeout);
+    }
+    const observer = ABind.#getObserver(this.#model, false);
+    if (observer && this.#subscribedProperty && this.#subscriptionCallback) {
+      observer.unsubscribe(this.#subscribedProperty, this.#subscriptionCallback);
+      this.#subscribedProperty = null;
+      this.#subscriptionCallback = null;
+    }
+  }
 
-	async #initialize() {
-		const modelName = this.model;
-		if (!modelName) {
-			return console.error('a-bind: "model" attribute is required.', this);
-		}
+  #updateElement(value) {
+    if ((!this.#property && !this.#modelAttr) || (this.#once && this.#hasUpdated) || this.#push) {
+      return;
+    }
+    if (value === undefined) {
+      value = this.#modelAttr ?
+        this.#model.getAttribute(this.#modelAttr) :
+        ABind.#getObjectProperty(this.#model, this.#property);
+    }
+    this.#elemAttr.split(/[,]+/).forEach(attribute => {
+      this.#setElementAttribute(this.#boundElement, attribute.trim(), value);
+    });
+    this.#hasUpdated = true;
+  }
 
-		// Allows for nested a-bind instances
-		let element = this.children[0];
-		while (element && element.localName === 'a-bind') {
-			element = element.children[0];
-		}
-
-		this.#boundElement = element;
-
-		if (!this.#boundElement) {
-			console.error('a-bind: Must have one child element.', this);
-			throw new Error('a-bind: Must have one child element.')
-		}
-
-		this.#resolvedModel = await this.#getModel(modelName);
-
-		if (!this.#resolvedModel) {
-			return console.error(`a-bind: Model "${modelName}" not found.`, this);
-		}
-
-		this.#abortController = new AbortController();
-
-		if (this.debug) {
-			console.debug("#initialize", {
-				'boundElement': this.#boundElement,
-				'model': this.#resolvedModel,
-			});
-		}
-		this.#setupListeners();
-		this.#updateElement();
-	}
-
-	#setObjectProperty(obj, path, value) {
-		const pathParts = path.split('.');
-		const lastPart = pathParts.pop();
-		const target = pathParts.length ? this.#getObjectProperty(obj, pathParts.join('.')) : obj;
-		if (target && typeof target === 'object') {
-			target[lastPart] = value;
-		}
-
-		if (this.debug) {
-			console.debug('#setObjectProperty', {
-				obj: obj,
-				path: path,
-				value: value,
-				target: target,
-				lastPart: lastPart
-			});
-		}
-	}
-
-	#setElementAttribute(element, attribute, value) {
-		if (value === undefined || value === null) value = '';
-		const { localName, type } = element;
-
-		if (this.debug) {
-			console.debug('#setElementAttribute', {
-				element: element,
-				attribute: attribute,
-				value: value
-			});
-		}
-
-		if (attribute.startsWith('style.')) {
-			element.style[attribute.split('.')[1]] = value;
-			return;
-		}
-
-		switch (localName) {
-			case 'input':
-				if (type === 'checkbox' || type === 'radio') {
-					element.checked = element.value === String(value);
-				} else if (type !== 'file') {
-					element[attribute] = value;
-				}
-				break;
-			case 'select':
-				if (element.multiple) {
-					const values = Array.isArray(value) ? value.map(String) : String(value).split(/[,\s]+/);
-					for (const option of element.options) option.selected = values.includes(option.value);
-				} else {
-					element[attribute] = value;
-				}
-				break;
-			default:
-				element[attribute] = value;
-		}
-	}
-
-	#setupListeners() {
-		if (!this.property && !this.func && !this.modelAttr) return;
-
-		const { signal } = this.#abortController;
-		this.#boundElement.addEventListener(this.event, (e) => this.#handleElementEvent(e), { signal });
-
-		if (this.property || this.modelAttr) {
-			document.addEventListener('abind:update', (e) => this.#handleModelUpdate(e), { signal });
-		}
-	}
-
-	#teardown() {
-		this.#abortController?.abort();
-		this.#abortController = null;
-		this.#boundElement = null;
-		this.#resolvedModel = null;
-	}
-
-	#updateElement(value) {
-		const bail = () => {
-			return (!this.property && !this.modelAttr) || (this.once && this.#hasUpdated) || (this.push);
-		}
-
-		if (this.debug) {
-			console.debug('#updateElement', {
-				property: this.property,
-				modelAttr: this.modelAttr,
-				once: this.once,
-				hasUpdated: this.#hasUpdated,
-				push: this.push,
-				Bail: bail()
-			});
-		}
-
-		if (bail()) return;
-
-		if (value === undefined) {
-			value = this.modelAttr ?
-				this.#resolvedModel.getAttribute(this.modelAttr) ?? '' :
-				this.#getObjectProperty(this.#resolvedModel, this.property);
-		}
-
-		if (this.debug) { console.debug('#updateElement', {value: value})}
-
-		this.elemAttr.split(/[,\s]+/).forEach(attribute => {
-			this.#setElementAttribute(this.#boundElement, attribute.trim(), value);
-		});
-		this.#hasUpdated = true;
-	}
-
-	#updateModel(value) {
-		let oldValue;
-    // Determine the old value from either the attribute or the property.
-    if (this.modelAttr) {
-        oldValue = this.#resolvedModel.getAttribute(this.modelAttr);
+  #updateModel(value) {
+    let oldValue;
+    if (this.#modelAttr) {
+      oldValue = this.#model.getAttribute(this.#modelAttr);
     } else {
-        oldValue = this.#getObjectProperty(this.#resolvedModel, this.property);
+      oldValue = ABind.#getObjectProperty(this.#model, this.#property);
+    }
+    if (String(oldValue) === String(value)) return;
+    if (this.#modelAttr) {
+      this.#model.setAttribute(this.#modelAttr, value);
+    } else {
+      this.#setObjectProperty(this.#model, this.#property, value);
+    }
+    const observer = ABind.#getObserver(this.#model, false);
+    const propertyName = this.#property || this.#modelAttr;
+    if (observer && propertyName) {
+      observer.publish(propertyName, value);
+    }
+  }
+
+  #waitForBoundElement(timeout = 2000) {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      const check = () => {
+        if (this.children[0]) {
+          resolve();
+        } else if (Date.now() - startTime > timeout) {
+          reject(new Error('a-bind: Timed out waiting for a child element.'));
+        } else {
+          setTimeout(check, 50);
+        }
+      };
+      check();
+    });
+  }
+
+  // --- Getters/Setters ---
+  get model() { return this.#model; }
+  set model(value) {
+    if (typeof value === 'object') {
+      this.#model = value;
+      if (this.#isConnected) { this.#teardown(); this.#initialize(); }
+    } else {
+      this.setAttribute('model', String(value));
+    }
+  }
+
+  get elemAttr() { return this.#elemAttr; }
+  set elemAttr(value) { this.setAttribute('elem-attr', value); }
+
+  get event() { return this.#event; }
+  set event(value) { this.setAttribute('event', value); }
+
+  get func() { return this.#func; }
+  set func(value) { this.setAttribute('func', value); }
+
+  get modelAttr() { return this.#modelAttr; }
+  set modelAttr(value) { this.setAttribute('model-attr', value); }
+
+  get property() { return this.#property; }
+  set property(value) { this.setAttribute('property', value); }
+
+  get once() { return this.#once; }
+  set once(value) { this.toggleAttribute('once', Boolean(value)); }
+
+  get pull() { return this.#pull; }
+  set pull(value) { this.toggleAttribute('pull', Boolean(value)); }
+
+  get push() { return this.#push; }
+  set push(value) { this.toggleAttribute('push', Boolean(value)); }
+
+  get debug() { return this.#debug; }
+  set debug(value) { this.toggleAttribute('debug', Boolean(value)); }
+
+  get throttle() { return this.#throttle; }
+  set throttle(value) {
+    const val = parseInt(value) || 0;
+    if (val > 0) { this.setAttribute('throttle', val); }
+    else { this.removeAttribute('throttle'); }
+  }
+}
+
+export class ABindgroup extends HTMLElement {
+  static modelRegistry = new Map();
+  // track how many components are using a model URL.
+  static modelReferenceCounts = new Map();
+  // Store the modelUrl on the instance for cleanup.
+  #modelUrl = null;
+
+  async connectedCallback() {
+    this.style.display = 'contents';
+    try {
+      const modelIdentifier = this.getAttribute('model');
+      if (!modelIdentifier) {
+        throw new Error('a-bindgroup requires a "model" attribute.');
+      }
+      const { modelInstance, modelUrl } = await this.#getModel(modelIdentifier);
+      this.#modelUrl = modelUrl; // Store for disconnectedCallback
+
+      const currentCount = ABindgroup.modelReferenceCounts.get(modelUrl) || 0;
+      ABindgroup.modelReferenceCounts.set(modelUrl, currentCount + 1);
+
+      this.#provideModelToChildren(modelInstance);
+    } catch (error) {
+      console.error(error, this);
+    }
+  }
+
+  disconnectedCallback() {
+    if (!this.#modelUrl) return;
+
+    const currentCount = ABindgroup.modelReferenceCounts.get(this.#modelUrl);
+    // If the count is 1, this is the last component using it.
+    if (currentCount === 1) {
+      ABindgroup.modelRegistry.delete(this.#modelUrl);
+      ABindgroup.modelReferenceCounts.delete(this.#modelUrl);
+      // Optional: For debugging memory usage.
+      // console.log(`a-bind: Unloaded and released model from registry: ${this.#modelUrl}`);
+    } else if (currentCount > 1) {
+      // Otherwise, just decrement the count.
+      ABindgroup.modelReferenceCounts.set(this.#modelUrl, currentCount - 1);
+    }
+  }
+
+  async #getModel(identifier) {
+    let modelUrl;
+    if (identifier.includes('/') || identifier.endsWith('.js') || identifier.endsWith('.mjs')) {
+      modelUrl = new URL(identifier, import.meta.url).href;
+      const modelInstance = await this.#loadAndCacheModel(modelUrl);
+      return { modelInstance, modelUrl };
     }
 
-    const bail = () => String(oldValue) === String(value);
+    const jsUrl = new URL(`${identifier}.js`, import.meta.url).href;
 
-    if (this.debug) {
-    	console.debug('#updateModel', {
-    		value: value,
-    		oldValue: oldValue,
-    		Bail: bail()
-    	});
+    try {
+      modelUrl = jsUrl;
+      const modelInstance = await this.#loadAndCacheModel(jsUrl);
+      return { modelInstance, modelUrl };
+    } catch (error) {
+      if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('module'))) {
+        const mjsUrl = new URL(`${identifier}.mjs`, import.meta.url).href;
+        modelUrl = mjsUrl;
+        const modelInstance = await this.#loadAndCacheModel(mjsUrl);
+        return { modelInstance, modelUrl };
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async #loadAndCacheModel(modelUrl) {
+
+    if (ABindgroup.modelRegistry.has(modelUrl)) {
+      return ABindgroup.modelRegistry.get(modelUrl);
     }
 
-    if (bail()) return;
+    try {
+      const modelModule = await import(modelUrl);
+      const ModelClass = modelModule.default;
+      if (typeof ModelClass !== 'function') {
+        throw new Error(`The module at ${modelUrl} must have a default export.`);
+      }
+      const modelInstance = new ModelClass();
+      ABindgroup.modelRegistry.set(modelUrl, modelInstance);
+      return modelInstance;
+    } catch (error) {
+      console.error(`Failed to load or instantiate model from: ${modelUrl}`);
+      throw error;
+    }
+  }
 
-    // Only update if the value has changed.
-		if (this.modelAttr) {
-			this.#resolvedModel.setAttribute(this.modelAttr, value);
-		} else {
-			this.#setObjectProperty(this.#resolvedModel, this.property, value);
-		}
-
-    // For dispatching, we need a property name. Infer from model-attr if necessary.
-    const propertyName = this.property || this.modelAttr.replace(/-(.)/g, (_, letter) => letter.toUpperCase());
-		ABind.update(this.#resolvedModel, propertyName, value);
-	}
-
-	// --- Getters/Setters ---
-
-	get elemAttr() { return this.getAttribute('elem-attr') || 'value'; }
-	set elemAttr(value) { this.setAttribute('elem-attr', value); }
-
-	get event() { return this.getAttribute('event') || 'input'; }
-	set event(value) { this.setAttribute('event', value); }
-
-	get func() { return this.getAttribute('func'); }
-	set func(value) { this.setAttribute('func', value); }
-
-	get model() { return this.getAttribute('model'); }
-	set model(value) { this.setAttribute('model', value); }
-
-	get modelAttr() { return this.getAttribute('model-attr'); }
-	set modelAttr(value) { this.setAttribute('model-attr', value); }
-
-	get once() { return this.hasAttribute('once'); }
-	set once(value) { this.toggleAttribute('once', Boolean(value)); }
-
-	get pull() { return this.hasAttribute('pull'); }
-	set pull(value) { this.toggleAttribute('pull', Boolean(value)); }
-
-	get push() { return this.hasAttribute('push'); }
-	set push(value) { this.toggleAttribute('push', Boolean(value)); }
-
-	get property() { return this.getAttribute('property'); }
-	set property(value) { this.setAttribute('property', value); }
-
-	get debug() { return this.hasAttribute('debug') }
-	set debug(value) { this.toggleAttribute('debug', Boolean(value)); }
+  #provideModelToChildren(modelInstance) {
+    if (!modelInstance) return;
+    const binders = this.querySelectorAll('a-bind');
+    binders.forEach(binder => {
+      if (!binder.model) {
+        binder.model = modelInstance;
+      }
+    });
+  }
 }
 
 if (!customElements.get('a-bind')) {
-	customElements.define('a-bind', ABind);
+  customElements.define('a-bind', ABind);
+}
+if (!customElements.get('a-bindgroup')) {
+  customElements.define('a-bindgroup', ABindgroup);
 }
