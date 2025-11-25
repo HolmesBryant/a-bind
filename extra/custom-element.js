@@ -119,9 +119,7 @@ export default class CustomElement extends HTMLElement {
    * @param {any} newval - The new value of the attribute.
    */
 	attributeChangedCallback(attr, oldval, newval) {
-    if (this._connected && newval === oldval) return;
-    if (newval === null) return;
-    const prop = attr.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+    if (this.#connected && newval === oldval) return;
 
     switch (attr) {
 	    case 'text': this.#text = newval; break;
@@ -130,7 +128,10 @@ export default class CustomElement extends HTMLElement {
 				for (const option of this.optionGenerator(newval)) options += option;
 				this.#datalist = options;
 				break;
-			case 'datalist-input': this.#datalistInput = newval;
+			case 'datalist-input':
+				this.#datalistInput = newval;
+				if (window.abind) abind.update(this, 'datalistInput', newval);
+				break;
 			case 'search': this.#search = newval; break;
 			case 'password': this.#password = newval; break;
 			case 'tel': this.#tel = newval; break;
@@ -140,14 +141,29 @@ export default class CustomElement extends HTMLElement {
 			case 'textarea': this.#textarea = newval; break;
 			case 'date': this.#date = newval; break;
 			case 'time': this.#time = newval; break;
-			case 'date-time': this.#dateTime = newval; break;
+			case 'date-time':
+				this.#dateTime = newval;
+				if (window.abind) abind.update(this, 'dateTime', newval);
+				break;
 			case 'week': this.#week = newval; break;
 			case 'month': this.#month = newval; break;
 			case 'select': this.#select = newval; break;
-			case 'select-multi': this.#selectMulti = newval; break;
-			case 'checkbox-foo': this.#checkboxFoo = newval; break;
-			case 'checkbox-bar': this.#checkboxFoo = newval; break;
-			case 'radio-group': this.#radioGroup = newval; break;
+			case 'select-multi':
+				this.#selectMulti = newval;
+				if (window.abind) abind.update(this, 'selectMulti', newval);
+				break;
+			case 'checkbox-foo':
+				this.#checkboxFoo = newval;
+				if (window.abind) abind.update(this, 'checkboxFoo', newval);
+				break;
+			case 'checkbox-bar':
+				this.#checkboxBar = newval;
+				if (window.abind) abind.update(this, 'checkboxBar', newval);
+				break;
+			case 'radio-group':
+				this.#radioGroup = newval;
+				if (window.abind) abind.update(this, 'radioGroup', newval);
+				break;
 			case 'button': this.#button = newval; break;
 			case 'color': this.#color = newval; break;
 			case 'range': this.#range = newval; break;
@@ -157,12 +173,12 @@ export default class CustomElement extends HTMLElement {
 			case 'editable': this.#editable = newval; break;
     }
 
-    if (window.abind) abind.updateDefer(this, attr);
+    if (window.abind) abind.update(this, attr, newval);
 	}
 
 	connectedCallback() {
 		this.reset();
-		this._connected = true;
+		this.#connected = true;
 	}
 
 	*optionGenerator(str) {
@@ -266,119 +282,73 @@ export default class CustomElement extends HTMLElement {
 	set datalist(value) { this.setAttribute("datalist", value) }
 
 	get datalistInput() { return this.#datalistInput }
-	set datalistInput(value) {
-		this.setAttribute('datalist-input', value);
-	}
+	set datalistInput(value) { this.setAttribute('datalist-input', value); }
 
 	get search() { return this.#search }
-	set search(value) {
-		this.setAttribute("search", value);
-	}
+	set search(value) { this.setAttribute("search", value); }
 
 	get password() { return this.#password}
-	set password(value) {
-		this.setAttribute("password", value);
-	}
+	set password(value) { this.setAttribute("password", value); }
 
 	get tel() { return this.#tel }
-	set tel(value) {
-		this.setAttribute("tel", value);
-	}
+	set tel(value) { this.setAttribute("tel", value); }
 
 	get url() { return this.#url }
-	set url(value) {
-		this.setAttribute("url", value);
-	}
+	set url(value) { this.setAttribute("url", value); }
 
 	get email() { return this.#email }
-	set email(value) {
-		this.setAttribute("email", value);
-	}
+	set email(value) { this.setAttribute("email", value); }
 
 	get number() { return this.#number }
-	set number(value) {
-		this.setAttribute("number", value);
-	}
+	set number(value) { this.setAttribute("number", value); }
 
 	get textarea() { return this.#textarea }
-	set textarea(value) {
-		this.setAttribute("textarea", value);
-	}
+	set textarea(value) { this.setAttribute("textarea", value); }
 
 	get date() { return this.#date }
-	set date(value) {
-		this.setAttribute("date", value);
-	}
+	set date(value) { this.setAttribute("date", value); }
 
 	get time() { return this.#time }
-	set time(value) {
-		this.setAttribute("time", value);
-	}
+	set time(value) { this.setAttribute("time", value); }
 
 	get dateTime() { return this.#dateTime }
-	set dateTime(value) {
-		this.setAttribute("date-time", value);
-	}
+	set dateTime(value) { this.setAttribute("date-time", value); }
 
 	get week() { return this.#week }
-	set week(value) {
-		this.setAttribute("week", value);
-	}
+	set week(value) { this.setAttribute("week", value); }
 
 	get month() { return this.#month }
-	set month(value) {
-		this.setAttribute("month", value);
-	}
+	set month(value) { this.setAttribute("month", value); }
 
 	get select() { return this.#select }
-	set select(value) {
-		this.setAttribute("select", value);
-	}
+	set select(value) { this.setAttribute("select", value); }
 
 	get selectMulti() { return this.#selectMulti }
-	set selectMulti(value) {
-		this.setAttribute("select-multi", value);
-	}
+	set selectMulti(value) { this.setAttribute("select-multi", value); }
 
 	get checkboxFoo() { return this.#checkboxFoo }
-	set checkboxFoo(value) {
-		this.setAttribute('checkbox-foo', value);
-	}
+	set checkboxFoo(value) { this.setAttribute('checkbox-foo', value); }
 
 	get checkboxBar() { return this.#checkboxBar }
-	set checkboxBar(value) {
-		this.setAttribute('checkbox-bar', value);
-	}
+	set checkboxBar(value) { this.setAttribute('checkbox-bar', value); }
 
 	get radioGroup() { return this.#radioGroup }
-	set radioGroup(value) {
-		this.setAttribute('radio-group', value);
-	}
+	set radioGroup(value) { this.setAttribute('radio-group', value); }
 
 	get button() { return this.#button }
-	set button(value) {
-		this.setAttribute('button', value);
-	}
+	set button(value) { this.setAttribute('button', value); }
 
 	get color() { return this.#color }
-	set color(value) {
-		this.setAttribute('color', value);
-	}
+	set color(value) { this.setAttribute('color', value); }
 
 	get range() { return this.#range }
-	set range(value) {
-		this.setAttribute('range', value);
-	}
+	set range(value) { this.setAttribute('range', value); }
 
 	get progress() { return this.#progress }
-	set progress(value) {
-		this.setAttribute('progress', value);
-	}
+	set progress(value) { this.setAttribute('progress', value); }
 
 	get meter() { return this.#meter }
-	set meter(value) {
-		this.setAttribute('meter', value);
-	}
+	set meter(value) { this.setAttribute('meter', value); }
 
 	get file() { return this.#file; }
 	set file(value) {
@@ -387,9 +357,7 @@ export default class CustomElement extends HTMLElement {
 	}
 
 	get name() { return this.#name }
-	set name(value) {
-		this.setAttribute('name', value);
-	}
+	set name(value) { this.setAttribute('name', value); }
 
 	get editable() {
 		if (!this.#editable) return "";
@@ -402,9 +370,8 @@ export default class CustomElement extends HTMLElement {
 	}
 
 	set editable(value) {
-		// if (value === this.#editable) return;
 		this.setAttribute('editable', value);
-		setTimeout(() => { this.#editableFormatted = null; });
+		// setTimeout(() => { this.#editableFormatted = null; });
 	}
 } // class
 

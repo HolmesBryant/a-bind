@@ -3,17 +3,26 @@
   "version": "1.0.0",
   "description": "A web component that performs two-way data binding",
   "type": "module",
-  "main": "index.js",
+  "main": "./dist/a-bind.min.js",
+  "module": "./dist/a-bind.min.js",
+  "exports": {
+    ".": "./dist/a-bind.min.js",
+    "./src/a-bind.js": "./src/a-bind.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
-    "dev": "browser-sync start --server --files \"src/*.*, index.html\"",
-    "test": "tests/tests.js",
+    "dev": "vite",
+    "test": "tests/index.html",
     "build": "rollup -c"
   },
   "author": "Holmes Bryant <https://github.com/HolmesBryant>",
-  "license": "GPL",
+  "license": "GPL-3.0-or-later",
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
-    "browser-sync": "^3.0.3",
-    "rollup": "^4.30.1"
+    "rollup": "^4.30.1",
+    "vite": "^6.4.1"
   }
 }

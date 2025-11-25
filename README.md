@@ -1,377 +1,194 @@
-# A-Bind Web Component
+# a-bind
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+**Lightweight, high-performance data binding for Vanilla Web Components and ES modules.**
 
-A custom HTML element (`<a-bind>`) designed to create a declarative data-binding bridge between a data source and a UI element in the DOM. It is a self-contained component that brings reactive capabilities to a vanilla JavaScript environment.
-
-The `<a-bind>` element is a wrapper. It does not render anything itself. Instead, it binds to its **first direct child element**, traversing through nested `<a-bind>` elements to find the actual UI element to control.
-
-Demo: [https://holmesbryant.github.io/a-bind/](https://holmesbryant.github.io/a-bind/)
+`a-bind` is a dependency-free library that provides two-way data binding between JavaScript models and DOM elements using Custom Elements (`<a-bind>`). It is built for modern ES Modules, supports Batched DOM updates via `requestAnimationFrame`, and features intelligent throttling for high-frequency data.
 
 ## Features
 
-- Provides a lightweight solution for adding reactivity to web pages without the overhead of a large framework.
+* **Zero Dependencies:** Built with vanilla Web Components for vanilla scripts. No framework required.
 
-- Two-Way Data Binding: Synchronizes data between a model and a UI element. Changes in one are automatically reflected in the other.
+* **Two-Way Binding:** Syncs UI inputs with data models and vice-versa.
 
-- One-Way Data Binding: Data can be configured to flow in only one direction: either from the model to the UI element or from the UI element to the model.
+* **One-Way Binding:**
 
-- Decoupled Data Binding: Provides a simple and decoupled way for any other part of the application to programmatically trigger a data update.
+  - **View => Model:** Only update the model (model doesn't influence view) using the 'push' attribute.
 
-- Event-Driven Function Execution: It can execute JavaScript functions in response to DOM events on the child element, similar to event handlers like `click`.
+  - **Model => View:** Only update the view (view doesn't influence model) using the 'pull' attribute.
 
-- Declarative API: All configuration is done through HTML attributes on the `<a-bind>` element, making the code clean and easy to understand.
+* **ES Module Support:** Load JS classes dynamically using `<a-bindgroup>`.
 
-- Bound UI elements can be anywhere in the page.
+* **High Performance:**
 
-- You can bind a UI element to a property or an attribute of a custom element.
+  - **Batched Updates:** Uses `requestAnimationFrame` to prevent layout thrashing.
 
-- You can bind to multiple attributes/properties of the same HTML element at once.
+  - **Smart Throttling:** Automatically handles **Debouncing** (for user input) and **Rate Limiting** (for high-frequency real-time feeds).
 
-- You can nest `<a-bind>` instances for complex binding scenerios on a single HTML element, such as pulling data from one property and pushing data to a different property.
+*   **Memory Safe:** Uses `WeakMap` for observers, ensuring models can be garbage collected when elements are removed.
 
-- The `once` flag will update the bound HTML element attribute/property only once, preventing feedback loops.
+---
+
+## Setup
+
+Simply import the script as a module in your HTML file.
+
+```html
+    <script type="module" src="./a-bind.js"></script>
+```
 
 ## Usage
 
-Include the script tag in your HTML page. Remember to add `type = "module"`
+1. Basic Binding (Global Objects)
 
-    <script type="module" src="a-bind.min.js"></script>
-
-Include the tag in the body with a single HTML element as its child.
-
-    <!-- index.html -->
-    <!-- input -->
-    <a-bind
-        model = "myObj"
-        property = "myProperty">
-        <input id = "text-input">
-    </a-bind>
-    ...
-    <!-- output -->
-    <a-bind
-        model = "myObj"
-        property = "myProperty">
-        <output for="text-input"></output>
-    </a-bind>
-
-
-    // myObj.js
-    // The model (or instance) must be in the global scope.
-    var myObj = {
-        _myProperty: 'foo',
-        get myProperty() { return this._myProperty },
-        set myProperty(value) {
-            this._myProperty = value;
-        }
-    }
-
-## Attributes
-
-| Attribute             | Description                                                                               | Default   |
-| :---                  | :---                                                                                      |      :--- |
-| **model** (Required)  | The name of the model (a **window** object or another element's selector).                |           |
-| **property**          | The dot-notation path to a property on the model object (e.g., `user.name`).              |           |
-| **model-attr**        | The name of an HTML attribute on the model element (used when the model is a DOM element).|           |
-| **elem-attr**         | The property or attribute of the child element to bind to. Can be a comma-separated list. | `value`   |
-| **event**             | The DOM event on the child element that triggers an update to the model.                  | `input`   |
-| **func**              | The function to execute when the **event** fires.                                         |           |
-| **pull**              | If present, enables one-way binding (**model** -> **element**).                           | `false`   |
-| **push**              | If present, enables one-way binding (**element** -> **model**).                           | `false`   |
-| **once**              | If present, the element only receives the model's value once and never again.             | `false`   |
-| **debug**             | If present, enables verbose console logging for the instance.                             | `false`   |
-
-### Important!
-
-The `debug` messages are logged using `console.debug()`. In order to see those messages, you must enable verbose logging in the console.
-
-
-## Data Flow and Binding Types
-
-The direction of data flow is controlled by the `pull` and `push` boolean attributes.
-
-### Two-Way Binding (Default Behavior)
-
-If neither `pull` nor `push` is present, the binding is two-way.
-
-- **Model to Element:** When the model's data changes, ABind.update() is called. The `<a-bind>` element listens for a global `abind:update` event, and if the change is relevant to its model and property, it updates the child element's value or attributes.
-
-- **Element to Model:** When the user interacts with the child element (e.g., types in an `<input>`), the `<a-bind>` element listens for a DOM event (defaulting to "input"). It triggers a method reads the new value from the element, updates the JavaScript object, and then calls `ABind.update()` to broadcast the change to any other elements that might be bound to the same data.
-
-### One-Way Binding (Model to Element)
-
-This is achieved by adding the `pull` attribute.
-
-The element will pull data from the model and update itself when the model changes. It will not push changes back to the model.
-
-Use Case: Displaying data that should not be editable by this specific element (e.g., showing a user's name in a `<span>`).
-
-### One-Time Binding
-
-This is achieved with the `once` attribute. The element will pull the initial value from the model **once** and will not listen for any subsequent updates.
-
-Use Case: A contentEditable element, which would reset the caret to the beginning of the element every time the user types something if `once` were not set.
-
-### Decoupled Binding
-
-A-Bind provides a couple of public static methods which provide simple and decoupled ways for any other part of the application to programmatically trigger a data update. The component registers a variable in the global scope named `abind`, so you can call the methods like: `if (window.abind) abind.update(...)`
-
-Both methods take as their first two arguments: 'model' and 'property'.
-
-- **model:** A reference to a javascript object; can be `this`.
-
-- **property** A (string) name of a property on the target model.
-
-#### update(model, property, value)
-
-Use this when you already know what the value is or if you want to send an explicit value to the bound elements.
-
-- `value` is the new value sent to all bound elements.
-
-##### Example
+You can bind to any object attached to the global window scope.
 
 ```javascript
-    var myObj = {
-        _foo = 'foo';
-        get foo() { return this._foo }
-        set foo(value) {
-            this._foo = value;
-            if ( window.abind) abind.update(this, '_foo', value);
-        }
-    }
-
-    class myClass {
-        // Private property
-        #foo = 'foo';
-
-        get foo() { return this.#foo }
-        set foo(value) {
-            this.#foo = value;
-            if (window.abind) abind.update(this, 'foo', value);
-        }
-    }
-
-```
-
-#### updateDefer(model, property, waitMs = 0)
-
-Use this if it might take a little while to set the final value on the property. When **waitMs** is `0`, the method simply waits for the current thread of execution to complete before it retrieves the property's value and dispatches the event.
-
-- `waitMs` is the number of milliseconds to wait before retrieving the value and dispatching the event.
-
-##### Example
-
-```javascript
-    const App = {
-        _foo: 'foo',
-
-        transformFoo(value) {
-            const newValue = '// takes a few milliseconds to transform the data';
-            return newValue;
-        },
-
-        get foo() { return this._foo },
-        set foo(value) {
-            this._foo = this.transformFoo(value);
-            if (window.abind) abind.updateDeferred(this, 'foo');
-        }
+    window.appState = {
+        message: "Hello World",
+        theme: "dark"
     };
 ```
 
-## Binding Elements
-
-### Text-ish inputs
-
-    <a-bind
-        model = "custom-element"
-        property = "myInput"
-    >
-        <input>
+```html
+    <!-- Input Binding (Two-way) -->
+    <a-bind model="appState" property="message">
+      <input type="text">
     </a-bind>
 
-### Select inputs
-
-    <a-bind
-        model = "custom-element"
-        property = "mySelect"
-    >
-        <select>
-            <option>foo</option>
-            <option>bar</option>
-            <option>baz</option>
-        </select>
+    <!-- Display Binding (One-way) -->
+    <a-bind model="appState" property="message" elem-attr="textContent">
+      <h1>Preview: <span></span></h1>
     </a-bind>
 
-    <a-bind
-        model = "custom-element"
-        property = "mySelectMulti"
-        elem-attr = "selectedOptions"
-    >
-        <select multiple>
-            <option>foo</option>
-            <option>bar</option>
-            <option>baz</option>
-        </select>
+    <!-- Attribute Binding -->
+    <a-bind model="appState" property="theme" elem-attr="class">
+      <div class="container">Content</div>
     </a-bind>
+```
 
-### Checkbox inputs
+2. Component Binding (ES Modules)
 
-    <a-bind
-        model = "custom-element"
-        property = "myCheckbox"
-    >
-        <input
-            type = "checkbox"
-            value = "foo"
-        >
-    </a-bind>
+Use `<a-bindgroup>` to load a JavaScript class file. The group creates a singleton instance of the class and shares it with all child binders.
 
-### Radio Group
+```javascript
+    // store.js
 
-    <a-bind
-        model = "custom-element"
-        property = "myRadiogroup"
-    >
-        <!-- checked -->
-        <input
-            type = "radio"
-            name = "rad-group"
-            value = "foo"
-        >
-    </a-bind>
-    ...
-    <a-bind
-        model = "custom-element"
-        property = "myRadiogroup"
-    >
-        <!-- not checked -->
-        <input
-            type = "radio"
-            name = "rad-group"
-            value = "bar"
-        >
-    </a-bind>
+    export default class UserStore {
+      constructor() {
+        this.username = "Guest";
+        this.isAdmin = false;
+      }
 
-### Buttons
+      login() {
+        alert(`Logging in as ${this.username}...`);
+      }
+    }
+```
 
-    <!--
-    Button text mirrors property value.
-    Invokes handleClick(event) on click.
-    myButton === "foo"
-    -->
-    <a-bind
-        model = "custom-element"
-        property = "myButton"
-        elem-attr = "textContent"
-        event = "click"
-        func = "handleClick"
-    >
-        <button> <!-- text is 'foo' --> </button>
-    </a-bind>
+```html
+    <!-- index.html -->
 
-    <!--
-    Button text mirrors property value.
-    Button value also mirrors property value.
-    Invokes handleClick(event) on click.
-    myButton === "foo"
-    -->
-    <a-bind
-        model = "custom-element"
-        property = "myButton"
-        elem-attr = "textContent, value"
-        event = "click"
-        func = "handleClick"
-    >
-        <button>
-            <!-- button text is 'foo' -->
-            <!-- button value is also 'foo' -->
-        </button>
-      </a-bind>
+    <a-bindgroup model="./store.js">
 
-    <!--
-    Button text does NOT mirror property value.
-    Button value DOES mirror property value.
-    Invokes handleClick(event) on click.
-    -->
-    <a-bind
-        model = "custom-element"
-        property = "myButton"
-        event = "click"
-        func = "handleClick"
-    >
-        <button> Click Me! </button>
-    </a-bind>
-
-    <!--
-    Button text does NOT mirror property value.
-    Button value does NOT mirror property value.
-    Invokes handleClick(event) on click.
-    -->
-    <a-bind
-        model = "custom-element"
-        event = "click"
-        func = "handleClick"
-    >
-        <button
-            value = "button.value"
-            data-other = "other value">
-            Click Me!
-        </button>
-    </a-bind>
-
-### File input
-
-    <a-bind
-        model="custom-element"
-        property="myFileInput"
-        event="change"
-        elem-attr="files">
-        <input type="file" multiple>
-      </a-bind>
-
-
-### Binding two different attributes to two different properties
-
-If you want to bind two different element attributes to two different model properties, you must use nested a-bind tags.
-
-For example, if you have an input element that is bound to the model property `myInput` and you want to disable the input based on the value of the property `isDisabled` you would write this:
-
-    <a-bind
-        pull
-        model="custom-element"
-        property="isDisabled"
-        elem-attr="disabled"
-    >
-        <a-bind
-            model="custom-element"
-            property="myInput"
-        >
-            <input id="my-input">
+      <!-- Binds to instance.username -->
+      <label>Username:
+        <a-bind property="username">
+          <input type="text">
         </a-bind>
+      </label>
+
+      <!-- Execute function on event -->
+      <a-bind func="login" event="click">
+        <button>Log In</button>
+      </a-bind>
+
+    </a-bindgroup>
+```
+
+3. DOM-to-DOM Binding
+
+You can bind one element directly to another without a JavaScript model by using an ID selector.
+
+```html
+    <input id="source" type="range" min="0" max="100">
+
+    <!-- Mirror the range input value -->
+    <a-bind model="#source" model-attr="value" elem-attr="textContent">
+      <span>0</span>
+    </a-bind>
+```
+
+## Throttling & Performance
+
+a-bind includes a powerful throttle attribute that adapts its behavior based on the data flow direction.
+
+### Input Debouncing (UI ➔ Model)
+
+When applied to user inputs, it waits until the user stops typing for X milliseconds before updating the model.
+
+```html
+    <!-- Updates model 150ms (Default) after user stops typing -->
+    <a-bind model="search" property="query" throttle>
+      <input type="text" placeholder="Search...">
     </a-bind>
 
-### Func
+    <!-- Updates model 10ms after user stops typing -->
+    <a-bind model="search" property="query" throttle="10">
+      <input type="text" placeholder="Search...">
+    </a-bind>
+```
 
-For `func` to work, the binding must have an event defined (the default is 'input'). The binding will pass the Event object to the function.
+### Output Rate Limiting (Model ➔ UI)
 
-    //example.js
-    var example = {
-        handleClick(event) {
-            const elem = event.target // button
-            const value = elem.value // foo
-            const other = elem.dataset.other // bar
+When applied to display elements, it limits how often the DOM updates. Perfect for high-frequency data like stock tickers or sensor feeds.
+
+```html
+    <!-- Updates UI max once every 500ms, regardless of data speed -->
+    <a-bind model="stockTicker" property="price" throttle="500" elem-attr="textContent">
+      <span>$0.00</span>
+    </a-bind>
+```
+
+## API Reference: Attributes
+| Attribute | Default | Description                                                                                      |
+| :-------- | :------ | :----------------------------------------------------------------------------------------------- |
+| model     | null    | The data source. Can be a Global Object name, a DOM ID (start with #), or passed via JS property.|
+| property  | null    | The property key on the model to observe (dot notation supported: user.address.city).            |
+| elem-attr | value   | The attribute/property on the child element to update (e.g., value, textContent, style.color).   |
+| event     | input   | The DOM event that triggers a model update.                                                      |
+| throttle  | 150     | Time in ms. Input = Debounce; Output = Rate Limit. If attribute is present with no value.        |
+| func      | null    | A method name to execute on the model when event fires. The method always recives an Event object|
+| pull      | false   | If set, data flows only from UI ➔ Model.                                                        |
+| push      | false   | If set, data flows only from Model ➔ UI.                                                        |
+| once      | false   | Update the UI once on load, then disconnect listeners.                                           |
+| model-attr| null    | If binding to a DOM element, the attribute on that element to watch.                             |
+
+## Static Methods
+
+Because a-bind uses a Pub/Sub system (not Proxies), you must use the static helper to update data if you want the UI to react.
+
+### ABind.update(model, property, value)
+
+Updates the model and notifies all listeners.
+
+```javascript
+    window.app = { message: 'initial data' };
+    app.message = 'New Data';
+    if (window.abind) abind.update(app, 'message', 'New Data');
+
+    class Foo {
+        bar;
+        setBar(value) {
+            this.bar = value;
+            if (window.abind) abind.update(this, 'bar', value);
         }
     }
+```
 
-    <!-- index.html -->
-    <a-bind
-        model = "example"
-        event = "click"
-        func = "handleClick"
-    >
-        <button value = "foo" data-other = "bar">
-            click me
-        </button>
-    </a-bind>
+### ABind.updateDefer(model, property, waitMs)
 
+Waits waitMs milliseconds, then reads the current value from the model and updates.
 
+## License
+
+GPL-3.0

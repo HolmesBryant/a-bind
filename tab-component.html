@@ -40,7 +40,7 @@
   <!-- datalist -->
   <data-row
     model="custom-element"
-    attr="datalist",
+    attr="datalist"
     attr-val="foo, bar, baz"
     prop="datalist"
     prop-val="boom, bing, bang">
@@ -308,14 +308,15 @@
     prop="textarea"
     prop-val="Exercitation do aliqua">
 
-    <div slot="input" class="flex column">
+    <div slot="input" class="flex">
       <span>Input <code>textarea</code></span>
 
       <a-bind
         model="custom-element"
         property="textarea">
         <textarea
-          style="width:100%; height:100%"
+          rows="4"
+          style="width:100%"
           id="textarea-input">
          </textarea>
       </a-bind>
@@ -484,6 +485,7 @@
         model="custom-element"
         property="month">
         <input
+          id="month-input"
           type="month">
       </a-bind>
     </div>
@@ -974,8 +976,8 @@
         <meter
           id="meter-input"
           max="100"
-          low="33",
-          high="66",
+          low="33"
+          high="66"
           optimum="80">
         </meter>
       </a-bind>
@@ -990,8 +992,8 @@
           property="meter">
           <meter
             max="100"
-            low="33",
-            high="66",
+            low="33"
+            high="66"
             optimum="80">
           </meter>
         </a-bind>
@@ -1132,7 +1134,7 @@
         <label for="form-name" name="name">Name</label>
 
         <a-bind model="custom-element" property="name">
-          <input id="form-name" name="name">
+          <input id="form-name" name="name" autocomplete="off">
         </a-bind>
       </div>
 
@@ -1140,7 +1142,7 @@
         <label for="form-email">Email</label>
 
         <a-bind model="custom-element" property="email">
-          <input id="form-email" name="email">
+          <input id="form-email" name="email" autocomplete="off">
         </a-bind>
       </div>
 
@@ -1317,7 +1319,7 @@
 
     <p> </p>
 
-    <details open>
+    <details>
     <summary class="nofrills">code</summary>
       <section class="flex">
         <div class="flex1">

@@ -1,7 +1,7 @@
 /**
  * @file color-conversion.js
  * A set of functions to convert various css color values to 6-digit hexidecimal format.
- * "lab" and "oklab" color spaces are not supported because the code to convert them *accurately* is too complex for this simple library.
+ * "lab" and "oklab" color spaces are not supported because the code to convert them *accurately* is too much for this simple library.
  * @author Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
  */

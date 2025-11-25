@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>a-bind Test Suite</title>
-    <script type="module" src="ATestRunner.min.js"></script>
     <script type="module" src="a-bind.test.js"></script>
+    <script type="module" src="a-test-results.js"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -22,10 +22,6 @@
 </head>
 <body>
     <h1>a-bind Test Suite</h1>
-    <p>Check the developer console for results.</p>
-
-    <!-- used for rendering test elements to ensure isolation -->
-    <h2>Test Rendering Area</h2>
-    <div id="test-container"></div>
+    <a-testresults id="test-results"></a-testresults>
 </body>
 </html>

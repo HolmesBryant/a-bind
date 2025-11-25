@@ -292,14 +292,15 @@
     prop="textarea"
     prop-val="Exercitation do aliqua">
 
-    <div slot="input" class="flex column">
+    <div slot="input" class="flex">
       <span>Input <code>textarea</code></span>
 
       <a-bind
         model="testObj"
         property="textarea">
         <textarea
-          style="width:100%; height:100%"
+          rows="4"
+          style="width:100%"
           id="o-textarea-input">
          </textarea>
       </a-bind>
@@ -454,10 +455,10 @@
       <span>Input <code></code>month</span>
 
       <a-bind
-        id="o-month-input"
         model="testObj"
         property="month">
         <input
+          id="o-month-input"
           type="month">
       </a-bind>
     </div>
@@ -485,7 +486,7 @@
     prop-val="bar">
 
     <div slot="input" class="flex column">
-      <label for="select-input">Input <code>select</code></label>
+      <label for="o-select-input">Input <code>select</code></label>
 
       <a-bind
         model="testObj"
@@ -655,7 +656,7 @@
             value="foo">
         </a-bind>
 
-        <label for="radiofoo-input">
+        <label for="o-radiofoo-input">
           value = "foo"
         </label>
       </div>
@@ -671,7 +672,7 @@
             value="bar">
         </a-bind>
 
-        <label for="radiobar-input">
+        <label for="o-radiobar-input">
           value = "bar"
         </label>
       </div>
@@ -926,8 +927,8 @@
         <meter
           id="o-meter-input"
           max="100"
-          low="33",
-          high="66",
+          low="33"
+          high="66"
           optimum="80">
         </meter>
       </a-bind>
@@ -942,8 +943,8 @@
           property="meter">
           <meter
             max="100"
-            low="33",
-            high="66",
+            low="33"
+            high="66"
             optimum="80">
           </meter>
         </a-bind>
@@ -1083,18 +1084,18 @@
       </aside>
 
       <div class="flex column start gap0">
-        <label for="form-name" name="name">Name</label>
+        <label for="o-form-name" name="name">Name</label>
 
         <a-bind model="testObj" property="name">
-          <input id="o-form-name" name="name">
+          <input id="o-form-name" name="name" autocomplete="off">
         </a-bind>
       </div>
 
       <div class="flex column start gap0">
-        <label for="form-email">Email</label>
+        <label for="o-form-email">Email</label>
 
         <a-bind model="testObj" property="email">
-          <input id="o-form-email" name="email">
+          <input id="o-form-email" name="email" autocomplete="off">
         </a-bind>
       </div>
 
@@ -1245,7 +1246,7 @@
     <div class="flex">
 
       <div class="flex1 flex column">
-      <label for="foo-input">Foo Input</label>
+      <label for="o-foo-input">Foo Input</label>
 
         <a-bind
           model="exampleObject"
@@ -1263,12 +1264,14 @@
       </a-bind>
 
       <div class="flex1 flex column">
-      <label>Foo Output</label>
+      <label for="o-foo-output">Foo Output</label>
 
         <a-bind
           model="exampleObject"
           property="foo">
-          <output for="o-foo-input">
+          <output
+            id="o-foo-output"
+            for="o-foo-input">
           </output>
         </a-bind>
       </div>
@@ -1282,7 +1285,7 @@
     </a-code>
     </p>
 
-    <details open>
+    <details>
     <summary class="nofrills">code</summary>
       <section class="flex end">
         <div class="flex1">
