@@ -4,6 +4,18 @@
 
 `a-bind` is a dependency-free library that provides two-way data binding between JavaScript models and DOM elements using Custom Elements (`<a-bind>`). It is built for modern ES Modules, supports Batched DOM updates via `requestAnimationFrame`, and features intelligent throttling for high-frequency data.
 
+## Change Log
+
+- v2.0.0:
+
+  * added batched updates using requestAnimationFrame.
+
+  * added optional throttling via `throttle` attribute.
+
+  * added pub/sub system.
+
+- v1.0.0: initial commit
+
 ## Features
 
 * **Zero Dependencies:** Built with vanilla Web Components for vanilla scripts. No framework required.

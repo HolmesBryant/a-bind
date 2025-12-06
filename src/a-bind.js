@@ -106,12 +106,13 @@ export default class ABind extends HTMLElement {
   #property = null;
   #pull = false;
   #push = false;
-  #throttle = 150;
+  #throttle = 0;
 
   // --- Internal State ---
   #abortController;
   #boundElement;
   #hasUpdated = false;
+  #isConnected = false;
   #isInitializing = false;
   #subscriptionCallback = null;
   #subscribedProperty = null;
@@ -156,9 +157,28 @@ export default class ABind extends HTMLElement {
    * @param {string} newval - The new value.
    */
   attributeChangedCallback(attr, oldval, newval) {
+    if (this.#debug) console.groupCollapsed(`attributeChangedCallback(${attr}, ${oldval}, ${newval})`);
     if (oldval === newval) return;
-    this.#updatePropertyFromAttribute(attr, newval);
-    if (this.isConnected && ['model', 'property', 'model-attr'].includes(attr)) {
+    switch (attr) {
+      case 'model':      this.#model = newval; break; // Note: String or Object handled in resolve
+      case 'property':   this.#property = newval; break;
+      case 'model-attr': this.#modelAttr = newval; break;
+      case 'event':      this.#event = newval; break;
+      case 'elem-attr':  this.#elemAttr = newval; break;
+      case 'func':       this.#func = newval; break;
+      case 'throttle':   this.#throttle = parseInt(newval) || 0; break;
+      case 'pull':       this.#pull = newval !== null && newval !== 'false'; break;
+      case 'push':       this.#push = newval !== null && newval !== 'false'; break;
+      case 'once':       this.#once = newval !== null && newval !== 'false'; break;
+      case 'debug':      this.#debug = newval !== null && newval !== 'false'; break;
+    }
+
+    if (this.#debug) {
+      console.log('isConnected', this.#isConnected);
+      console.groupEnd();
+    }
+
+    if (this.#isConnected && ['model', 'property', 'model-attr'].includes(attr)) {
       this.#reinitialize();
     }
   }
@@ -168,8 +188,9 @@ export default class ABind extends HTMLElement {
    * Sets up MutationObservers to wait for child elements and initializes bindings.
    */
   connectedCallback() {
-    if (this.#debug) console.debug('Debugging:', this);
+    if (this.#debug) console.log('connectedCallback()', this);
     if (!window.abind) window.abind = ABind;
+    this.#isConnected = true;
 
     // Use MutationObserver instead of polling to wait for children
     if (!this.firstElementChild) {
@@ -184,6 +205,7 @@ export default class ABind extends HTMLElement {
     } else {
       this.#initialize();
     }
+    if (this.#debug) console.log('isConnected', this.#isConnected);
   }
 
   /**
@@ -191,11 +213,13 @@ export default class ABind extends HTMLElement {
    * Cleans up observers, event listeners, and pending throttle timers.
    */
   disconnectedCallback() {
+    if (this.#debug) console.log('disconnectedCallback', this);
     this.#teardown();
     if (this.#childObserver) {
       this.#childObserver.disconnect();
       this.#childObserver = null;
     }
+    this.#isConnected = false;
   }
 
   // --- Public API ---
@@ -224,7 +248,7 @@ export default class ABind extends HTMLElement {
    */
   static updateDefer(model, property, waitMs = 0) {
     setTimeout(() => {
-      const value = ABind.#getObjectProperty(model, property);
+      const value = this.#getObjectProperty(model, property);
       ABind.update(model, property, value);
     }, waitMs);
   }
@@ -236,7 +260,9 @@ export default class ABind extends HTMLElement {
    * @param {any} value - The value to apply to the element's attribute or property.
    */
   applyUpdate(value) {
+    if (this.#debug) console.groupCollapsed(`applyUpdate(${value})`);
     this.#updateElement(value);
+    if (this.#debug) console.groupEnd();
   }
 
   // --- Private Methods ---
@@ -247,21 +273,41 @@ export default class ABind extends HTMLElement {
    * @param {Event} event
    */
   #executeFunction(event) {
+    if (this.#debug) console.groupCollapsed(`#executeFunction(${event})`);
     const parts = this.#func.split('.');
     const fnName = parts.pop();
     const ctxPath = parts.join('.');
 
     // Look on Model first, then Window
-    let ctx = ctxPath ? ABind.#getObjectProperty(this.#model, ctxPath) : this.#model;
+    let ctx = ctxPath ? this.#getObjectProperty(this.#model, ctxPath) : this.#model;
     if (!ctx || typeof ctx[fnName] !== 'function') {
-        ctx = ctxPath ? ABind.#getObjectProperty(window, ctxPath) : window;
+        ctx = ctxPath ? this.#getObjectProperty(window, ctxPath) : window;
     }
 
     if (ctx && typeof ctx[fnName] === 'function') {
+        if (this.#debug) console.log('#executeFunction', { fnName, context: ctx, event });
         ctx[fnName].call(ctx, event);
     } else if (this.#debug) {
-        console.warn(`a-bind: Function ${this.#func} not found.`);
+        console.warn(`Function ${this.#func} not found.`);
     }
+
+    if (this.#debug) {
+      console.log('fnName', fnName);
+      console.log('ctx', ctx);
+      console.log(this.#printDebug());
+      console.groupEnd();
+    }
+  }
+
+  #getObjectProperty(obj, path) {
+    if (this.#debug) console.groupCollapsed(`#getObjectProperty(${obj}, ${path})`);
+    const value = (!path) ? obj : path.split('.').reduce((acc, part) => acc && acc[part], obj);
+    if (this.#debug) {
+      console.log('value', value);
+      console.log(this.#printDebug());
+      console.groupEnd();
+    }
+    return value;
   }
 
   /**
@@ -272,20 +318,32 @@ export default class ABind extends HTMLElement {
    * @param {Event} event - The DOM event.
    */
   #handleElementEvent(event) {
-    if (this.#func) this.#executeFunction(event);
-    if (this.#pull || (!this.#property && !this.#modelAttr)) return;
+    if (this.#debug) {
+      console.groupCollapsed(`#handleElementEvent(${event})`);
+      console.log(this.#printDebug());
+    }
 
-    // Extract Value (Standard logic)
+    if (this.#func) this.#executeFunction(event);
+    if (this.#pull || (!this.#property && !this.#modelAttr)) {
+      if (this.#debug) console.groupEnd();
+      return;
+    }
+
     let value;
     const el = this.#boundElement;
     if (el.localName === 'select' && el.multiple) {
       value = Array.from(el.selectedOptions).map(o => o.value);
     } else if (el.type === 'checkbox') {
-      value = el.checked ? (el.getAttribute('value') || true) : (el.getAttribute('value') ? null : false);
+      value = el.checked ? (el.getAttribute('value') || true) : false;
     } else if (event.target.value !== undefined) {
       value = event.target.value;
     } else {
       value = el[this.#elemAttr];
+    }
+
+    if (this.#debug) {
+      console.log('value', value);
+      console.groupEnd();
     }
 
     // Throttling Logic (Debounce)
@@ -307,22 +365,37 @@ export default class ABind extends HTMLElement {
    * @returns {Promise<void>}
    */
   async #initialize() {
-    if (this.#isInitializing) return;
+    if (this.#debug) {
+      console.groupCollapsed('#initialize()');
+      console.log('isInitializing', this.#isInitializing);
+    }
+
+    if (this.#isInitializing) {
+      if (this.#debug) console.groupEnd();
+      return;
+    }
+
     this.#isInitializing = true;
 
     try {
       if (!this.#model) {
-        // If no model yet (e.g., waiting for parent group), exit.
-        // Logic in setters/parent will trigger this later.
         this.#isInitializing = false;
+        if (this.#debug) {
+          console.log('#initialize paused: No model present yet.');
+          console.groupEnd();
+        }
         return;
       }
 
       await this.#resolveModel();
 
       if (!this.firstElementChild) {
-        // Should be caught by MutationObserver in connectedCallback, but double check here.
         this.#isInitializing = false;
+        if (this.#debug) {
+          console.log('firstElementChild', this.firstElementChild);
+          console.log('isInitializing', this.#isInitializing);
+          console.groupEnd();
+        }
         return;
       }
 
@@ -333,12 +406,24 @@ export default class ABind extends HTMLElement {
       this.#boundElement = element;
 
       if (!this.#boundElement) {
-        console.warn('a-bind: No valid child element to bind to.');
+        console.error('a-bind: No valid child element to bind to.');
         this.#isInitializing = false;
+        if (this.#debug) {
+          console.log('boundElement', this.#boundElement);
+          console.log('isInitializing', this.#isInitializing);
+          console.groupEnd();
+        }
         return;
       }
 
+      if (this.#debug) {
+        console.log('Initialized:', { boundElement: this.#boundElement });
+        console.log(this.#printDebug());
+        console.groupEnd();
+      }
+
       this.#abortController = new AbortController();
+
       this.#setupListeners();
 
       // Initial Sync
@@ -351,13 +436,35 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  #printDebug() {
+    let info = {};
+    const attrs = ABind.observedAttributes;
+    for (const attr of attrs) {
+      switch (attr) {
+        case 'model':      info.model = this.#model; break;
+        case 'property':   info.property = this.#property; break;
+        case 'model-attr': info.modelAttr = this.#modelAttr; break;
+        case 'event':      info.event = this.#event; break;
+        case 'elem-attr':  info.elemAttr = this.#elemAttr; break;
+        case 'func':       info.func = this.#func; break;
+        case 'throttle':   info.throttle = this.#throttle; break;
+        case 'pull':       info.pull = this.#pull; break;
+        case 'push':       info.push = this.#push; break;
+        case 'once':       info.once = this.#once; break;
+      }
+    }
+    return info;
+  }
+
   /**
    * Re-runs the setup logic when attributes change.
    * @private
    */
   #reinitialize() {
+    if (this.#debug) console.groupCollapsed('#reinitialize()');
     this.#teardown();
     this.#initialize();
+    if (this.#debug) console.groupEnd();
   }
 
   /**
@@ -366,28 +473,71 @@ export default class ABind extends HTMLElement {
    * @returns {Promise<void>}
    */
   async #resolveModel() {
-    // If model is already an object, we are good.
-    if (typeof this.#model === 'object' && this.#model !== null) return;
+    if (this.#debug) {
+      console.groupCollapsed('#resolveModel()');
+    }
+
+    if (typeof this.#model === 'object') {
+      // It's a custom element
+      if (this.#model.localName && this.#model.localName.includes('-')) {
+        await customElements.whenDefined(this.#model.localName);
+        if (this.#debug) {
+          console.log('resolved: model is custom element');
+          console.log(this.#printDebug());
+          console.groupEnd();
+        }
+        return;
+      } else {
+        // It's not a custom element
+        if (this.#debug) {
+        console.log('resolved: model is object');
+        console.log(this.#printDebug());
+        console.groupEnd();
+      }
+      return;
+      }
+    }
 
     // If string, try to find it
     const id = this.#model;
     if (typeof id === 'string') {
-        // Try DOM Element
-        const el = document.querySelector(id);
-        if (el) {
-            if (el.localName.includes('-')) await customElements.whenDefined(el.localName);
-            this.#model = el;
-            return;
+      // Try DOM Element
+      const el = document.querySelector(id);
+
+      if (el) {
+        if (el.localName.includes('-')) {
+          await customElements.whenDefined(el.localName);
+          if (this.#debug) console.log('custom element');
         }
-        // Try Window Global
-        const winObj = ABind.#getObjectProperty(window, id);
-        if (winObj) {
-            this.#model = winObj;
-            return;
+
+        this.#model = el;
+
+        if (this.#debug) {
+          console.log('resolved via DOM Selector:');
+          console.log(this.#printDebug());
+          console.groupEnd();
         }
+        return
+      }
+
+      // Try Window Global
+      const winObj = this.#getObjectProperty(window, id);
+      if (winObj) {
+        this.#model = winObj;
+        if (this.#debug) {
+          console.log('resolved via Window Scope');
+          console.log(this.#printDebug());
+          console.groupEnd();
+        }
+        return
+      }
     }
 
-    if (this.#debug) console.warn('a-bind: Model not resolved:', id);
+    if (this.#debug) {
+      console.warn('Model not resolved');
+      console.log(this.#printDebug());
+      console.groupEnd();
+    }
   }
 
   /**
@@ -399,30 +549,50 @@ export default class ABind extends HTMLElement {
    */
   #setElementAttribute(element, attribute, value) {
     if (value === undefined || value === null) value = '';
-
+    if (this.#debug) console.groupCollapsed(`#setElementAttribute(${element}, ${attribute}, ${value})`);
     if (attribute.startsWith('style.')) {
       element.style[attribute.split('.')[1]] = value;
+      if (this.#debug) {
+        const cssProp = attribute.split('.')[1];
+        console.log({cssProp: value});
+        console.groupEnd();
+      }
       return;
     }
 
     // Attribute Setting
     if (element.localName === 'input' && (element.type === 'checkbox' || element.type === 'radio')) {
-        element.checked = String(element.value) === String(value) || value === true;
+      element.checked = String(element.value) === String(value);
+      if (this.#debug) console.log({ checked: element.checked });
     } else if (element.localName === 'select' && element.multiple) {
-        const valArr = Array.isArray(value) ? value.map(String) : String(value).split(',');
-        Array.from(element.options).forEach(opt => opt.selected = valArr.includes(opt.value));
+      const valArr = Array.isArray(value) ? value.map(String) : String(value).split(',');
+      Array.from(element.options).forEach(opt => opt.selected = valArr.includes(opt.value));
+      if (this.#debug) console.log('selectedOptions', element.selectedOptions);
     } else if (attribute in element) {
-        element[attribute] = value;
+      element[attribute] = value;
     } else {
-        element.setAttribute(attribute, value);
+      element.setAttribute(attribute, value);
+    }
+
+    if (this.#debug) {
+      console.log(this.#printDebug());
+      console.groupEnd();
     }
   }
 
   #setObjectProperty(obj, path, value) {
+    if (this.#debug) console.groupCollapsed(`#setObjectProperty(${obj}, ${path}, ${value})`);
     const parts = path.split('.');
     const last = parts.pop();
-    const target = parts.length ? ABind.#getObjectProperty(obj, parts.join('.')) : obj;
+    const target = parts.length ? this.#getObjectProperty(obj, parts.join('.')) : obj;
     if (target && typeof target === 'object') target[last] = value;
+    if (this.#debug) {
+      console.log('target', target);
+      console.log('last', last);
+      console.log('target[last]', target[last]);
+      console.log(this.#printDebug());
+      console.groupEnd();
+    }
   }
 
   /**
@@ -433,9 +603,14 @@ export default class ABind extends HTMLElement {
    */
   #setupListeners() {
     if (!this.#property && !this.#func && !this.#modelAttr) return;
+    if (this.#debug) console.groupCollapsed('#setupListeners()');
 
     // Element -> Model (Event)
-    if (this.#event) {
+    if (this.#event && !this.#pull) {
+      if (this.#debug) {
+        console.log('Element -> Model');
+        console.log('boundElement', this.#boundElement);
+      }
       this.#boundElement.addEventListener(
         this.#event,
         (e) => this.#handleElementEvent(e),
@@ -444,24 +619,52 @@ export default class ABind extends HTMLElement {
     }
 
     // Model -> Element (Observer)
+    if (this.#push) {
+      if (this.#debug) {
+        console.log(this.#printDebug());
+        console.groupEnd();
+      }
+      return;
+    }
     const observer = ABind.#getObserver(this.#model, true);
     this.#subscribedProperty = this.#property || this.#modelAttr;
+    if (this.#debug) console.log('#setupListeners: Model -> Element', { property: this.#property, modelAttr: this.#modelAttr });
 
     if (observer && this.#subscribedProperty) {
       this.#subscriptionCallback = (value) => {
-        if (this.#once && this.#hasUpdated) return;
-        // updateManager.scheduleUpdate(this, value);
+        if (this.#once && this.#hasUpdated) {
+          if (this.#debug) {
+            console.log('subscribedProperty', this.#subscribedProperty);
+            console.log('hasUpdated', this.#hasUpdated);
+            console.log(this.#printDebug());
+            console.groupEnd();
+          }
+          return;
+        }
+
         if (this.#throttle > 0) {
           const now = Date.now();
           const timeSinceLast = now - this.#lastOutputTime;
 
           if (timeSinceLast >= this.#throttle) {
-            // Case 1: Cool down period over. Update immediately.
+            // Update immediately.
             this.#lastOutputTime = now;
             updateManager.scheduleUpdate(this, value);
+            if (this.#debug) {
+              console.log('scheduleUpdate', value);
+              console.log(this.#printDebug());
+              console.groupEnd();
+            }
           } else {
-            // Case 2: Too fast! Save value for later.
+            // Too fast. Save value for later.
             this.#pendingOutputValue = value;
+            if (this.#debug) {
+              console.log('Output throttled (Model -> UI)');
+              console.log('pendingOutputValue', this.#pendingOutputValue);
+              console.log('wait for', this.#throttle - timeSinceLast);
+              console.log(this.#printDebug());
+              console.groupEnd();
+            }
 
             // Only schedule a delayed update if one isn't already waiting
             if (!this.#outputTimer) {
@@ -479,6 +682,9 @@ export default class ABind extends HTMLElement {
         }
       };
       observer.subscribe(this.#subscribedProperty, this.#subscriptionCallback);
+    } else if (this.#debug) {
+      console.log(this.#printDebug());
+      console.groupEnd();
     }
   }
 
@@ -487,6 +693,7 @@ export default class ABind extends HTMLElement {
    * @private
    */
   #teardown() {
+    if (this.#debug) console.groupCollapsed('#teardown()');
     this.#abortController?.abort();
     if (this.#inputTimer) clearTimeout(this.#inputTimer);
     if (this.#outputTimer) clearTimeout(this.#outputTimer);
@@ -499,6 +706,15 @@ export default class ABind extends HTMLElement {
     }
     this.#subscribedProperty = null;
     this.#subscriptionCallback = null;
+    if (this.#debug) {
+      console.log('abortController', this.#abortController);
+      console.log('inputTimer', this.#inputTimer);
+      console.log('outputTimer', this.#outputTimer);
+      console.log('pendingOutputValue', this.#pendingOutputValue);
+      console.log('subscribedProperty', this.#subscribedProperty);
+      console.log('subscriptionCallback', this.#subscriptionCallback);
+      console.groupEnd();
+    }
   }
 
   /**
@@ -509,18 +725,36 @@ export default class ABind extends HTMLElement {
    * @param {any} value - The value to write to the element.
    */
   #updateElement(value) {
-    if ((!this.#property && !this.#modelAttr) || (this.#once && this.#hasUpdated) || this.#push) return;
+    if (this.#debug) {
+      console.groupCollapsed(`#updateElement(${value})`);
+    }
+
+    if ((!this.#property && !this.#modelAttr) || (this.#once && this.#hasUpdated) || this.#push) {
+      if (this.#debug) {
+        console.log(this.#printDebug());
+        console.groupEnd();
+      }
+      return;
+    }
 
     if (value === undefined) {
       value = this.#modelAttr
         ? this.#model.getAttribute(this.#modelAttr)
-        : ABind.#getObjectProperty(this.#model, this.#property);
+        : this.#getObjectProperty(this.#model, this.#property);
     }
 
     const attrs = this.#elemAttr.split(',').map(s => s.trim());
-    attrs.forEach(attr => this.#setElementAttribute(this.#boundElement, attr, value));
+    attrs.forEach(attr => {
+      this.#setElementAttribute(this.#boundElement, attr, value);
+      if (this.#debug) console.log(attr, value);
+    });
 
     this.#hasUpdated = true;
+    if (this.#debug) {
+      console.log('hasUpdated', this.#hasUpdated);
+      console.log(this.#printDebug());
+      console.groupEnd();
+    }
   }
 
   /**
@@ -531,15 +765,27 @@ export default class ABind extends HTMLElement {
    * @param {any} value - The value to write to the model.
    */
   #updateModel(value) {
+    if (this.#debug) console.groupCollapsed(`#updateModel(${value})`);
     let oldValue;
     if (this.#modelAttr) {
       oldValue = this.#model.getAttribute(this.#modelAttr);
     } else {
-      oldValue = ABind.#getObjectProperty(this.#model, this.#property);
+      oldValue = this.#getObjectProperty(this.#model, this.#property);
     }
 
-    // Loose equality check to handle 1 vs "1" updates commonly found in HTML attributes
-    if (oldValue == value) return;
+    if (this.#debug) {
+      console.log({ value, oldValue });
+
+    }
+
+    // Loose equality check to handle 1 vs "1" to account for model attributes
+    if (oldValue == value) {
+      if (this.#debug) {
+        console.log('Update skipped: Values are loosely equal.', { oldValue, value });
+        console.groupEnd();
+      }
+      return;
+    }
 
     if (this.#modelAttr) {
       this.#model.setAttribute(this.#modelAttr, value);
@@ -551,28 +797,10 @@ export default class ABind extends HTMLElement {
     const observer = ABind.#getObserver(this.#model, false);
     const prop = this.#property || this.#modelAttr;
     if (observer && prop) observer.publish(prop, value);
-  }
-
-  /**
-   * Updates the internal configuration based on attribute changes.
-   * Handles 'throttle' logic (parsing int or setting default).
-   * @private
-   * @param {string} attr
-   * @param {string} value
-   */
-  #updatePropertyFromAttribute(attr, value) {
-    switch (attr) {
-      case 'model':      this.#model = value; break; // Note: String or Object handled in resolve
-      case 'property':   this.#property = value; break;
-      case 'model-attr': this.#modelAttr = value; break;
-      case 'event':      this.#event = value || 'input'; break;
-      case 'elem-attr':  this.#elemAttr = value || 'value'; break;
-      case 'func':       this.#func = value; break;
-      case 'throttle':   this.#throttle = parseInt(value) || 0; break;
-      case 'pull':       this.#pull = value !== null && value !== 'false'; break;
-      case 'push':       this.#push = value !== null && value !== 'false'; break;
-      case 'once':       this.#once = value !== null && value !== 'false'; break;
-      case 'debug':      this.#debug = value !== null && value !== 'false'; break;
+    if (this.#debug) {
+      console.log('observer.publish()', prop, value);
+      console.log(this.#printDebug());
+      console.groupEnd();
     }
   }
 
@@ -586,16 +814,11 @@ export default class ABind extends HTMLElement {
     return modelObservers.get(model) || null;
   }
 
-  static #getObjectProperty(obj, path) {
-    if (!path) return obj;
-    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
-  }
-
   // --- Getters / Setters  ---
   get model() { return this.#model; }
   set model(value) {
     this.#model = value;
-    if(this.isConnected) this.#reinitialize();
+    if(this.#isConnected) this.#reinitialize();
   }
 }
 
@@ -622,13 +845,19 @@ export class ABindgroup extends HTMLElement {
       if (!id) throw new Error('a-bindgroup requires "model" attribute.');
 
       // Load Model
-      const { modelInstance, modelUrl } = await this.#getModel(id);
-      this.#modelUrl = modelUrl;
-      this.#modelInstance = modelInstance;
+      const instance = document.body.querySelector(id);
+      if (!instance) {
+        const { modelInstance, modelUrl } = await this.#getModel(id);
+        this.#modelUrl = modelUrl;
+        this.#modelInstance = modelInstance;
+      } else {
+        this.#modelUrl = id;
+        this.#modelInstance = instance;
+      }
 
       // Ref Count
-      const count = ABindgroup.modelReferenceCounts.get(modelUrl) || 0;
-      ABindgroup.modelReferenceCounts.set(modelUrl, count + 1);
+      const count = ABindgroup.modelReferenceCounts.get(this.#modelUrl) || 0;
+      ABindgroup.modelReferenceCounts.set(this.#modelUrl, count + 1);
 
       // Apply to existing children
       this.#updateChildren();
@@ -642,7 +871,6 @@ export class ABindgroup extends HTMLElement {
         if (needsUpdate) this.#updateChildren();
       });
       this.#mutationObserver.observe(this, { childList: true, subtree: true });
-
     } catch (err) {
       console.error(err, this);
     }
@@ -676,29 +904,27 @@ export class ABindgroup extends HTMLElement {
     const binders = this.querySelectorAll('a-bind');
     binders.forEach(binder => {
       // Direct property access is safer than checking attribute
-      if (!binder.model) {
-        binder.model = this.#modelInstance;
-      }
+      if (!binder.model) binder.model = this.#modelInstance;
     });
   }
 
   /**
    * Resolves the module URL relative to the current import meta.
    * @private
-   * @param {string} identifier - The model filename or path.
+   * @param {string} file - The model filename or path.
    * @returns {Promise<{modelInstance: Object, modelUrl: string}>}
    */
-  async #getModel(identifier) {
+  async #getModel(file) {
     // Determine URL (Relative to import.meta.url)
     let url;
-    if (identifier.match(/\.(js|mjs)$/) || identifier.includes('/')) {
-        url = new URL(identifier, import.meta.url).href;
+    if (file.match(/\.(js|mjs)$/) || file.includes('/')) {
+        url = new URL(file, import.meta.url).href;
     } else {
         // Try .js, fallback to .mjs handled in catch
-        url = new URL(`${identifier}.js`, import.meta.url).href;
+        url = new URL(`${file}.js`, import.meta.url).href;
     }
 
-    return this.#fetchModel(url, identifier);
+    return this.#fetchModel(url, file);
   }
 
   /**

@@ -1,6 +1,6 @@
 {
   "name": "a-tooltip",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A web component that performs two-way data binding",
   "type": "module",
   "main": "./dist/a-bind.min.js",
