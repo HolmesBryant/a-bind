@@ -796,7 +796,10 @@ export default class ABind extends HTMLElement {
       oldValue = this.#getObjectProperty(this.#model, this.#property);
     }
 
-    if (this.#debug) console.log({ value, oldValue });
+    if (this.#debug) {
+      console.log({ value, oldValue });
+
+    }
 
     // Loose equality check to handle 1 vs "1" to account for model attributes
     if (oldValue == value) {
@@ -809,18 +812,14 @@ export default class ABind extends HTMLElement {
 
     if (this.#modelAttr) {
       if (this.#modelAttr.startsWith('style.')) {
-        const prop = this.#modelAttr.substring(6); // remove 'style.'
-
-        if (prop.startsWith('--')) {
-          // CSS Variables must use setProperty
+          const prop = this.#modelAttr.substring(6);
+          // setProperty works for both vars (--) and standard props (color)
           this.#model.style.setProperty(prop, value);
-        } else {
-          // Standard properties (supports camelCase like 'backgroundColor')
-          this.#model.style[prop] = value;
-        }
       } else {
-        this.#setObjectProperty(this.#model, this.#property, value);
+          this.#model.setAttribute(this.#modelAttr, value);
       }
+    } else {
+      this.#setObjectProperty(this.#model, this.#property, value);
     }
 
     // Notify others
