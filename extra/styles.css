@@ -114,10 +114,13 @@ body {
   .card
   { border-radius: .5rem; }
 
-  .nofrills {
-  	border: none;
-  	border-radius: 0;
+  details[open] > summary {
+  	border-bottom-left-radius: 0;
+  	border-bottom-right-radius: 0;
   }
+
+  .nofrills
+  { border: none }
 
   [contenteditable]:hover
   { border-color: var(--accent-color); }
