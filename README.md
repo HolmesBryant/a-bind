@@ -6,13 +6,15 @@
 
 ## Change Log
 
+- v2.1.0 : added ability to bind to css regular and custom properties on the model and bound element.
+
 - v2.0.0:
 
   * added batched updates using requestAnimationFrame.
 
   * added optional throttling via `throttle` attribute.
 
-  * added pub/sub system.
+  * added pub/sub system for more efficient updates.
 
 - v1.0.0: initial commit
 
@@ -50,7 +52,7 @@ Simply import the script as a module in your HTML file.
 
 ## Usage
 
-1. Basic Binding (Global Objects)
+### Basic Binding (Global Objects)
 
 You can bind to any object attached to the global window scope.
 
@@ -78,7 +80,7 @@ You can bind to any object attached to the global window scope.
     </a-bind>
 ```
 
-2. Component Binding (ES Modules)
+### Component Binding (ES Modules)
 
 Use `<a-bindgroup>` to load a JavaScript class file. The group creates a singleton instance of the class and shares it with all child binders.
 
@@ -117,7 +119,7 @@ Use `<a-bindgroup>` to load a JavaScript class file. The group creates a singlet
     </a-bindgroup>
 ```
 
-3. DOM-to-DOM Binding
+### DOM-to-DOM Binding
 
 You can bind one element directly to another without a JavaScript model by using an ID selector.
 
@@ -128,6 +130,63 @@ You can bind one element directly to another without a JavaScript model by using
     <a-bind model="#source" model-attr="value" elem-attr="textContent">
       <span>0</span>
     </a-bind>
+```
+
+### CSS & Style Binding
+
+You can bind data directly to CSS properties (including CSS Variables) by using the `style.` prefix.
+
+#### elem-attr (Styling the Child)
+
+Use this when you want data from your model to change the style of the element inside the `<a-bind>` tag.
+
+**Syntax:** elem-attr="style.property"
+
+**Syntax (Custom Var):** elem-attr="style.--variable-name"
+
+
+```html
+<style>
+  .box { --size: 100px; }
+</style>
+
+<script>
+  var app = {
+    color: 'orange';
+    size: '50px';
+  }
+</script>
+
+<!-- Example: The inner <div> background changes based on 'app.color' -->
+<a-bind model="app" property="color" elem-attr="style.backgroundColor">
+    <div class="box">I change color</div>
+</a-bind>
+
+<!-- Example: Updating a CSS Variable on the child -->
+<a-bind model="app" property="size" elem-attr="style.--size">
+    <div class="box" style="width: var(--size); height: var(--size)">I change size</div>
+</a-bind>
+```
+
+#### model-attr (Styling the Model)
+
+Use this when your model is a DOM element (e.g., #target), and you want an input to update that element's CSS directly.
+
+**Syntax:** model-attr="style.property"
+
+**Syntax (Custom Var):** model-attr="style.--variable-name"
+
+```html
+<!-- The Target Element (Model) -->
+<div id="target" style="--theme: blue; color: var(--theme);">
+    I am the target
+</div>
+
+<!-- The Control -->
+<!-- When input changes, it updates '--theme' on #target -->
+<a-bind model="#target" model-attr="style.--theme">
+    <input type="text" value="red">
+</a-bind>
 ```
 
 ## Throttling & Performance
@@ -172,7 +231,7 @@ When applied to display elements, it limits how often the DOM updates. Perfect f
 | func      | null    | A method name to execute on the model when event fires. The method always recives an Event object|
 | pull      | false   | If set, data flows only from UI ➔ Model.                                                        |
 | push      | false   | If set, data flows only from Model ➔ UI.                                                        |
-| once      | false   | Update the UI once on load, then disconnect listeners.                                           |
+| once      | false   | Update the UI once on load, then disconnect listeners. (Bound element still updates model)       |
 | model-attr| null    | If binding to a DOM element, the attribute on that element to watch.                             |
 
 ## Static Methods

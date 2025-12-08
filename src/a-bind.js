@@ -4,7 +4,7 @@
  *              Features MutationObserver support, batched DOM updates via requestAnimationFrame,
  *              and intelligent throttling (Input Debounce / Output Rate Limiting).
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @version 2.0.0
+ * @version 2.1.0
  * @license GPL-3.0
  */
 
@@ -551,10 +551,17 @@ export default class ABind extends HTMLElement {
     if (value === undefined || value === null) value = '';
     if (this.#debug) console.groupCollapsed(`#setElementAttribute(${element}, ${attribute}, ${value})`);
     if (attribute.startsWith('style.')) {
-      element.style[attribute.split('.')[1]] = value;
+      const cssProp = attribute.split('.')[1];
+      if (cssProp.startsWith('--')) {
+        // CSS Variables require setProperty
+        element.style.setProperty(cssProp, value);
+      } else {
+        // Standard properties (e.g. backgroundColor)
+        element.style[cssProp] = value;
+      }
+
       if (this.#debug) {
-        const cssProp = attribute.split('.')[1];
-        console.log({cssProp: value});
+        console.log({ [cssProp]: value });
         console.groupEnd();
       }
       return;
@@ -738,9 +745,18 @@ export default class ABind extends HTMLElement {
     }
 
     if (value === undefined) {
-      value = this.#modelAttr
-        ? this.#model.getAttribute(this.#modelAttr)
-        : this.#getObjectProperty(this.#model, this.#property);
+      if (this.#modelAttr) {
+        if (this.#modelAttr.startsWith('style.')) {
+            // Read CSS variable or style property
+            const prop = this.#modelAttr.substring(6); // remove 'style.'
+            // use getComputedStyle to also catch css variables
+            value = getComputedStyle(this.#model).getPropertyValue(prop).trim();
+        } else {
+            value = this.#model.getAttribute(this.#modelAttr);
+        }
+      } else {
+        value = this.#getObjectProperty(this.#model, this.#property);
+      }
     }
 
     const attrs = this.#elemAttr.split(',').map(s => s.trim());
@@ -767,16 +783,20 @@ export default class ABind extends HTMLElement {
   #updateModel(value) {
     if (this.#debug) console.groupCollapsed(`#updateModel(${value})`);
     let oldValue;
+
     if (this.#modelAttr) {
-      oldValue = this.#model.getAttribute(this.#modelAttr);
+      if (this.#modelAttr.startsWith('style.')) {
+        // remove 'style.'
+        const prop = this.#modelAttr.substring(6);
+        oldValue = this.#model.style.getPropertyValue(prop).trim();
+      } else {
+        oldValue = this.#model.getAttribute(this.#modelAttr);
+      }
     } else {
       oldValue = this.#getObjectProperty(this.#model, this.#property);
     }
 
-    if (this.#debug) {
-      console.log({ value, oldValue });
-
-    }
+    if (this.#debug) console.log({ value, oldValue });
 
     // Loose equality check to handle 1 vs "1" to account for model attributes
     if (oldValue == value) {
@@ -788,9 +808,19 @@ export default class ABind extends HTMLElement {
     }
 
     if (this.#modelAttr) {
-      this.#model.setAttribute(this.#modelAttr, value);
-    } else {
-      this.#setObjectProperty(this.#model, this.#property, value);
+      if (this.#modelAttr.startsWith('style.')) {
+        const prop = this.#modelAttr.substring(6); // remove 'style.'
+
+        if (prop.startsWith('--')) {
+          // CSS Variables must use setProperty
+          this.#model.style.setProperty(prop, value);
+        } else {
+          // Standard properties (supports camelCase like 'backgroundColor')
+          this.#model.style[prop] = value;
+        }
+      } else {
+        this.#setObjectProperty(this.#model, this.#property, value);
+      }
     }
 
     // Notify others
@@ -798,6 +828,7 @@ export default class ABind extends HTMLElement {
     const prop = this.#property || this.#modelAttr;
     if (observer && prop) observer.publish(prop, value);
     if (this.#debug) {
+      console.log('model', this.#model);
       console.log('observer.publish()', prop, value);
       console.log(this.#printDebug());
       console.groupEnd();
