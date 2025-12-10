@@ -138,8 +138,17 @@ export default class ABind extends HTMLElement {
    * @returns {string[]} ['debug', 'elem-attr', 'event', 'func', 'model', 'model-attr', 'once', 'property', 'pull', 'push', 'throttle']
    */
   static observedAttributes = [
-    'debug', 'elem-attr', 'event', 'func', 'model',
-    'model-attr', 'once', 'property', 'pull', 'push', 'throttle'
+    'debug',
+    'elem-attr',
+    'event',
+    'func',
+    'model',
+    'model-attr',
+    'once',
+    'property',
+    'pull',
+    'push',
+    'throttle'
   ];
 
 
@@ -478,8 +487,8 @@ export default class ABind extends HTMLElement {
     }
 
     if (typeof this.#model === 'object') {
-      // It's a custom element
       if (this.#model.localName && this.#model.localName.includes('-')) {
+        // It's a custom element
         await customElements.whenDefined(this.#model.localName);
         if (this.#debug) {
           console.log('resolved: model is custom element');
@@ -490,10 +499,10 @@ export default class ABind extends HTMLElement {
       } else {
         // It's not a custom element
         if (this.#debug) {
-        console.log('resolved: model is object');
-        console.log(this.#printDebug());
-        console.groupEnd();
-      }
+          console.log('resolved: model is object');
+          console.log(this.#printDebug());
+          console.groupEnd();
+        }
       return;
       }
     }
@@ -550,6 +559,7 @@ export default class ABind extends HTMLElement {
   #setElementAttribute(element, attribute, value) {
     if (value === undefined || value === null) value = '';
     if (this.#debug) console.groupCollapsed(`#setElementAttribute(${element}, ${attribute}, ${value})`);
+    // Check if it's a style
     if (attribute.startsWith('style.')) {
       const cssProp = attribute.split('.')[1];
       if (cssProp.startsWith('--')) {
@@ -572,8 +582,12 @@ export default class ABind extends HTMLElement {
       element.checked = String(element.value) === String(value);
       if (this.#debug) console.log({ checked: element.checked });
     } else if (element.localName === 'select' && element.multiple) {
-      const valArr = Array.isArray(value) ? value.map(String) : String(value).split(',');
-      Array.from(element.options).forEach(opt => opt.selected = valArr.includes(opt.value));
+      const valArr = Array.isArray(value) ?
+        value.map( item => String(item).trim()) :
+        String(value).split(',').map(item => item.trim());
+      for (const option of element.options) {
+        option.selected = valArr.includes(option.value);
+      }
       if (this.#debug) console.log('selectedOptions', element.selectedOptions);
     } else if (attribute in element) {
       element[attribute] = value;
@@ -747,12 +761,16 @@ export default class ABind extends HTMLElement {
     if (value === undefined) {
       if (this.#modelAttr) {
         if (this.#modelAttr.startsWith('style.')) {
-            // Read CSS variable or style property
-            const prop = this.#modelAttr.substring(6); // remove 'style.'
+            //remove 'style.'
+            const prop = this.#modelAttr.substring(6);
             // use getComputedStyle to also catch css variables
             value = getComputedStyle(this.#model).getPropertyValue(prop).trim();
         } else {
-            value = this.#model.getAttribute(this.#modelAttr);
+            if (this.#model.getAttribute) {
+              value = this.#model.getAttribute(this.#modelAttr);
+            } else {
+              console.warn(`Attempting to use getAttribute(${this.#modelAttr}) on non-element`, this.#model)
+            }
         }
       } else {
         value = this.#getObjectProperty(this.#model, this.#property);
@@ -861,33 +879,46 @@ export default class ABind extends HTMLElement {
 export class ABindgroup extends HTMLElement {
   static modelRegistry = new Map();
   static modelReferenceCounts = new Map();
-  #modelUrl = null;
+  #debug = false;
+  #model;
+  #modelKey = null;
   #modelInstance = null;
   #mutationObserver = null;
+
+  static observedAttributes = ['debug', 'model'];
+
+  constructor() {
+    super();
+  }
+
+  // --- Lifecycle ---
+
+  attributeChangedCallback(attr, oldval, newval) {
+    if (oldval === newval) return;
+    if (this.#debug) console.log(`attributeChangedCallback(${attr}, ${oldval}, ${newval})`);
+    if (attr === 'debug') this.#debug = newval !== 'false';
+    if (attr === 'model') this.#model = newval;
+  }
 
   /**
    * Called when connected. Loads the module defined in the 'model' attribute,
    * instantiates the class, and assigns it to all children.
    */
   async connectedCallback() {
+    if (this.#debug) {
+      console.groupCollapsed('connectedCallback()');
+    }
     try {
-      const id = this.getAttribute('model');
-      if (!id) throw new Error('a-bindgroup requires "model" attribute.');
+      const idx = this.#model;
+      if (!idx) throw new Error('a-bindgroup requires "model" attribute.');
 
-      // Load Model
-      const instance = document.body.querySelector(id);
-      if (!instance) {
-        const { modelInstance, modelUrl } = await this.#getModel(id);
-        this.#modelUrl = modelUrl;
-        this.#modelInstance = modelInstance;
-      } else {
-        this.#modelUrl = id;
-        this.#modelInstance = instance;
-      }
+      const { modelInstance, modelKey } = await this.#loadModel(idx);
+      this.#modelKey = modelKey;
+      this.#modelInstance = modelInstance;
 
       // Ref Count
-      const count = ABindgroup.modelReferenceCounts.get(this.#modelUrl) || 0;
-      ABindgroup.modelReferenceCounts.set(this.#modelUrl, count + 1);
+      const count = ABindgroup.modelReferenceCounts.get(this.#modelKey) || 0;
+      ABindgroup.modelReferenceCounts.set(this.#modelKey, count + 1);
 
       // Apply to existing children
       this.#updateChildren();
@@ -901,8 +932,14 @@ export class ABindgroup extends HTMLElement {
         if (needsUpdate) this.#updateChildren();
       });
       this.#mutationObserver.observe(this, { childList: true, subtree: true });
+
+      if (this.#debug) {
+        console.log({modelInstance, modelKey, count});
+        console.groupEnd();
+      }
     } catch (err) {
       console.error(err, this);
+      console.groupEnd();
     }
   }
 
@@ -911,16 +948,121 @@ export class ABindgroup extends HTMLElement {
    * model instance from the registry if count reaches zero.
    */
   disconnectedCallback() {
+    if (this.#debug) console.groupCollapsed('disconnectedCallback()');
     this.#mutationObserver?.disconnect();
 
-    if (this.#modelUrl) {
-      const count = ABindgroup.modelReferenceCounts.get(this.#modelUrl);
+    if (this.#modelKey) {
+      const count = ABindgroup.modelReferenceCounts.get(this.#modelKey);
       if (count === 1) {
-        ABindgroup.modelRegistry.delete(this.#modelUrl);
-        ABindgroup.modelReferenceCounts.delete(this.#modelUrl);
+        ABindgroup.modelRegistry.delete(this.#modelKey);
+        ABindgroup.modelReferenceCounts.delete(this.#modelKey);
       } else {
-        ABindgroup.modelReferenceCounts.set(this.#modelUrl, count - 1);
+        ABindgroup.modelReferenceCounts.set(this.#modelKey, count - 1);
       }
+    }
+
+    if (this.#debug) {
+      console.log({
+        modelRegistry: ABindgroup.modelRegistry,
+        modelReferenceCounts: ABindgroup.modelReferenceCounts
+      });
+      console.groupEnd();
+    }
+  }
+
+  // --- Private ---
+
+  /**
+   * Determines if a function/object can be called with the 'new' keyword.
+   * Uses Reflect.construct for the most reliable check.
+   * @param {any} func - The object or function to check.
+   * @returns {boolean}
+   */
+  #isInstantiable(func) {
+    if (this.#debug) console.groupCollapsed(`#isInstantiable(${func})`);
+    if (typeof func !== 'function') {
+      if (this.#debug) console.log('Not Instantiable');
+      return false;
+    }
+
+    try {
+      // Reflect.construct throws a TypeError if 'func' is not a constructor.
+      Reflect.construct(func, [], func);
+      if (this.#debug) console.log('Is Instantiable');
+      return true;
+    } catch (e) {
+      if (this.#debug) console.log('Not Instantiable');
+      return false;
+    }
+  }
+
+  /**
+   * Determines if a string looks like a path or URL pointing to a JS module.
+   * @param {string} str - The input string.
+   * @returns {boolean}
+   */
+  #isModulePath(str) {
+    if (this.#debug) console.log(`#isModulePath(${str})`);
+    return (
+      str.startsWith('http://') ||
+      str.startsWith('https://') ||
+      str.startsWith('./') ||
+      str.startsWith('../') ||
+      str.endsWith('.js') ||
+      str.endsWith('.mjs')
+    );
+  }
+
+  /**
+   * Loads a resource, which can be either a JavaScript module (URL/Path)
+   * or a CSS selector for a DOM element.
+   * * If a module is loaded:
+   * 1. It checks for a 'default' export.
+   * 2. It checks if the export is an instantiable constructor (class or function).
+   * 3. It instantiates the constructor if possible, otherwise uses the object as-is.
+   * * If a CSS selector is provided:
+   * 1. It attempts to select the element in the DOM.
+   * @param {string} key - The CSS selector or module URL/Path.
+   * @returns {Promise<{model: any, key: string}>} - An object containing the loaded model/element and the original key.
+   */
+  async #loadModel(modelKey) {
+    if (this.#debug) console.groupCollapsed(`#loadModel(${modelKey})`);
+    // Check if the argument is a module path/URL
+    if (this.#isModulePath(modelKey)) {
+      try {
+        const moduleObject = await import(modelKey);
+        const rawModel = moduleObject.default || moduleObject;
+        const model = this.#isInstantiable(rawModel) ? new rawModel() : rawModel;
+
+        if (this.#debug) {
+          console.log({ modelInstance:model, modelKey, moduleObject, rawModel })
+          console.groupEnd();
+        }
+        return { modelInstance:model, modelKey };
+
+      } catch (error) {
+        // Re-throw the error, but add context
+        console.error(`Failed to load or instantiate module: ${modelKey}`, error);
+        console.groupEnd();
+        throw new Error(`Module loading failed for modelKey: ${modelKey}`);
+      }
+    }
+
+    // If it's not a module path, treat it as a CSS selector
+    try {
+      const element = document.querySelector(modelKey);
+      if (!element) throw new Error(`CSS selector matched no element: ${modelKey}`);
+      // The modelInstance is the selected DOM element
+      if (this.#debug) {
+        console.log({ modelInstance: element, modelKey });
+        console.groupEnd();
+      }
+      return { modelInstance: element, modelKey };
+    } catch (error) {
+      // Re-throw the error, but add context
+      console.error(`Failed to select DOM element: ${modelKey}`, error);
+      if (this.#debug) console.groupEnd();
+      throw new Error(`DOM selection failed for modelKey: ${modelKey}`);
     }
   }
 
@@ -929,61 +1071,35 @@ export class ABindgroup extends HTMLElement {
    * @private
    */
   #updateChildren() {
-    if (!this.#modelInstance) return;
+    if (this.#debug) {
+      console.groupCollapsed('#updateChildren()');
+      console.log('modelInstance', this.#modelInstance);
+    }
+    if (!this.#modelInstance) {
+      console.groupEnd();
+      return;
+    }
     // Query all a-binds that don't have a model yet
     const binders = this.querySelectorAll('a-bind');
+    if (this.#debug) console.groupCollapsed('binders');
     binders.forEach(binder => {
       // Direct property access is safer than checking attribute
       if (!binder.model) binder.model = this.#modelInstance;
+      if (this.#debug) console.log(binder)
     });
-  }
-
-  /**
-   * Resolves the module URL relative to the current import meta.
-   * @private
-   * @param {string} file - The model filename or path.
-   * @returns {Promise<{modelInstance: Object, modelUrl: string}>}
-   */
-  async #getModel(file) {
-    // Determine URL (Relative to import.meta.url)
-    let url;
-    if (file.match(/\.(js|mjs)$/) || file.includes('/')) {
-        url = new URL(file, import.meta.url).href;
-    } else {
-        // Try .js, fallback to .mjs handled in catch
-        url = new URL(`${file}.js`, import.meta.url).href;
-    }
-
-    return this.#fetchModel(url, file);
-  }
-
-  /**
-   * Imports the module and manages the singleton registry.
-   * @private
-   * @param {string} url - The full URL of the module.
-   * @param {string} originalId - The original identifier for fallback logic.
-   * @returns {Promise<Object>}
-   */
-  async #fetchModel(url, originalId) {
-    if (ABindgroup.modelRegistry.has(url)) {
-        return { modelInstance: ABindgroup.modelRegistry.get(url), modelUrl: url };
-    }
-
-    try {
-        const mod = await import(url);
-        if (typeof mod.default !== 'function') throw new Error(`Module ${url} missing default class export.`);
-        const instance = new mod.default();
-        ABindgroup.modelRegistry.set(url, instance);
-        return { modelInstance: instance, modelUrl: url };
-    } catch (e) {
-        // Fallback to .mjs if .js failed and looks like a generic name
-        if (url.endsWith('.js') && !originalId.endsWith('.js')) {
-            const mjsUrl = url.replace('.js', '.mjs');
-            return this.#fetchModel(mjsUrl, originalId);
-        }
-        throw e;
+    if (this.#debug) {
+      console.groupEnd();
+      console.groupEnd();
     }
   }
+
+  // --- Getters / Setters
+
+  get debug() { return this.#debug }
+  set debug(value) { this.toggleAttribute('debug', value !== false )}
+
+  get model() { return this.#model }
+  set model(value) { this.setAttribute('model', value) }
 }
 
 if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);

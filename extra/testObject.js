@@ -1,4 +1,4 @@
-var testObj = {
+export const testObject = {
 	_text: null,
 	_datalist: null,
 	_search: null,
@@ -151,7 +151,7 @@ var testObj = {
 
 	set text(value) {
 		this._text = value;
-		if (window.abind) abind.update(this, 'text', value);
+		window.abind?.update?.(this, 'text', value);
 	},
 
 	get datalist() {
@@ -163,98 +163,98 @@ var testObj = {
 		.map(item => `<option>${item}</option>`)
 		.join("\n");
 
-		if (window.abind) abind.updateDefer(this, 'datalist');
+		window.abind?.update?.Defer(this, 'datalist');
 	},
 
 	get search() { return this._search },
 
 	set search(value) {
 		this._search = value;
-		if (window.abind) abind.update(this, 'search', value);
+		window.abind?.update?.(this, 'search', value);
 	},
 
 	get password() { return this._password},
 
 	set password(value) {
 		this._password = value;
-		if (window.abind) abind.update(this, 'password', value);
+		window.abind?.update?.(this, 'password', value);
 	},
 
 	get tel() { return this._tel },
 
 	set tel(value) {
 		this._tel = value;
-		if (window.abind) abind.update(this, 'tel', value);
+		window.abind?.update?.(this, 'tel', value);
 	},
 
 	get url() { return this._url },
 
 	set url(value) {
 		this._url = value;
-		if (window.abind) abind.update(this, 'url', value);
+		window.abind?.update?.(this, 'url', value);
 	},
 
 	get email() { return this._email },
 
 	set email(value) {
 		this._email = value;
-		if (window.abind) abind.update(this, 'email', value);
+		window.abind?.update?.(this, 'email', value);
 	},
 
 	get number() { return this._number },
 
 	set number(value) {
 		this._number = value;
-		if (window.abind) abind.update(this, 'number', value);
+		window.abind?.update?.(this, 'number', value);
 	},
 
 	get textarea() { return this._textarea },
 
 	set textarea(value) {
 		this._textarea = value;
-		if (window.abind) abind.update(this, 'textarea', value);
+		window.abind?.update?.(this, 'textarea', value);
 	},
 
 	get date() { return this._date },
 
 	set date(value) {
 		this._date = value;
-		if (window.abind) abind.update(this, 'date', value);
+		window.abind?.update?.(this, 'date', value);
 	},
 
 	get time() { return this._time },
 
 	set time(value) {
 		this._time = value;
-		if (window.abind) abind.update(this, 'time', value);
+		window.abind?.update?.(this, 'time', value);
 	},
 
 	get dateTime() { return this._dateTime },
 
 	set dateTime(value) {
 		this._dateTime = value;
-		if (window.abind) abind.update(this, 'dateTime', value);
+		window.abind?.update?.(this, 'dateTime', value);
 	},
 
 	get week() { return this._week },
 
 	set week(value) {
 		this._week = value;
-		if (window.abind) abind.update(this, 'week', value);
+		window.abind?.update?.(this, 'week', value);
 	},
 
 	get month() { return this._month },
 
 	set month(value) {
 		this._month = value;
-		if (window.abind) abind.update(this, 'month', value);
+		window.abind?.update?.(this, 'month', value);
 	},
 
 	get select() { return this._select },
 
 	set select(value) {
 		this._select = value;
-		if (window.abind) abind.update(this, 'select', value);
+		window.abind?.update?.(this, 'select', value);
 	},
 
 	get selectMulti() { return this._selectMulti },
@@ -263,49 +263,49 @@ var testObj = {
 		if (value === null) return;
 		value = Array.isArray(value) ? value : value.split(/[,\s]+/);
 		this._selectMulti = value;
-		if (window.abind) abind.update(this, 'selectMulti', value);
+		window.abind?.update?.(this, 'selectMulti', value);
 	},
 
 	get checkboxFoo() { return this._checkboxFoo },
 
 	set checkboxFoo(value) {
 		this._checkboxFoo = value;
-		if (window.abind) abind.update(this, 'checkboxFoo', value);
+		window.abind?.update?.(this, 'checkboxFoo', value);
 	},
 
 	get checkboxBar() { return this._checkboxBar },
 
 	set checkboxBar(value) {
 		this._checkboxBar = value;
-		if (window.abind) abind.update(this, 'checkboxBar', value);
+		window.abind?.update?.(this, 'checkboxBar', value);
 	},
 
 	get radioGroup() { return this._radioGroup },
 
 	set radioGroup(value) {
 		this._radioGroup = value;
-		if (window.abind) abind.update(this, 'radioGroup', value);
+		window.abind?.update?.(this, 'radioGroup', value);
 	},
 
 	get button() { return this._button },
 
 	set button(value) {
 		this._button = value;
-		if (window.abind) abind.update(this, 'button', value);
+		window.abind?.update?.(this, 'button', value);
 	},
 
 	get color() { return this._color },
 
 	set color(value) {
 		this._color = value;
-		if (window.abind) abind.update(this, 'color', value);
+		window.abind?.update?.(this, 'color', value);
 	},
 
 	get range() { return this._range },
 
 	set range(value) {
 		this._range = value;
-		if (window.abind) abind.update(this, 'range', value);
+		window.abind?.update?.(this, 'range', value);
 	},
 
 	get progress() { return this._progress },
@@ -313,28 +313,28 @@ var testObj = {
 	set progress(value) {
 		value = parseFloat(value);
 		this._progress = value;
-		if (window.abind) abind.update(this, 'progress', value);
+		window.abind?.update?.(this, 'progress', value);
 	},
 
 	get meter() { return this._meter },
 
 	set meter(value) {
 		this._meter = parseFloat(value);
-		if (window.abind) abind.update(this, 'meter', value);
+		window.abind?.update?.(this, 'meter', value);
 	},
 
 	get file() { return this._file; },
 
 	set file(fileList) {
 		this._file = fileList;
-		if (window.abind) abind.update(this, 'file', this._file);
+		window.abind?.update?.(this, 'file', this._file);
 	},
 
 	get name() { return this._name },
 
 	set name(value) {
 		this._name = value;
-		if (window.abind) abind.update(this, 'name', value);
+		window.abind?.update?.(this, 'name', value);
 	},
 
 	get editable() {
@@ -355,8 +355,6 @@ var testObj = {
 		if (value === this._editable) return;
 		this._editable = value;
 		setTimeout(() => { this._editableFormatted = null; });
-		if (window.abind) abind.update(this, 'editable', this.editable);
+		window.abind?.update?.(this, 'editable', this.editable);
 	}
 }
-
-testObj.reset();

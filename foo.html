@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Foo!</title>
+	<script type="module" src="extra/code-demo.js"></script>
+	<script type="module" src="src/a-bind.js"></script>
+	<script type="module" src="extra/custom-element.js"></script>
+	<script type="module" src="extra/a-code.min.js"></script>
+
+	<link rel="stylesheet" href="extra/styles.css">
+</head>
+<body>
+	<h1>Foo!</h1>
+
+	<a-bindgroup model="custom-element">
+		<code-demo attr="text" prop="text">
+			<div slot="attr"></div>
+			<div slot="prop"></div>
+			<div slot="input" class="flex column flex1 gap0">
+				<label for="c-text"> text </label>
+					<a-bind property="text">
+						<input id="c-text">
+					</a-bind>
+			</div>
+
+			<a-code highlight slot="code">
+				<textarea>
+					<a-bind
+						property="text">
+						<input>
+					</a-bind>
+				</textarea>
+			</a-code>
+		</code-demo>
+
+		<hr>
+
+		<code-demo attr="datalist" prop="datalist">
+			<div slot="attr"></div>
+			<div slot="prop"></div>
+			<div slot="input" class="flex column flex1 gap0">
+				<label for="c-datalist-input"> input with datalist </label>
+					<a-bind property="datalistInput">
+						<input id="c-datalist-input" list="c-datalist">
+					</a-bind>
+
+					<a-bind
+						property="datalistInput">
+						<output></output>
+					</a-bind>
+
+					<a-bind
+						property="datalist"
+						elem-attr="innerHTML">
+						<datalist id="c-datalist"></datalist>
+					</a-bind>
+			</div>
+
+			<a-code highlight slot="code">
+				<textarea>
+					<a-bind
+						property="text">
+						<input>
+					</a-bind>
+				</textarea>
+			</a-code>
+		</code-demo>
+	</a-bindgroup>
+
+	<custom-element></custom-element>
+</body>
+</html>

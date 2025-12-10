@@ -43,6 +43,8 @@ export default class CustomElement extends HTMLElement {
 
 	// Public
 
+	datalistHTML;
+
 	/**
 	 * Default values for all properties so I can reset the UI back to the original values.
 	 * @type {Object}
@@ -63,7 +65,7 @@ export default class CustomElement extends HTMLElement {
 		dateTime: "1970-01-01T12:00",
 		week: "1970-W01",
 		month: "1970-01",
-		select: "",
+		select: "baz",
 		selectMulti: 'foo, baz',
 		checkboxFoo: 'foo',
 		checkboxBar: 'bar',
@@ -122,58 +124,116 @@ export default class CustomElement extends HTMLElement {
     if (this.#connected && newval === oldval) return;
 
     switch (attr) {
-	    case 'text': this.#text = newval; break;
 			case 'datalist':
 				let options = "";
 				for (const option of this.optionGenerator(newval)) options += option;
-				this.#datalist = options;
+				this.datalistHtml = options;
+				this.#datalist = newval;
+				window.abind?.update?.(this, 'datalist', options);
+				window.abind?.update?.(this, 'datalistHtml', options);
 				break;
 			case 'datalist-input':
 				this.#datalistInput = newval;
-				if (window.abind) abind.update(this, 'datalistInput', newval);
+				window.abind?.update?.(this, 'datalistInput', newval);
 				break;
-			case 'search': this.#search = newval; break;
-			case 'password': this.#password = newval; break;
-			case 'tel': this.#tel = newval; break;
-			case 'url': this.#url = newval; break;
-			case 'email': this.#email = newval; break;
-			case 'number': this.#number = newval; break;
-			case 'textarea': this.#textarea = newval; break;
-			case 'date': this.#date = newval; break;
-			case 'time': this.#time = newval; break;
 			case 'date-time':
 				this.#dateTime = newval;
-				if (window.abind) abind.update(this, 'dateTime', newval);
+				window.abind?.update?.(this, 'dateTime', newval);
 				break;
-			case 'week': this.#week = newval; break;
-			case 'month': this.#month = newval; break;
-			case 'select': this.#select = newval; break;
 			case 'select-multi':
 				this.#selectMulti = newval;
-				if (window.abind) abind.update(this, 'selectMulti', newval);
+				window.abind?.update?.(this, 'selectMulti', newval);
 				break;
 			case 'checkbox-foo':
 				this.#checkboxFoo = newval;
-				if (window.abind) abind.update(this, 'checkboxFoo', newval);
+				window.abind?.update?.(this, 'checkboxFoo', newval);
 				break;
 			case 'checkbox-bar':
 				this.#checkboxBar = newval;
-				if (window.abind) abind.update(this, 'checkboxBar', newval);
+				window.abind?.update?.(this, 'checkboxBar', newval);
 				break;
 			case 'radio-group':
 				this.#radioGroup = newval;
-				if (window.abind) abind.update(this, 'radioGroup', newval);
+				window.abind?.update?.(this, 'radioGroup', newval);
 				break;
-			case 'button': this.#button = newval; break;
-			case 'color': this.#color = newval; break;
-			case 'range': this.#range = newval; break;
-			case 'progress': this.#progress = newval; break;
-			case 'meter': this.#meter = newval; break;
-			case 'name': this.#name = newval; break;
-			case 'editable': this.#editable = newval; break;
+	    case 'text':
+	    	this.#text = newval;
+				window.abind?.update?.(this, 'text', newval);
+	    	break;
+			case 'search':
+				this.#search = newval;
+				window.abind?.update?.(this, 'search', newval);
+				break;
+			case 'password':
+				this.#password = newval;
+				window.abind?.update?.(this, 'password', newval);
+				break;
+			case 'tel':
+				this.#tel = newval;
+				window.abind?.update?.(this, 'tel', newval);
+				break;
+			case 'url':
+				this.#url = newval;
+				window.abind?.update?.(this, 'url', newval);
+				break;
+			case 'email':
+				this.#email = newval; break;
+				window.abind?.update?.(this, 'email', newval);
+			case 'number': this.#number = newval;
+				break;
+			case 'textarea':
+				this.#textarea = newval;
+				window.abind?.update?.(this, 'textarea', newval);
+				break;
+			case 'date':
+				this.#date = newval;
+				window.abind?.update?.(this, 'date', newval);
+				break;
+			case 'time':
+				this.#time = newval;
+				window.abind?.update?.(this, 'time', newval);
+				break;
+			case 'week':
+				this.#week = newval;
+				window.abind?.update?.(this, 'week', newval);
+				break;
+			case 'month':
+				this.#month = newval;
+				window.abind?.update?.(this, 'month', newval);
+				break;
+			case 'select':
+				this.#select = newval;
+				window.abind?.update?.(this, 'select', newval);
+				break;
+			case 'button':
+				this.#button = newval;
+				window.abind?.update?.(this, 'button', newval);
+				break;
+			case 'color':
+				window.abind?.update?.(this, 'color', newval);
+				this.#color = newval;
+				break;
+			case 'range':
+				this.#range = newval;
+				window.abind?.update?.(this, 'range', newval);
+				break;
+			case 'progress':
+				this.#progress = newval;
+				window.abind?.update?.(this, 'progress', newval);
+				break;
+			case 'meter':
+				this.#meter = newval;
+				window.abind?.update?.(this, 'meter', newval);
+				break;
+			case 'name':
+				this.#name = newval;
+				window.abind?.update?.(this, 'name', newval);
+				break;
+			case 'editable':
+				this.#editable = newval;
+				break;
     }
 
-    if (window.abind) abind.update(this, attr, newval);
 	}
 
 	connectedCallback() {
