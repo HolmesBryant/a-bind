@@ -8,7 +8,6 @@
 
   <script type="module" src="extra/custom-element.js"></script>
   <script src="extra/example-component.js"></script>
-  <script type="module" src="extra/testObject.js"></script>
   <script defer src="extra/exampleObject.js"></script>
 	<script type="module" src="extra/a-markdown.min.js"></script>
   <script type="module" src="src/a-bind.js"></script>
@@ -17,16 +16,24 @@
   <script type="module" src="extra/a-code.min.js"></script>
   <script type="module" src="extra/code-demo.js"></script>
 
+  <script>
+  	customElements.whenDefined('code-demo')
+  	.then( cls => {
+  		cls.model = 'bar';
+  		console.log(cls.model)
+  	});
+  </script>
+
 	<link rel="stylesheet" href="extra/styles.css">
   <link rel="stylesheet" href="extra/a-markdown.css">
   <link rel="stylesheet" href="extra/a-tabset.css">
 
-<style>
-  [slot="content"] {
-    height: 100svh;
-    overflow: auto;
-  }
-</style>
+	<style>
+	  [slot="content"] {
+	    height: 100svh;
+	    overflow: auto;
+	  }
+	</style>
 
 </head>
 <body>
@@ -47,17 +54,15 @@
 		</details>
 	</header>
 
-	<a-tabset>
+	<a-tabset active="1">
 		<span slot="title">Custom Element</span>
 		<div slot="content" src="tab-component.html"></div>
 
 		<span slot="title">JS Object</span>
-		<div slot="content">
-			object demo
+		<div slot="content" nosrc="tab-object.html">
+			working on it...
 		</div>
 	</a-tabset>
 
-
-	<custom-element></custom-element>
 </body>
 </html>

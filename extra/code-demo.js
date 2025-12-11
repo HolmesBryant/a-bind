@@ -12,7 +12,11 @@ export default class CodeDemo extends HTMLElement {
   #codeContainer;
   #initialized = false;
 
+  // Public
+
   // -- Static --
+
+  static model = 'nope';
 
   static observedAttributes = ['attr', 'attr-val', 'prop', 'prop-val'];
 
@@ -171,12 +175,14 @@ export default class CodeDemo extends HTMLElement {
     textarea.textContent = `
 			<a-bind
 				pull
+    model="${this.model}"
 				${type}="${value}">
 			 	<output></output>
 			</a-bind>
 
 			<a-bind
 				push
+    model="${this.model}"
 				${type}="${value}"
 				event="click">
 			  <button
@@ -189,6 +195,15 @@ export default class CodeDemo extends HTMLElement {
     acode.append(textarea);
     wrapper.append(acode);
     this.#codeContainer.prepend(wrapper);
+  }
+
+  get model() {
+    return CodeDemo.model;
+  }
+
+  set model(value) {
+    CodeDemo.model = value;
+    window.abind?.update?.(this, 'model', value);
   }
 }
 

@@ -19,8 +19,7 @@ export default class CustomElement extends HTMLElement {
 	#month;
 	#select;
 	#selectMulti;
-	#checkboxFoo;
-	#checkboxBar;
+	#checkbox;
 	#radioGroup;
 	#button;
 	#color;
@@ -67,8 +66,7 @@ export default class CustomElement extends HTMLElement {
 		month: "1970-01",
 		select: "baz",
 		selectMulti: 'foo, baz',
-		checkboxFoo: 'foo',
-		checkboxBar: 'bar',
+		checkbox: 'foo',
 		radioGroup: 'foo',
 		button: "value of button property",
 		color: "#cd5c5c",
@@ -97,7 +95,7 @@ export default class CustomElement extends HTMLElement {
 		'month',
 		'select',
 		'select-multi',
-		'checkbox-foo',
+		'checkbox',
 		'checkbox-bar',
 		'radio-group',
 		'button',
@@ -135,26 +133,26 @@ export default class CustomElement extends HTMLElement {
 			case 'datalist-input':
 				this.#datalistInput = newval;
 				window.abind?.update?.(this, 'datalistInput', newval);
+				window.abind?.update?.(this, 'datalist-input', newval);
 				break;
 			case 'date-time':
 				this.#dateTime = newval;
 				window.abind?.update?.(this, 'dateTime', newval);
+				window.abind?.update?.(this, 'date-time', newval);
 				break;
 			case 'select-multi':
 				this.#selectMulti = newval;
 				window.abind?.update?.(this, 'selectMulti', newval);
+				window.abind?.update?.(this, 'select-multi', newval);
 				break;
-			case 'checkbox-foo':
-				this.#checkboxFoo = newval;
-				window.abind?.update?.(this, 'checkboxFoo', newval);
-				break;
-			case 'checkbox-bar':
-				this.#checkboxBar = newval;
-				window.abind?.update?.(this, 'checkboxBar', newval);
+			case 'checkbox':
+				this.#checkbox = newval;
+				window.abind?.update?.(this, 'checkbox', newval);
 				break;
 			case 'radio-group':
 				this.#radioGroup = newval;
 				window.abind?.update?.(this, 'radioGroup', newval);
+				window.abind?.update?.(this, 'radio-group', newval);
 				break;
 	    case 'text':
 	    	this.#text = newval;
@@ -177,9 +175,12 @@ export default class CustomElement extends HTMLElement {
 				window.abind?.update?.(this, 'url', newval);
 				break;
 			case 'email':
-				this.#email = newval; break;
+				this.#email = newval;
 				window.abind?.update?.(this, 'email', newval);
-			case 'number': this.#number = newval;
+				break;
+			case 'number':
+				this.#number = newval;
+				window.abind?.update?.(this, 'number', newval);
 				break;
 			case 'textarea':
 				this.#textarea = newval;
@@ -233,7 +234,6 @@ export default class CustomElement extends HTMLElement {
 				this.#editable = newval;
 				break;
     }
-
 	}
 
 	connectedCallback() {
@@ -307,9 +307,14 @@ export default class CustomElement extends HTMLElement {
 		for (const attr of attrs) {
 			// Convert kebab-case attribute name to camelCase property name
     	const prop = attr.replace(/-(.)/g, (match, letter) => letter.toUpperCase());
-			this.removeAttribute(prop);
+			// this.removeAttribute(prop);
 			this[prop] = this.defaults[prop];
 		}
+	}
+
+	resetForm(event) {
+		window.abind?.update?.(this, 'name', this.defaults['name']);
+		window.abind?.update?.(this, 'email', this.defaults['email']);
 	}
 
 	sendForm(event) {
@@ -386,11 +391,8 @@ export default class CustomElement extends HTMLElement {
 	get selectMulti() { return this.#selectMulti }
 	set selectMulti(value) { this.setAttribute("select-multi", value); }
 
-	get checkboxFoo() { return this.#checkboxFoo }
-	set checkboxFoo(value) { this.setAttribute('checkbox-foo', value); }
-
-	get checkboxBar() { return this.#checkboxBar }
-	set checkboxBar(value) { this.setAttribute('checkbox-bar', value); }
+	get checkbox() { return this.#checkbox }
+	set checkbox(value) { this.setAttribute('checkbox', value); }
 
 	get radioGroup() { return this.#radioGroup }
 	set radioGroup(value) { this.setAttribute('radio-group', value); }

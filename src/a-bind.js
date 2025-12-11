@@ -309,7 +309,12 @@ export default class ABind extends HTMLElement {
   }
 
   #getObjectProperty(obj, path) {
-    if (this.#debug) console.groupCollapsed(`#getObjectProperty(${obj}, ${path})`);
+    if (this.#debug) {
+      console.groupCollapsed('#getObjectProperty()');
+      console.log('obj', obj);
+      console.log('path', path);
+    }
+
     const value = (!path) ? obj : path.split('.').reduce((acc, part) => acc && acc[part], obj);
     if (this.#debug) {
       console.log('value', value);
@@ -1027,13 +1032,19 @@ export class ABindgroup extends HTMLElement {
    */
   async #loadModel(modelKey) {
     if (this.#debug) console.groupCollapsed(`#loadModel(${modelKey})`);
-    // Check if the argument is a module path/URL
+
+    // Check if the argument is a path/URL
     if (this.#isModulePath(modelKey)) {
       try {
-        const moduleObject = await import(modelKey);
-        const rawModel = moduleObject.default || moduleObject;
+        const mod = await import(modelKey);
+        // does the file have a default export?
+        let rawModel = mod.default;
+        if (!rawModel) {
+          // If not, grab the first exported item
+          const modelName = Object.keys(mod)[0];
+          rawModel = mod[modelName];
+        }
         const model = this.#isInstantiable(rawModel) ? new rawModel() : rawModel;
-
         if (this.#debug) {
           console.log({ modelInstance:model, modelKey, moduleObject, rawModel })
           console.groupEnd();
@@ -1048,7 +1059,27 @@ export class ABindgroup extends HTMLElement {
       }
     }
 
-    // If it's not a module path, treat it as a CSS selector
+    // It's not a url. Maybe it's global var?
+    if (window[modelKey]) {
+      try {
+        const modelObject = window[modelKey];
+        const model = this.#isInstantiable(modelObject) ? new modelObject() : modelObject;
+
+        if (this.#debug) {
+          console.log({ modelInstance:model, modelKey, modelObject })
+          console.groupEnd();
+        }
+
+        return { modelInstance:model, modelKey };
+      } catch (error) {
+        // Re-throw the error, but add context
+        console.error(`Failed to load or instantiate module: ${modelKey}`, error);
+        console.groupEnd();
+        throw new Error(`Module loading failed for modelKey: ${modelKey}`);
+      }
+    }
+
+    // Finally, treat it as a CSS selector
     try {
       const element = document.querySelector(modelKey);
       if (!element) throw new Error(`CSS selector matched no element: ${modelKey}`);

@@ -17,13 +17,11 @@ class ExampleComponent extends HTMLElement {
 				break;
 		}
 
-		if (window.abind) {
-			abind.update(this, attr, newval);
-			// or abind.updateDefer(this, attr);
-		}
+		window.abind?.update?.(this, attr, newval);
 	}
 
 	connectedCallback() {
+		// Ignore this. It just displays the code of this class
 		this.innerHTML = `<a-code highlight="javascript">\n${this.constructor.toString()}\n</a-code>`;
 	}
 
