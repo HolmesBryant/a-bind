@@ -1,271 +1,214 @@
-# a-bind
+# a-bind.js
 
-**Lightweight, high-performance data binding for Vanilla Web Components and ES modules.**
+Data-binding for Custom Elements and ESM Modules.
 
-`a-bind` is a dependency-free library that provides two-way data binding between JavaScript models and DOM elements using Custom Elements (`<a-bind>`). It is built for modern ES Modules, supports Batched DOM updates via `requestAnimationFrame`, and features intelligent throttling for high-frequency data.
-
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0).
-
-Renders a tabset
-
-Demo: [https://holmesbryant.github.io/a-bind/](https://holmesbryant.github.io/a-bind/)
-
-## Change Log
-
-- v2.1.0 : added ability to bind to css regular and custom properties on the model and bound element.
-
-- v2.0.0:
-
-  * added batched updates using requestAnimationFrame.
-
-  * added optional throttling via `throttle` attribute.
-
-  * added pub/sub system for more efficient updates.
-
-- v1.0.0: initial commit
+a-bind is a lightweight, zero-dependency Web Component library that adds two-way data binding to any HTML application. It bridges the gap between your DOM and your data models (ES Modules, global objects, or other DOM elements) with built-in performance optimization and security features.
 
 ## Features
 
-* **Zero Dependencies:** Built with vanilla Web Components for vanilla scripts. No framework required.
+* Zero Build Step: Works directly in the browser via native ES Modules.
 
-* **Two-Way Binding:** Syncs UI inputs with data models and vice-versa.
+* Secure by Design: Strict origin policies prevent unauthorized module loading.
 
-* **One-Way Binding:**
+* High Performance: Batched DOM updates via requestAnimationFrame and MutationObserver support.
 
-  - **View => Model:** Only update the model (model doesn't influence view) using the 'push' attribute.
+* Intelligent Throttling: Built-in input debouncing and output rate limiting.
 
-  - **Model => View:** Only update the view (view doesn't influence model) using the 'pull' attribute.
+* Scope Management: `<a-bindgroup>` allows for clean, nested model scoping.
 
-* **ES Module Support:** Load JS classes dynamically using `<a-bindgroup>`.
+* Developer Experience: logger for debugging state changes.
 
-* **High Performance:**
+## Change Log
 
-  - **Batched Updates:** Uses `requestAnimationFrame` to prevent layout thrashing.
+- v2.5.0
 
-  - **Smart Throttling:** Automatically handles **Debouncing** (for user input) and **Rate Limiting** (for high-frequency real-time feeds).
+  - Simplified logic ... somewhat
 
-*   **Memory Safe:** Uses `WeakMap` for observers, ensuring models can be garbage collected when elements are removed.
+  - Made it easier for strictly boolean checkboxes (ommit the value attribute on the input)
 
----
+  - Added some security by allowing only local paths for dynamic module imports ('/', './', '../')
 
-## Setup
+- v2.0.0
 
-Simply import the script as a module in your HTML file.
+    - Added `<a-bindgroup model="./SomeClass.js">` to group several `<a-bind>` elements without having to set `model="..."` on every `<a-bind>` element.
 
-```html
-    <script type="module" src="./a-bind.js"></script>
-```
+    - Added UpdateManager to use requestAnimationFrame() to batch rapid updates once per frame.
 
-## Usage
+    - Added Pub/Sub to handle updates in large apps.
 
-### Basic Binding (Global Objects)
+- v1.0.0
 
-You can bind to any object attached to the global window scope.
+    - Initial commit.
 
-```javascript
-    window.appState = {
-        message: "Hello World",
-        theme: "dark"
-    };
-```
+## Installation
+
+Simply import the file into your project.
 
 ```html
-    <!-- Input Binding (Two-way) -->
-    <a-bind model="appState" property="message">
-      <input type="text">
-    </a-bind>
-
-    <!-- Display Binding (One-way) -->
-    <a-bind model="appState" property="message" elem-attr="textContent">
-      <h1>Preview: <span></span></h1>
-    </a-bind>
-
-    <!-- Attribute Binding -->
-    <a-bind model="appState" property="theme" elem-attr="class">
-      <div class="container">Content</div>
-    </a-bind>
+<script type="module" src="./path/to/a-bind.js"></script>
 ```
 
-### Component Binding (ES Modules)
+Or import it inside your main JavaScript file:
 
-Use `<a-bindgroup>` to load a JavaScript class file. The group creates a singleton instance of the class and shares it with all child binders.
-
-```javascript
-    // store.js
-
-    export default class UserStore {
-      constructor() {
-        this.username = "Guest";
-        this.isAdmin = false;
-      }
-
-      login() {
-        alert(`Logging in as ${this.username}...`);
-      }
-    }
+```javaScript
+import ABind from './path/to/a-bind.js';
 ```
+
+## Quick Start
+
+### Binding to a Global Object
+
+Define a model globally (or attach it to window), then bind an input to it.
 
 ```html
-    <!-- index.html -->
-
-    <a-bindgroup model="./store.js">
-
-      <!-- Binds to instance.username -->
-      <label>Username:
-        <a-bind property="username">
-          <input type="text">
-        </a-bind>
-      </label>
-
-      <!-- Execute function on event -->
-      <a-bind func="login" event="click">
-        <button>Log In</button>
-      </a-bind>
-
-    </a-bindgroup>
-```
-
-### DOM-to-DOM Binding
-
-You can bind one element directly to another without a JavaScript model by using an ID selector.
-
-```html
-    <input id="source" type="range" min="0" max="100">
-
-    <!-- Mirror the range input value -->
-    <a-bind model="#source" model-attr="value" elem-attr="textContent">
-      <span>0</span>
-    </a-bind>
-```
-
-### CSS & Style Binding
-
-You can bind data directly to CSS properties (including CSS Variables) by using the `style.` prefix.
-
-#### elem-attr (Styling the Child)
-
-Use this when you want data from your model to change the style of the element inside the `<a-bind>` tag.
-
-**Syntax:** elem-attr="style.property"
-
-**Syntax (Custom Var):** elem-attr="style.--variable-name"
-
-
-```html
-<style>
-  .box { --size: 100px; }
-</style>
-
 <script>
-  var app = {
-    color: 'orange';
-    size: '50px';
-  }
+  window.user = {
+    name: 'Alice',
+    email: 'alice@example.com'
+  };
 </script>
 
-<!-- Example: The inner <div> background changes based on 'app.color' -->
-<a-bind model="app" property="color" elem-attr="style.backgroundColor">
-    <div class="box">I change color</div>
-</a-bind>
-
-<!-- Example: Updating a CSS Variable on the child -->
-<a-bind model="app" property="size" elem-attr="style.--size">
-    <div class="box" style="width: var(--size); height: var(--size)">I change size</div>
+<!-- The input updates window.user.name, and vice versa -->
+<a-bind model="user" property="name">
+  <input type="text">
 </a-bind>
 ```
 
-#### model-attr (Styling the Model)
+### Binding to an ES Module
 
-Use this when your model is a DOM element (e.g., #target), and you want an input to update that element's CSS directly.
-
-**Syntax:** model-attr="style.property"
-
-**Syntax (Custom Var):** model-attr="style.--variable-name"
+You can load a model directly from a file.
 
 ```html
-<!-- The Target Element (Model) -->
-<div id="target" style="--theme: blue; color: var(--theme);">
-    I am the target
-</div>
-
-<!-- The Control -->
-<!-- When input changes, it updates '--theme' on #target -->
-<a-bind model="#target" model-attr="style.--theme">
-    <input type="text" value="red">
+<!-- Loads ./models/store.js and binds to the 'theme' property -->
+<a-bind model="./models/store.js" property="theme">
+  <select>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
 </a-bind>
 ```
 
-## Throttling & Performance
+## Usage Guide
 
-a-bind includes a powerful throttle attribute that adapts its behavior based on the data flow direction.
+### The `<a-bind>` Element
 
-### Input Debouncing (UI ➔ Model)
+The core element that creates a link between a data source (Model) and a DOM element. It expects a single child element.
 
-When applied to user inputs, it waits until the user stops typing for X milliseconds before updating the model.
+### Attributes
+
+| Attribute | Default | Description |
+| :-------- | :------ | :---------- |
+| model     | null    | The key to resolve the data. Can be a Global var name, a CSS selector, or a Module URL. |
+| property  | mull    | The path to the data inside the model (e.g., user.address.city).|
+| elem-attr | value   | The attribute on the child element to update (e.g., value, textContent, style.color). |
+| event     | input   | The DOM event that triggers a model update. |
+| throttle  | 0       | Time in ms to debounce input/output updates.  |
+| pull      | false   | If present, only reads FROM the DOM (One-way: DOM -> Model).  |
+| push      | false   | If present, only writes TO the DOM (One-way: Model -> DOM). |
+| once      | false   | Update the DOM once on load, then stop listening. |
+| debug     | false   | Enables verbose console logging for this binding. |
+
+## Advanced Examples
+
+### Binding CSS Styles:
 
 ```html
-    <!-- Updates model 150ms (Default) after user stops typing -->
-    <a-bind model="search" property="query" throttle>
-      <input type="text" placeholder="Search...">
-    </a-bind>
-
-    <!-- Updates model 10ms after user stops typing -->
-    <a-bind model="search" property="query" throttle="10">
-      <input type="text" placeholder="Search...">
-    </a-bind>
+<a-bind model="appState" property="headerColor" elem-attr="style.backgroundColor">
+  <header>...</header>
+</a-bind>
 ```
 
-### Output Rate Limiting (Model ➔ UI)
+### Executing Functions:
 
-When applied to display elements, it limits how often the DOM updates. Perfect for high-frequency data like stock tickers or sensor feeds.
+Instead of binding data, you can bind an event to a function within your model.
 
 ```html
-    <!-- Updates UI max once every 500ms, regardless of data speed -->
-    <a-bind model="stockTicker" property="price" throttle="500" elem-attr="textContent">
-      <span>$0.00</span>
-    </a-bind>
+<a-bind model="authController" func="login" event="click">
+  <button>Log In</button>
+</a-bind>
 ```
 
-## API Reference: Attributes
-| Attribute | Default | Description                                                                                      |
-| :-------- | :------ | :----------------------------------------------------------------------------------------------- |
-| model     | null    | The data source. Can be a Global Object name, a DOM ID (start with #), or passed via JS property.|
-| property  | null    | The property key on the model to observe (dot notation supported: user.address.city).            |
-| elem-attr | value   | The attribute/property on the child element to update (e.g., value, textContent, style.color).   |
-| event     | input   | The DOM event that triggers a model update.                                                      |
-| throttle  | 150     | Time in ms. Input = Debounce; Output = Rate Limit. If attribute is present with no value.        |
-| func      | null    | A method name to execute on the model when event fires. The method always recives an Event object|
-| pull      | false   | If set, data flows only from UI ➔ Model.                                                        |
-| push      | false   | If set, data flows only from Model ➔ UI.                                                        |
-| once      | false   | Update the UI once on load, then disconnect listeners. (Bound element still updates model)       |
-| model-attr| null    | If binding to a DOM element, the attribute on that element to watch.                             |
+### The `<a-bindgroup>` Element
 
-## Static Methods
+To avoid repeating the "model" attribute on every field, wrap them in a group.
 
-Because a-bind uses a Pub/Sub system (not Proxies), you must use the static helper to update data if you want the UI to react.
+```html
+<a-bindgroup model="userSettings">
 
-### ABind.update(model, property, value)
+  <h3>User Settings</h3>
 
-Updates the model and notifies all listeners.
+  <!-- Inherits model="userSettings" -->
+  <label>Username</label>
+  <a-bind property="username">
+    <input type="text">
+  </a-bind>
 
-```javascript
-    window.app = { message: 'initial data' };
-    app.message = 'New Data';
-    if (window.abind) abind.update(app, 'message', 'New Data');
+  <!-- Inherits model="userSettings" -->
+  <label>Notifications</label>
+  <a-bind property="preferences.notifications">
+    <input type="checkbox">
+  </a-bind>
 
-    class Foo {
-        bar;
-        setBar(value) {
-            this.bar = value;
-            if (window.abind) abind.update(this, 'bar', value);
-        }
-    }
+</a-bindgroup>
 ```
 
-### ABind.updateDefer(model, property, waitMs)
+**Note on Nesting:** a-bindgroup uses smart scoping. A binder will only attach to its closest group, meaning you can nest groups without data leaking between them.
 
-Waits waitMs milliseconds, then reads the current value from the model and updates.
+## Security Configuration
 
-## License
+When using the "model" attribute to load ES Modules (e.g., model="./store.js"), a-bind implements strict security checks to prevent arbitrary module injection.
 
-GPL-3.0
+### Default Behavior
+✅ Allowed: Relative paths (./store.js, ../utils/data.js).
+✅ Allowed: Absolute paths on the same origin (/assets/js/model.js).
+❌ Blocked: Third-party domains (https://evil.com/script.js).
+
+### Whitelisting CDNs or APIs
+
+If you need to load models from a CDN (like unpkg or jsdelivr) or a specific API domain, you must explicitly whitelist them in your JavaScript entry point.
+
+```javaScript
+import ABind from './a-bind.js';
+
+// Allow specific external origins
+ABind.config.allowedOrigins.push('https://cdn.jsdelivr.net');
+ABind.config.allowedOrigins.push('https://api.my-backend.com');
+```
+
+### Emergency Override (Dev Only)
+
+For local development where ports might change, you can disable security checks. Do not use this in production.
+
+```javaScript
+// DANGER: Disables all origin checks
+ABind.config.allowAny = true;
+```
+
+## Architecture & Performance
+
+1. Update Batching
+
+a-bind uses an UpdateManager that queues DOM updates and flushes them in a single requestAnimationFrame cycle. This prevents layout thrashing when processing rapid updates or updating multiple bindings simultaneously.
+
+2. Memory Management
+
+The library uses a WeakMap to store model observers. If your data model is garbage collected by the browser, the listeners associated with it are automatically cleaned up, preventing memory leaks in Single Page Applications (SPAs).
+
+3. Smart Throttling
+
+The throttle attribute works both ways:
+
+* Input: Debounces rapid events (like keyup or mousemove) to prevent flooding the model.
+* Output: Rate-limits updates coming from the model to prevent the DOM from flickering or freezing during high-frequency data changes.
+
+## Debugging
+
+Struggling to see why a value isn't updating? Add the "debug" attribute to any a-bind or a-bindgroup instance.
+
+```html
+<a-bind model="user" property="name" debug>
+  <input>
+</a-bind>
+```
+
+Open your browser console. You will see logs grouping the lifecycle events:

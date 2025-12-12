@@ -18,7 +18,7 @@ export default class CodeDemo extends HTMLElement {
 
   static model = 'nope';
 
-  static observedAttributes = ['attr', 'attr-val', 'prop', 'prop-val'];
+  static observedAttributes = ['attr', 'attr-val', 'prop', 'prop-val', 'model'];
 
   static template = document.createElement('template');
   static {
@@ -61,9 +61,16 @@ export default class CodeDemo extends HTMLElement {
     if (attr === 'attr-val') this.#attrVal = newval;
     if (attr === 'prop') this.#prop = newval;
     if (attr === 'prop-val') this.#propVal = newval;
+    if (attr === 'model') CodeDemo.model = newval;
 
     // Trigger render if connected
-    if (this.#initialized && this.isConnected) this.render();
+    if (this.#initialized && this.isConnected) {
+      if (this.hasAttribute('norender')) {
+        this.shadowRoot.innerHTML = "";
+      } else {
+        this.render();
+      }
+    }
   }
 
   connectedCallback() {
@@ -76,7 +83,18 @@ export default class CodeDemo extends HTMLElement {
       this.#initialized = true;
     }
 
-    this.render();
+    if (this.hasAttribute('norender')) {
+      this.shadowRoot.innerHTML = "";
+    } else {
+      this.render();
+    }
+  }
+
+  disconnectedCallback() {
+    CodeDemo.model = null;
+    this.#demosContainer = null;
+    this.#codeContainer = null;
+    this.#initialized = false;
   }
 
   render() {
@@ -101,6 +119,7 @@ export default class CodeDemo extends HTMLElement {
   }
 
   renderAttrDemo(value) {
+    let newval;
 		const container = this.querySelector('[slot="attr"]');
 		if (!container) return;
 
@@ -121,23 +140,26 @@ export default class CodeDemo extends HTMLElement {
     bindPull.innerHTML = '<output>...</output>';
     label.append(span, bindPull);
 
-    const bindPush = document.createElement('a-bind');
-    bindPush.toggleAttribute('push', true);
-    bindPush.setAttribute('model-attr', value);
-    bindPush.setAttribute('event', 'click');
+    if (this.#attrVal !== 'null') {
+      const bindPush = document.createElement('a-bind');
+      bindPush.toggleAttribute('push', true);
+      bindPush.setAttribute('model-attr', value);
+      bindPush.setAttribute('event', 'click');
 
-    const newval = this.#attrVal || 'foo';
-    const btn = this.#createEl('button', '', `Change to '${newval}'`);
-    btn.value = newval;
-    bindPush.appendChild(btn);
+      newval = this.#attrVal || 'foo';
+      const btn = this.#createEl('button', '', `Set attribute to '${newval}'`);
+      btn.value = newval;
+      bindPush.appendChild(btn);
+      wrapper.append(label, bindPush);
+    }
 
-    wrapper.append(label, bindPush);
     container.append(wrapper);
 
     this.renderCodeBlock(value, 'model-attr', newval);
   }
 
   renderPropDemo(value) {
+    let newval;
   	const container = this.querySelector('[slot="prop"]');
   	if (!container) return;
     const wrapper = this.#createEl('div', 'flex column dynamic-content');
@@ -151,22 +173,25 @@ export default class CodeDemo extends HTMLElement {
     bindPull.innerHTML = '<output>...</output>';
     label.append(span, bindPull);
 
-    const bindPush = document.createElement('a-bind');
-    bindPush.toggleAttribute('push', true);
-    bindPush.setAttribute('property', value);
-    bindPush.setAttribute('event', 'click');
+    if (this.#propVal !== 'null') {
+      newval = this.#propVal || 'bar';
+      const bindPush = document.createElement('a-bind');
+      bindPush.toggleAttribute('push', true);
+      bindPush.setAttribute('property', value);
+      bindPush.setAttribute('event', 'click');
+      const btn = this.#createEl('button', '', `Set property to '${newval}'`);
+      btn.value = newval;
+      bindPush.appendChild(btn);
+      wrapper.append(label, bindPush);
+    }
 
-    const newval = this.#propVal || 'bar';
-    const btn = this.#createEl('button', '', `Change to '${newval}'`);
-    btn.value = newval;
-    bindPush.appendChild(btn);
 
-    wrapper.append(label, bindPush);
     container.append(wrapper);
     this.renderCodeBlock(value, 'property', newval);
   }
 
   renderCodeBlock(value, type, btnVal) {
+    if (this.#propVal === 'null') return;
     const wrapper = this.#createEl('div', 'flex1 dynamic-content');
     const acode = this.#createEl('a-code');
     const textarea = document.createElement('textarea');
@@ -197,14 +222,8 @@ export default class CodeDemo extends HTMLElement {
     this.#codeContainer.prepend(wrapper);
   }
 
-  get model() {
-    return CodeDemo.model;
-  }
-
-  set model(value) {
-    CodeDemo.model = value;
-    window.abind?.update?.(this, 'model', value);
-  }
+  get model() { return CodeDemo.model; }
+  set model(value) { this.setAttribute('model', value); }
 }
 
 if (!customElements.get('code-demo')) customElements.define('code-demo', CodeDemo);

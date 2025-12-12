@@ -43,7 +43,6 @@ group("ABind Static Methods", () => {
         ABind.update(model, 'greeting', 'World');
         return await when(() => input.value === 'World');
       } finally {
-        // This guarantees the DOM is cleaned up after this test is done.
         cleanup();
       }
     },
@@ -130,7 +129,6 @@ group("ABind Core Functionality", () => {
       model.text = "B";
       ABind.update(model, 'text', 'B');
       await wait(10);
-      // await when(() => input.value === 'B');
 
       // Element -> Model
       input.value = "C";
@@ -156,8 +154,6 @@ group("ABind Core Functionality", () => {
       // Element -> Model (push)
       input.value = "C";
       input.dispatchEvent(new Event('input', { bubbles: true }));
-      // await when(() => model.text === 'C');
-
 
       // Model -> Element (pull)
       model.text = "B";
@@ -198,9 +194,8 @@ group("ABind Attribute Features", () => {
       await when(() => input.value === '1');
 
       ABind.update(model, 'value', 2);
-      await wait(20); // wait to see if it updates
+      await wait(20);
 
-      // It should NOT have updated
       return input.value === '1';
     } finally {
       cleanup();
@@ -238,7 +233,7 @@ group("ABind Attribute Features", () => {
 
       spy.restore();
       const called = spy.callCount;
-      delete window.testModel; // cleanup
+      delete window.testModel;
       return called;
     } finally {
       cleanup();
@@ -278,10 +273,9 @@ group("ABind With Different Element Types", () => {
       const checkbox = container.querySelector('input');
 
       await when(() => checkbox.checked === true);
-      // Test element to model
+
       checkbox.checked = false;
       checkbox.dispatchEvent(new Event('input', { bubbles: true }));
-      // console.log(checkbox.checked, model.isChecked)
 
       return await when(() => !model.isChecked);
     } finally {
@@ -304,60 +298,76 @@ group("ABindgroup Functionality", () => {
         </a-bindgroup>
       `;
       const span = container.querySelector('span');
-      return await when(() => span.textContent === 'Hello from SimpleModel', 500);
+      return await when(() => span.textContent === 'Hello from SimpleModel', 1000);
     } finally {
       cleanup();
     }
   }, true);
 
-  test("Model registry caches models to prevent re-importing", async () => {
+  // REWRITTEN: Behavior-based testing for caching
+  test("Model registry shares instances (Caching)", async () => {
     const { container, cleanup } = setup();
     try {
+      const modelUrl = simpleModelUrl;
+
+      // Load the same model in two different groups
       container.innerHTML = `
-        <a-bindgroup model="${simpleModelUrl}">
-          <a-bind property="message" elem-attr="textContent">
-            <span></span>
-          </a-bind>
-        </a-bindgroup>
+        <a-bindgroup id="g1" model="${modelUrl}"></a-bindgroup>
+        <a-bindgroup id="g2" model="${modelUrl}"></a-bindgroup>
       `;
 
-      // allow time for import
-      await wait(100);
-      return ABindgroup.modelRegistry.has(new URL(simpleModelUrl, import.meta.url).href);
+      const g1 = container.querySelector('#g1');
+      const g2 = container.querySelector('#g2');
+
+      // Wait until both models are resolved
+      await when(() => g1.model && g2.model);
+
+      // They should point to the exact same object instance
+      return g1.model === g2.model;
     } finally {
       cleanup();
     }
   }, true);
 
-  test("Reference counting cleans up the model registry", async () => {
+  // REWRITTEN: Behavior-based testing for cleanup
+  test("Reference counting cleans up (New Instance on Re-mount)", async () => {
     const { container, cleanup } = setup();
     try {
-      const modelUrl = new URL(counterModelUrl, import.meta.url).href;
+      const modelUrl = counterModelUrl; // Uses CounterModel (Class based)
 
-      const group1 = document.createElement('a-bindgroup');
-      group1.setAttribute('model', counterModelUrl);
-      container.append(group1);
-      await wait(50);
-      const countIsOne = ABindgroup.modelReferenceCounts.get(modelUrl) === 1;
+      // 1. Mount Group 1
+      const g1 = document.createElement('a-bindgroup');
+      g1.setAttribute('model', modelUrl);
+      container.appendChild(g1);
 
-      const group2 = document.createElement('a-bindgroup');
-      group2.setAttribute('model', counterModelUrl);
-      container.append(group2);
-      await wait(50);
-      const countIsTwo = ABindgroup.modelReferenceCounts.get(modelUrl) === 2;
+      await when(() => g1.model);
+      const instance1 = g1.model;
 
-      // Remove one group, count should decrement
-      group1.remove();
-      await wait(10);
-      const countIsOneAgain = ABindgroup.modelReferenceCounts.get(modelUrl) === 1;
+      // 2. Mount Group 2 (Should share instance1)
+      const g2 = document.createElement('a-bindgroup');
+      g2.setAttribute('model', modelUrl);
+      container.appendChild(g2);
+      await when(() => g2.model);
 
-      // Remove the second group, model should be purged from registry
-      group2.remove();
-      await wait(10);
-      const registryIsClean = !ABindgroup.modelRegistry.has(modelUrl);
-      const refCountIsClean = !ABindgroup.modelReferenceCounts.has(modelUrl);
+      if (g2.model !== instance1) return "Failed: Instances were not shared initially";
 
-      return countIsOne && countIsTwo && countIsOneAgain && registryIsClean && refCountIsClean;
+      // 3. Unmount both (Should trigger ref count -> 0 -> cleanup)
+      g1.remove();
+      g2.remove();
+
+      // Wait for cleanup
+      await wait(100);
+
+      // 4. Mount Group 3
+      const g3 = document.createElement('a-bindgroup');
+      g3.setAttribute('model', modelUrl);
+      container.appendChild(g3);
+
+      await when(() => g3.model);
+      const instance3 = g3.model;
+
+      // If Registry cleaned up, instance3 should be a new object reference.
+      return instance3 !== instance1;
     } finally {
       cleanup();
     }

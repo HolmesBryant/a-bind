@@ -1,12 +1,6 @@
-<a-bindgroup model="../extra/testObject.js">
+<code-demo model="../extra/testObject.js" norender></code-demo>
 
-<div>
-  <a-bind
-    model="code-demo"
-    property="model">
-    <output>...</output>
-  </a-bind>
-</div>
+<a-bindgroup model="../extra/testObject.js">
 
 <!-- reset -->
 <aside class="flex sticky center" style="z-index:1">
@@ -16,7 +10,7 @@
 </aside>
 
 <details name="object-props">
-<summary> Text-ish Inputs </summary>
+<summary>Text-ish Inputs</summary>
   <!-- text -->
   <code-demo prop="text">
     <div slot="prop"></div>
@@ -426,16 +420,48 @@
   </code-demo>
 </details>
 
-<details open name="object-props">
+<details name="object-props">
 <summary>Checkbox and Radio Inputs</summary>
-  <!-- checkbox -->
+  <!-- checkbox value = 'foo' -->
   <code-demo prop="checkbox">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
       <label for="c-checkbox"> checkbox value='foo' </label>
-        <a-bind property="checkbox">
-          <input type="checkbox" value="foo" id="c-checkbox">
+
+      <a-bind property="checkbox">
+        <input type="checkbox" value="foo" id="c-checkbox">
+      </a-bind>
+
+      <a-bind
+        push
+        property="checkbox"
+        event="click">
+        <button value="foo">Set property to 'foo'</button>
+      </a-bind>
+    </div>
+
+    <a-code highlight slot="code">
+      <textarea>
+        <a-bind
+          model="../extra/testObject.js"
+          property="checkbox">
+          <input
+            type="checkbox"
+            value="foo">
         </a-bind>
+      </textarea>
+    </a-code>
+  </code-demo>
+
+  <!-- checkbox no value -->
+  <code-demo prop="checkbox">
+    <div slot="prop"></div>
+    <div slot="input" class="flex column flex1 gap0">
+      <label for="c-checkbox"> checkbox (no value) </label>
+
+      <a-bind property="checkbox">
+        <input type="checkbox" id="c-checkbox">
+      </a-bind>
     </div>
 
     <a-code highlight slot="code">
@@ -506,7 +532,7 @@
 <details name="object-props">
 <summary>Buttons</summary>
   <!-- button (text mirrors value) -->
-  <code-demo prop="button">
+  <code-demo prop="button" prop-val="foo">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
       <label for="c-button-a"> button (text mirrors value) </label>
@@ -687,7 +713,7 @@
   </code-demo>
 
   <!-- file -->
-  <code-demo prop="file">
+  <code-demo prop="file" prop-val="null" attr-val="null">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
       <label for="c-file"> file </label>
@@ -751,7 +777,7 @@
     <summary class="card nofrills">Code</summary>
       <section class="card flex stretch">
         <div class="flex column flex1">
-          <a-code highlight>
+          <a-code highlight indent="1">
             <textarea>
               <a-bind
                 once
@@ -767,14 +793,14 @@
         </div>
 
         <div class="flex column flex1">
-          <a-code highlight indent="6px">
-            <textarea>
-              <a-bind
-                model="../extra/testObject.js"
-                property="editable">
-                <output></output>
+          <a-code highlight indent="1">
+          <textarea>
+            <a-bind
+              model="../extra/testObject.js"
+              property="editable">
+              <output></output>
             </a-bind>
-            </textarea>
+          </textarea>
           </a-code>
         </div>
       </section>
@@ -920,7 +946,7 @@
                   </button>
 
                 </form>
-              </a-bind>
+              </a-bind>  <!-- the form binding -->
             </a-bindgroup>
           </textarea>
         </a-code>
@@ -930,13 +956,13 @@
 </details>
 
 <details name="object-props">
-<summary>Example Component</summary>
+<summary>Example Object</summary>
   <section>
     <div class="flex">
       <div class="flex1 flex column">
         <label for="foo-input">Input</label>
 
-        <a-bind model="example-component" property="foo">
+        <a-bind model="../extra/exampleObject.js" property="foo">
           <input id="foo-input">
         </a-bind>
 
@@ -947,7 +973,7 @@
 
         <a-bind
           pull
-          model="example-component"
+          model="../extra/exampleObject.js"
           property="foo">
           <output
             id="foo-output"
@@ -967,7 +993,7 @@
           <a-code highlight>
             <textarea>
               <a-bind
-                model="example-component"
+                model="../extra/exampleObject.js"
                 property="foo">
                 <input id="foo-input">
               </a-bind>
@@ -980,7 +1006,7 @@
             <textarea>
               <a-bind
                 pull
-                model="example-component"
+                model="../extra/exampleObject.js"
                 property="foo">
                 <output></output>
               </a-bind>
@@ -992,14 +1018,10 @@
 
     <p> </p>
 
-    <example-component></example-component>
-
-    <hr>
     <a-code highlight="javascript" line-numbers>
-      <textarea>
-        <example-component>
-        </example-component>
-      </textarea>
+      var exampleObject = {
+        foo: 'foo',
+      }
     </a-code>
   </section>
 </details>
