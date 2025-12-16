@@ -1,5 +1,5 @@
 import ATestRunner from './ATestRunner.min.js';
-import ABind, { ABindgroup } from '../src/a-bind.js';
+import ABind, { ABindgroup } from '../src/index.js';
 
 // --- Setup ---
 

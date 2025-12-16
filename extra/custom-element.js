@@ -19,7 +19,8 @@ export default class CustomElement extends HTMLElement {
 	#month;
 	#select;
 	#selectMulti;
-	#checkbox;
+	#checkboxFoo;
+	#checkboxBool;
 	#radioGroup;
 	#button;
 	#color;
@@ -66,7 +67,8 @@ export default class CustomElement extends HTMLElement {
 		month: "1970-01",
 		select: "baz",
 		selectMulti: 'foo, baz',
-		checkbox: 'foo',
+		checkboxFoo: 'foo',
+		checkboxBool: undefined,
 		radioGroup: 'foo',
 		button: "value of button property",
 		color: "#cd5c5c",
@@ -95,8 +97,8 @@ export default class CustomElement extends HTMLElement {
 		'month',
 		'select',
 		'select-multi',
-		'checkbox',
-		'checkbox-bar',
+		'checkbox-foo',
+		'checkbox-bool',
 		'radio-group',
 		'button',
 		'color',
@@ -145,10 +147,14 @@ export default class CustomElement extends HTMLElement {
 				window.abind?.update?.(this, 'selectMulti', newval);
 				window.abind?.update?.(this, 'select-multi', newval);
 				break;
-			case 'checkbox':
-				this.#checkbox = newval;
-				window.abind?.update?.(this, 'checkbox', newval);
+			case 'checkbox-foo':
+				this.#checkboxFoo = newval;
+				window.abind?.update?.(this, 'checkbox-foo', newval);
 				break;
+			case 'checkbox-bool':
+				const value = newval !== 'false';
+				this.#checkboxBool = value;
+				window.abind?.update?.(this, 'checkbox-bool', newval);
 			case 'radio-group':
 				this.#radioGroup = newval;
 				window.abind?.update?.(this, 'radioGroup', newval);
@@ -391,8 +397,11 @@ export default class CustomElement extends HTMLElement {
 	get selectMulti() { return this.#selectMulti }
 	set selectMulti(value) { this.setAttribute("select-multi", value); }
 
-	get checkbox() { return this.#checkbox }
-	set checkbox(value) { this.setAttribute('checkbox', value); }
+	get checkboxFoo() { return this.#checkboxFoo }
+	set checkboxFoo(value) { this.setAttribute('checkbox-foo', value); }
+
+	get checkboxBool() { return this.#checkboxBool }
+	set checkboxBool(value) { this.setAttribute('checkbox-bool', value); }
 
 	get radioGroup() { return this.#radioGroup }
 	set radioGroup(value) { this.setAttribute('radio-group', value); }

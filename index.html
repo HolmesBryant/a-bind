@@ -6,11 +6,12 @@
 	<title>a-bind Web Component</title>
   <meta description="A web component that performs one-way and two-way data binding for javascript objects and custom elements.">
 
+  <script type="module" src="src/index.js"></script>
+  <!-- <script type="module" src="dist/a-bind.min.js"></script> -->
+
   <script type="module" src="extra/custom-element.js"></script>
   <script src="extra/example-component.js"></script>
 	<script type="module" src="extra/a-markdown.min.js"></script>
-  <!-- <script type="module" src="src/a-bind.js"></script> -->
-  <script type="module" src="dist/a-bind.min.js"></script>
   <script type="module" src="extra/a-tabset.min.js"></script>
   <script type="module" src="extra/a-code.min.js"></script>
   <script type="module" src="extra/code-demo.js"></script>
@@ -45,13 +46,18 @@
 		</details>
 	</header>
 
-	<a-tabset>
+	<a-tabset active="3">
 		<span slot="title">Custom Element</span>
 		<div slot="content" src="tab-component.html"></div>
 
 		<span slot="title">JS Object</span>
 		<div slot="content" src="tab-object.html">
 			Working on it...
+		</div>
+
+		<span slot="title">DOM to DOM</span>
+		<div slot="content" src="tab-dom.html">
+			Loading...
 		</div>
 	</a-tabset>
 

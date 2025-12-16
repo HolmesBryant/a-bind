@@ -29,7 +29,6 @@ export default class CodeDemo extends HTMLElement {
 
       <div id="wrapper">
         <div id="demos" class="flex stretch card">
-    			<div><slot name="prop"></slot></div>
           <div><slot name="input"></slot></div>
         </div>
 
@@ -154,7 +153,6 @@ export default class CodeDemo extends HTMLElement {
     }
 
     container.append(wrapper);
-
     this.renderCodeBlock(value, 'model-attr', newval);
   }
 
@@ -162,6 +160,13 @@ export default class CodeDemo extends HTMLElement {
     let newval;
   	const container = this.querySelector('[slot="prop"]');
   	if (!container) return;
+
+    const slot = this.shadowRoot.querySelector('[name="prop"]');
+    if (!slot) {
+      const html = '<div><slot name="prop"></slot></div>';
+      this.#demosContainer.insertAdjacentHTML('afterbegin', html);
+    }
+
     const wrapper = this.#createEl('div', 'flex column dynamic-content');
     const label = this.#createEl('label', 'flex column');
     const span = this.#createEl('span');
@@ -173,12 +178,25 @@ export default class CodeDemo extends HTMLElement {
     bindPull.innerHTML = '<output>...</output>';
     label.append(span, bindPull);
 
-    if (this.#propVal !== 'null') {
+    /*if (this.#propVal !== 'null') {
       newval = this.#propVal || 'bar';
       const bindPush = document.createElement('a-bind');
       bindPush.toggleAttribute('push', true);
       bindPush.setAttribute('property', value);
       bindPush.setAttribute('event', 'click');
+      const btn = this.#createEl('button', '', `Set property to '${newval}'`);
+      btn.value = newval;
+      bindPush.appendChild(btn);
+      wrapper.append(label, bindPush);
+    }*/
+
+    if (this.#propVal !== 'null') {
+      const bindPush = document.createElement('a-bind');
+      bindPush.toggleAttribute('push', true);
+      bindPush.setAttribute('model-attr', value);
+      bindPush.setAttribute('event', 'click');
+
+      newval = this.#propVal || 'bar';
       const btn = this.#createEl('button', '', `Set property to '${newval}'`);
       btn.value = newval;
       bindPush.appendChild(btn);

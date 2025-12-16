@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Foo</title>
+	<script type="module" src="src/index.js"></script>
+</head>
+<body>
+<h1>DOM Elements</h1>
+
+	<form onsubmit="return false">
+		<a-bind
+			push
+			model="#input"
+			property="value"
+			event="click">
+			<button value="button value">Click Me</button>
+		</a-bind>
+
+		<a-bind
+			model="#output"
+			property="value">
+			<input id="#input" value="input value">
+		</a-bind>
+
+		<a-bind
+			pull
+			model="#input"
+			property="value">
+			<output id="output">output value</output>
+		</a-bind>
+
+		<input type="reset">
+	</form>
+
+	<hr>
+
+<h2>(One Way) Radio inputs affect checkbox</h2>
+
+	<a-bindgroup
+		model="#ex1-checkbox">
+
+		<div>
+			<label for="ex1-radio-true">
+				Check:
+			</label>
+			<a-bind
+				push
+				property="checked">
+				<input
+					id="ex1-radio-true"
+					type="radio"
+					name="ex1"
+					value="true">
+			</a-bind>
+		</div>
+
+		<div>
+			<label for="ex1-radio-false">
+				Uncheck:
+			</label>
+			<a-bind
+				push
+				property="checked">
+				<input
+					id="ex1-radio-false"
+					type="radio"
+					name="ex1"
+					value="">
+			</a-bind>
+		</div>
+	</a-bindgroup>
+
+	<input
+		id="ex1-checkbox"
+		type="checkbox">
+
+	<hr>
+
+<h2>(One Way) Checkbox affects radio inputs</h2>
+
+	<input
+		id="ex2-checkbox"
+		type="checkbox"
+		oninput="abind.update(this, 'checked', this.checked)">
+
+	<a-bindgroup model="#ex2-checkbox">
+		<div>
+			<label for="ex2-radio-true">
+				true:
+			</label>
+
+			<a-bind
+				pull
+				property="checked">
+				<input
+					id="ex2-radio-true"
+					type="radio"
+					name="ex2"
+					value="true">
+			</a-bind>
+		</div>
+
+		<div>
+			<label for="ex2-radio-false">
+				false:
+			</label>
+
+			<a-bind
+				pull
+				property="checked">
+				<input
+					id="ex2-radio-false"
+					type="radio"
+					name="ex2"
+					value="false">
+			</a-bind>
+		</div>
+	</a-bindgroup>
+
+	<hr>
+
+<h2>(Two Way) All inputs affect each other</h2>
+
+	<input id="ex3-checkbox" type="checkbox" oninput="abind.update(this, 'checked', this.checked)">
+
+	<a-bindgroup model="#ex3-checkbox">
+    <a-bind property="checked" elem-attr="checked">
+			<input type="radio" name="ex3" value="true">
+    </a-bind>
+
+    <a-bind property="checked" elem-attr="checked">
+			<input type="radio" name="ex3" value="false">
+    </a-bind>
+	</a-bindgroup>
+
+	<hr>
+
+<h2>Live Mirror (Text Sync)</h2>
+
+	<p>A text area acts as the model. The output tag subscribes to it.</p>
+	<p>Basic one-way binding (pull) from a value property.</p>
+
+	<!-- The State Store -->
+	<textarea id="msg-store"
+	  placeholder="Type here..."
+	  oninput="abind.update(this, 'value', this.value)">
+  </textarea>
+
+	<!-- The Viewer -->
+	<a-bind
+	  pull
+	  model="#msg-store"
+	  property="value"
+	  elem-attr="value"> <!-- Output uses .value, not textContent -->
+	  <output>Waiting for input...</output>
+	</a-bind>
+
+	<hr>
+
+<h2>Synced Controls (Two-Way)</h2>
+	<p>A Range slider and a Number input that stay perfectly synchronized.</p>
+	<p>Two-way binding. The Range is the "Master", the Number input is the "Binder" that can also push changes back.</p>
+
+	<!-- The State Store (Master) -->
+	<input type="range" id="volume-store" min="0" max="100" value="50"
+	  oninput="abind.update(this, 'value', this.value)">
+
+	<!-- The Servant (Two-way Binder) -->
+	<a-bind
+	  model="#volume-store"
+	  property="value">
+	  <!-- Changing this input pushes value back to #volume-store -->
+	  <input type="number" min="0" max="100">
+	</a-bind>
+
+	<hr>
+
+<h2>CSS Variable Proxy (Themer)</h2>
+	<p>An input controls a CSS variable on a container, affecting multiple children.</p>
+	<p>Binding to style.--variable-name.</p>
+
+	<!-- The State Store -->
+	<input type="color" id="color-store" value="#ff0000"
+	  oninput="abind.update(this, 'value', this.value)">
+
+	<!-- The Consumer -->
+	<a-bind
+	  pull
+	  model="#color-store"
+	  property="value"
+	  elem-attr="style.--theme-color">
+
+	  <div style="border: 2px solid var(--theme-color); padding: 10px;">
+	    <h3 style="color: var(--theme-color)">Themed Card</h3>
+	    <button style="background: var(--theme-color); color: white">Action</button>
+	  </div>
+	</a-bind>
+
+	<hr>
+
+<h2>The "Unlocker" (Enable if Unchecked/Locked)</h2>
+	<p>A submit button is disabled until a checkbox is checked.</p>
+	<p>Demonstrates direct boolean mapping.</p>
+
+	<label>
+	  <input type="checkbox" id="lock-store" checked
+	    oninput="abind.update(this, 'checked', this.checked)">
+	  Lock Controls
+	</label>
+
+	<a-bindgroup model="#lock-store">
+	  <!-- All inputs disabled when lock-store is checked -->
+	  <a-bind pull property="checked" elem-attr="disabled">
+	    <input placeholder="I am locked">
+	  </a-bind>
+
+	  <a-bind pull property="checked" elem-attr="disabled">
+	    <button>Can't Click Me</button>
+	  </a-bind>
+	</a-bindgroup>
+
+	<hr>
+
+<h2>DOM Method Caller (Counter)</h2>
+	<p>A button acts as a remote control. When clicked, it calls the stepUp() method on a number input, incrementing its value. An output tag listens to the input and displays the new value live.</p>
+	<p>This demonstrates the func attribute, which lets you trigger built-in browser functionality on your "model" element.</p>
+
+	<!-- 1. The State Store -->
+	<!-- This input holds the number. -->
+	<!-- We hide it because the user will interact with the button and see the output instead. -->
+	<input
+		type="number"
+		id="counter"
+		value="0"
+		style="">
+
+	  <button
+	  	onclick="
+	  		const el = document.querySelector('#counter');
+	  		el.stepUp()
+	  		abind.update(el, 'value', el.value)">
+		  Increment
+		</button>
+
+	<!-- 3. The View -->
+	<!-- This output pulls the 'value' from the state store whenever it changes. -->
+	<a-bind
+	  pull
+	  model="#counter"
+	  property="value">
+	  <output>0</output>
+	</a-bind>
+
+	<hr>
+
+<h2>Remote Control (Media Player)</h2>
+	<p>Buttons use func to call native video methods (play, pause). A checkbox binds to the muted property.</p>
+	<p>Using func for actions (Methods) vs property for state (Properties).</p>
+
+	<!-- The State Store (Model) -->
+	<!-- We use a standard MP4 file for demonstration -->
+	<video
+	  id="video-store"
+	  width="300"
+	  style="background: black; border-radius: 8px;"
+	  src="https://www.w3schools.com/html/mov_bbb.mp4">
+	</video>
+
+	<div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+
+	  <!-- ACTION: Calls .play() (Ignores the click event argument) -->
+	  <a-bind model="#video-store" event="click" func="play">
+	    <button>▶ Play</button>
+	  </a-bind>
+
+	  <!-- ACTION: Calls .pause() -->
+	  <a-bind model="#video-store" event="click" func="pause">
+	    <button>⏸ Pause</button>
+	  </a-bind>
+
+	  <!-- STATE: Two-way binding to Volume -->
+	  <!-- Volume is 0.0 to 1.0, so we set step="0.1" -->
+	  <a-bind model="#video-store" property="volume">
+	    <input type="range" min="0" max="1" step="0.1">
+	  </a-bind>
+
+	</div>
+
+	<hr>
+
+<h2>Modal Launcher</h2>
+	<p>Opening and closing a native HTML dialog without writing a single line of JS script.</p>
+	<p>Using func="showModal" and func="close".</p>
+
+	<!-- The State Store -->
+	<dialog id="modal-store" style="padding: 20px; border: 2px solid black; border-radius: 8px;">
+	  <h3>Native Modal</h3>
+	  <p>Controlled entirely by DOM binding.</p>
+
+	  <a-bind model="#modal-store" event="click" func="close">
+	    <button>Close Me</button>
+	  </a-bind>
+	</dialog>
+
+	<a-bind model="#modal-store" event="click" func="showModal">
+	  <button>Open Modal</button>
+	</a-bind>
+
+</body>
+</html>

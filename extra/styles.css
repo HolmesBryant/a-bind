@@ -119,8 +119,9 @@ body {
   	border-bottom-right-radius: 0;
   }
 
-  .nofrills
-  { border: none }
+  .nofrills,
+  details:has(.nofrills)
+  { border-radius: 0 }
 
   [contenteditable]:hover
   { border-color: var(--accent-color); }
@@ -165,6 +166,7 @@ body {
 
 /**** Cursor ****/
 	button,
+	label,
 	input[type="submit"],
 	input[type="button"],
 	input[type="color"],
@@ -325,23 +327,38 @@ body {
 	.flex2
 	{ flex: 2; }
 
-	.flex100
-	{ flex-basis: 100%; }
-
-	.flex50
-	{ flex-basis: 50%; }
-
-	.flex30
-	{ flex-basis: 30%; }
-
-	.flex25
-	{ flex-basis: 25%; }
+	.flex16
+	{ flex-basis: 16%; }
 
 	.flex20
 	{ flex-basis: 20%; }
 
-	.flex16
-	{ flex-basis: 16%; }
+	.flex25
+	{ flex-basis: 25%; }
+
+	.flex30
+	{ flex-basis: 30%; }
+
+	.flex50
+	{ flex-basis: 50%; }
+
+	.flex100
+	{ flex-basis: 100%; }
+
+	.flex240
+	{ flex-basis: 240px; }
+
+	.flex360
+	{ flex-basis: 360px; }
+
+	.flex480
+	{ flex-basis: 480px; }
+
+	.flex520
+	{ flex-basis: 520px; }
+
+	.flex640
+	{ flex-basis: 640px; }
 
 	.column
 	{ flex-direction: column; }

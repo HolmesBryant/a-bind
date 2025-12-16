@@ -8,11 +8,19 @@ a-bind is a lightweight, zero-dependency Web Component library that adds two-way
 
 * Zero Build Step: Works directly in the browser via native ES Modules.
 
-* Secure by Design: Strict origin policies prevent unauthorized module loading.
+* Modes: Two-way (default), One-way (push/pull), and One-time (once).
 
-* High Performance: Batched DOM updates via requestAnimationFrame and MutationObserver support.
+* Targets: Binds to standard properties, attributes, CSS styles, or event handlers.
 
-* Intelligent Throttling: Built-in input debouncing and output rate limiting.
+* Loading: Can resolve models via ESM imports, global variables, or DOM IDs.
+
+* Performance: Uses requestAnimationFrame batching to prevent layout thrashing.
+
+* Reactive: Implements a lightweight PubSub system to track changes.
+
+* Secure: Strict origin policies prevent remote module loading.
+
+* Throttling: Built-in input debouncing and output rate limiting.
 
 * Scope Management: `<a-bindgroup>` allows for clean, nested model scoping.
 
@@ -20,11 +28,18 @@ a-bind is a lightweight, zero-dependency Web Component library that adds two-way
 
 ## Change Log
 
+- v2.5.2
+
+  - made radio button binding (hopefully) more intuitive.
+  - made logger more helpful
+  - fixed issues with css bindings
+  - broke out into separate files to make maintenance easier.
+
 - v2.5.0
 
   - Simplified logic ... somewhat
 
-  - Made it easier for strictly boolean checkboxes (ommit the value attribute on the input)
+  - Made binding strictly boolean checkboxes more intuitive.
 
   - Added some security by allowing only local paths for dynamic module imports ('/', './', '../')
 
@@ -45,13 +60,13 @@ a-bind is a lightweight, zero-dependency Web Component library that adds two-way
 Simply import the file into your project.
 
 ```html
-<script type="module" src="./path/to/a-bind.js"></script>
+<script type="module" src="./path/to/a-bind.min.js"></script>
 ```
 
 Or import it inside your main JavaScript file:
 
 ```javaScript
-import ABind from './path/to/a-bind.js';
+import ABind from './path/to/a-bind.min.js';
 ```
 
 ## Quick Start

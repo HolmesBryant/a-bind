@@ -2,13 +2,6 @@
 <code-demo model="custom-element" norender></code-demo>
 <a-bindgroup model="custom-element">
 
-<!-- reset -->
-<aside class="flex sticky center" style="z-index:1">
-  <a-bind event="click" func="reset">
-    <button>Reset Model</button>
-  </a-bind>
-</aside>
-
 <details name="component-props">
 <summary> Text-ish Inputs </summary>
   <!-- text -->
@@ -833,57 +826,66 @@
 
 <details name="component-props">
 <summary>Form Submission</summary>
-  <section class="flex vstart">
+  <section class="flex top space-around">
     <a-bindgroup
       model="custom-element">
 
       <p>
         <a-bind
+          push
           event="click"
           func="resetForm">
           <button>
             Reset Properties
           </button>
         </a-bind>
+
+        <input
+          type="reset"
+          value="Reset Form"
+          form="c-test-form">
       </p>
 
       <a-bind
+        push
         event="submit"
         func="sendForm">
 
         <form
-          id="test-form"
+          id="c-test-form"
           class="flex column center flex1"
           onsubmit="return false">
 
 
           <div class="flex column start gap0">
             <label
-              for="form-name">
+              for="c-form-name">
               Name
             </label>
 
             <a-bind
               property="name">
               <input
-                id="form-name"
+                id="c-form-name"
                 name="name"
+                value="Default Input Value"
                 autocomplete="name">
             </a-bind>
           </div>
 
           <div class="flex column start gap0">
             <label
-              for="form-email">
+              for="c-form-email">
               Email
             </label>
 
             <a-bind
               property="email">
               <input
-                id="form-email"
+                id="c-form-email"
                 name="email"
                 type="email"
+                value="default@input.value"
                 autocomplete="email">
             </a-bind>
           </div>
@@ -893,7 +895,7 @@
               property="name">
               Name:
               <output
-                for="form-name">
+                for="c-form-name">
               </output>
             </a-bind>
 
@@ -903,7 +905,7 @@
               property="email">
               Email:
               <output
-                for="form-email">
+                for="c-form-email">
               </output>
             </a-bind>
           </p>
@@ -914,16 +916,17 @@
       </a-bind>
     </a-bindgroup>
 
-    <div class="card flex1">
+    <div class="card">
       <h3>code</h3>
 
       <div>
-        <a-code highlight>
+        <a-code highlight indent=1>
           <textarea>
             <a-bindgroup
               model="custom-element">
 
               <a-bind
+                push
                 event="click"
                 func="resetForm">
                 <button>
@@ -931,34 +934,62 @@
                 </button>
               </a-bind>
 
+              <input
+                type="reset"
+                form="c-test-form">
+
               <a-bind
+                push
                 event="submit"
                 func="sendForm">
 
                 <form
+                  id="c-test-form"
                   onsubmit="return false">
 
+                  <label
+                    for="c-form-name">
+                    Name
+                  </label>
+
                   <a-bind
                     property="name">
                     <input
-                      name="name">
+                      id="c-form-name"
+                      name="name"
+                      value="Default Input Value"
+                      autocomplete="name">
                   </a-bind>
+
+                  <label
+                    for="c-form-email">
+                    Email
+                  </label>
 
                   <a-bind
                     property="email">
                     <input
+                      id="c-form-email"
                       name="email"
-                      type="email">
+                      type="email"
+                      value="default@input.value"
+                      autocomplete="email">
                   </a-bind>
 
                   <a-bind
                     property="name">
-                    Name: <output></output>
+                    Name:
+                    <output
+                      for="c-form-name">
+                    </output>
                   </a-bind>
 
                   <a-bind
                     property="email">
-                    Email: <output></output>
+                    Email:
+                    <output
+                      for="c-form-email">
+                    </output>
                   </a-bind>
 
                   <button
@@ -983,7 +1014,7 @@
       <div class="flex1 flex column">
         <label for="foo-input">Input</label>
 
-        <a-bind model="example-component" property="foo">
+        <a-bind model="example-component" property="fooBar">
           <input id="foo-input">
         </a-bind>
 
@@ -995,7 +1026,7 @@
         <a-bind
           pull
           model="example-component"
-          property="foo">
+          property="fooBar">
           <output
             id="foo-output"
             for="foo-input">
@@ -1015,8 +1046,8 @@
             <textarea>
               <a-bind
                 model="example-component"
-                property="foo">
-                <input id="foo-input">
+                property="fooBar">
+                <input>
               </a-bind>
             </textarea>
           </a-code>
@@ -1028,7 +1059,7 @@
               <a-bind
                 pull
                 model="example-component"
-                property="foo">
+                property="fooBar">
                 <output></output>
               </a-bind>
             </textarea>

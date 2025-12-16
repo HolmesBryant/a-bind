@@ -1,13 +1,6 @@
-<code-demo model="../extra/testObject.js" norender></code-demo>
+<code-demo model="/extra/testObject.js" norender></code-demo>
 
-<a-bindgroup model="../extra/testObject.js">
-
-<!-- reset -->
-<aside class="flex sticky center" style="z-index:1">
-  <a-bind event="click" func="reset">
-    <button>Reset Model</button>
-  </a-bind>
-</aside>
+<a-bindgroup model="/extra/testObject.js">
 
 <details name="object-props">
 <summary>Text-ish Inputs</summary>
@@ -15,16 +8,16 @@
   <code-demo prop="text">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-text"> text </label>
+      <label for="o-text"> text </label>
         <a-bind property="text">
-          <input id="c-text">
+          <input id="o-text">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="text">
           <input>
         </a-bind>
@@ -38,9 +31,9 @@
     >
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-datalist-input"> input with datalist </label>
+      <label for="o-datalist-input"> input with datalist </label>
         <a-bind property="datalistInput">
-          <input id="c-datalist-input" list="c-datalist">
+          <input id="o-datalist-input" list="o-datalist">
         </a-bind>
 
         <a-bind
@@ -51,24 +44,24 @@
         <a-bind
           property="datalistHtml"
           elem-attr="innerHTML">
-          <datalist id="c-datalist"></datalist>
+          <datalist id="o-datalist"></datalist>
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="text">
           <input
-            list="c-datalist">
+            list="o-datalist">
         </a-bind>
 
         <a-bind
           property="datalistHtml"
           elem-attr="innerHTML">
           <datalist
-            id="c-datalist">
+            id="o-datalist">
           </datalist>
         </a-bind>
       </textarea>
@@ -79,16 +72,16 @@
   <code-demo prop="search">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-search"> search </label>
+      <label for="o-search"> search </label>
         <a-bind property="search">
-          <input type="search" id="c-search">
+          <input type="search" id="o-search">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="search">
           <input type="search">
         </a-bind>
@@ -100,16 +93,16 @@
   <code-demo prop="password">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-password"> password </label>
+      <label for="o-password"> password </label>
         <a-bind property="password">
-          <input type="password" id="c-password">
+          <input type="password" id="o-password">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="password">
           <input
             type="password">
@@ -124,16 +117,16 @@
     prop-val="575-225-8963">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-tel"> tel </label>
+      <label for="o-tel"> tel </label>
         <a-bind property="tel">
-          <input type="tel" id="c-tel">
+          <input type="tel" id="o-tel">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="tel">
           <input
             type="tel">
@@ -148,16 +141,16 @@
     prop-val="https://bar.org">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-url"> url </label>
+      <label for="o-url"> url </label>
         <a-bind property="url">
-          <input type="url" id="c-url">
+          <input type="url" id="o-url">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="url">
           <input
             type="url">
@@ -172,16 +165,16 @@
     prop-val="bar@foo.org">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-email"> email </label>
+      <label for="o-email"> email </label>
         <a-bind property="email">
-          <input type="email" id="c-email">
+          <input type="email" id="o-email">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="email">
           <input
             type="email">
@@ -196,16 +189,16 @@
     prop-val="24.42">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-number"> number </label>
+      <label for="o-number"> number </label>
         <a-bind property="number">
-          <input type="number" id="c-number">
+          <input type="number" id="o-number">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="number">
           <input
             type="number">
@@ -218,16 +211,16 @@
   <code-demo prop="textarea">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-textarea"> textarea </label>
+      <label for="o-textarea"> textarea </label>
         <a-bind property="textarea">
-          <textarea id="c-textarea"></textarea>
+          <textarea id="o-textarea"></textarea>
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="textarea">
           <textarea></textarea>
         </a-bind>
@@ -244,16 +237,16 @@
     prop-val="1969-08-15">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-date"> date </label>
+      <label for="o-date"> date </label>
         <a-bind property="date">
-          <input type="date" id="c-date">
+          <input type="date" id="o-date">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="date">
           <input type="date">
         </a-bind>
@@ -267,16 +260,16 @@
     prop-val="22:30">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-time"> time </label>
+      <label for="o-time"> time </label>
         <a-bind property="time">
-          <input type="time" id="c-time">
+          <input type="time" id="o-time">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="time">
           <input
             type="time">
@@ -291,16 +284,16 @@
     prop-val="1969-08-15T17:07">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-dateTime"> datetime-local </label>
+      <label for="o-dateTime"> datetime-local </label>
         <a-bind property="dateTime">
-          <input type="datetime-local" id="c-dateTime">
+          <input type="datetime-local" id="o-dateTime">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="dateTime">
           <input>
         </a-bind>
@@ -314,16 +307,16 @@
     prop-val="1969-W33">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-week"> week </label>
+      <label for="o-week"> week </label>
         <a-bind property="week">
-          <input type="week" id="c-week">
+          <input type="week" id="o-week">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="week">
           <input>
         </a-bind>
@@ -337,16 +330,16 @@
     prop-val="1969-08">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-month"> month </label>
+      <label for="o-month"> month </label>
         <a-bind property="month">
-          <input type="month" id="c-month">
+          <input type="month" id="o-month">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="month">
           <input>
         </a-bind>
@@ -361,9 +354,9 @@
   <code-demo prop="select">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-select"> select </label>
+      <label for="o-select"> select </label>
         <a-bind property="select">
-          <select id="c-select">
+          <select id="o-select">
             <option>foo</option>
             <option>bar</option>
             <option>baz</option>
@@ -374,7 +367,7 @@
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="select">
           <select>
             <option>foo</option>
@@ -392,10 +385,10 @@
     prop-val="bar, baz">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-selectMulti"> select multiple </label>
+      <label for="o-selectMulti"> select multiple </label>
         <a-bind
           property="selectMulti">
-          <select multiple id="c-selectMulti">
+          <select multiple id="o-selectMulti">
             <option>foo</option>
             <option>bar</option>
             <option>baz</option>
@@ -406,7 +399,7 @@
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="selectMulti"
           elem-attr="selectedOptions">
           <select multiple>
@@ -420,21 +413,22 @@
   </code-demo>
 </details>
 
-<details name="object-props">
+<details open name="object-props">
 <summary>Checkbox and Radio Inputs</summary>
   <!-- checkbox value = 'foo' -->
-  <code-demo prop="checkbox">
+  <code-demo prop="checkboxFoo">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-checkbox"> checkbox value='foo' </label>
+      <label for="o-checkbox"> checkbox value='foo' </label>
 
-      <a-bind property="checkbox">
-        <input type="checkbox" value="foo" id="c-checkbox">
+      <a-bind
+        property="checkboxFoo">
+        <input type="checkbox" value="foo" id="o-checkbox">
       </a-bind>
 
       <a-bind
         push
-        property="checkbox"
+        property="checkboxFoo"
         event="click">
         <button value="foo">Set property to 'foo'</button>
       </a-bind>
@@ -443,7 +437,7 @@
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="checkbox">
           <input
             type="checkbox"
@@ -454,24 +448,33 @@
   </code-demo>
 
   <!-- checkbox no value -->
-  <code-demo prop="checkbox">
+  <code-demo
+    prop="checkboxBool"
+    prop-val = 'false'>
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-checkbox"> checkbox (no value) </label>
+      <label for="o-checkboxb"> checkbox (no value) </label>
 
-      <a-bind property="checkbox">
-        <input type="checkbox" id="c-checkbox">
+      <a-bind
+        property="checkboxBool">
+        <input type="checkbox" id="o-checkboxb">
+      </a-bind>
+
+      <a-bind
+        push
+        property="checkboxBool"
+        event="click">
+        <button value="true">Set property to 'true'</button>
       </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="checkbox">
           <input
-            type="checkbox"
-            value="foo">
+            type="checkbox">
         </a-bind>
       </textarea>
     </a-code>
@@ -486,42 +489,42 @@
         <a-bind property="radioGroup">
           <input
             type="radio"
-            name="c-radiogroup"
+            name="o-radiogroup"
             value="foo"
-            id="c-radioGroup-foo">
+            id="o-radioGroup-foo">
         </a-bind>
-        <label for="c-radioGroup-foo"> foo </label>
+        <label for="o-radioGroup-foo"> foo </label>
       </div>
 
       <div class="flex">
         <a-bind property="radioGroup">
           <input
             type="radio"
-            name="c-radiogroup"
+            name="o-radiogroup"
             value="bar"
-            id="c-radioGroup-bar">
+            id="o-radioGroup-bar">
         </a-bind>
-        <label for="c-radioGroup-bar"> bar </label>
+        <label for="o-radioGroup-bar"> bar </label>
       </div>
     </fieldset>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="radioGroup">
           <input
             type="radio"
-            name="c-radiogroup"
+            name="o-radiogroup"
             value="foo">
         </a-bind>
 
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="radioGroup">
           <input
             type="radio"
-            name="c-radiogroup"
+            name="o-radiogroup"
             value="bar">
         </a-bind>
       </textarea>
@@ -535,20 +538,20 @@
   <code-demo prop="button" prop-val="foo">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-button-a"> button (text mirrors value) </label>
+      <label for="o-button-a"> button (text mirrors value) </label>
         <a-bind
           property="button"
           elem-attr="value, textContent"
           event="click"
           func="notify">
-          <button id="c-button-a"></button>
+          <button id="o-button-a"></button>
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="button"
           elem-attr="value, textContent"
           event="click"
@@ -563,12 +566,12 @@
   <code-demo prop="button">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-button-b"> button (text does not mirror value) </label>
+      <label for="o-button-b"> button (text does not mirror value) </label>
         <a-bind
           property="button"
           event="click"
           func="notify">
-          <button id="c-button-b">
+          <button id="o-button-b">
             CLick Me
           </button>
         </a-bind>
@@ -577,7 +580,7 @@
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="button"
           event="click"
           func="notify">
@@ -606,9 +609,9 @@
         </output>
       </a-bind>
 
-      <label for="c-color"> color Input</label>
+      <label for="o-color"> color Input</label>
       <a-bind property="color">
-        <input type="color" id="c-color">
+        <input type="color" id="o-color">
       </a-bind>
 
     </div>
@@ -616,7 +619,7 @@
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="color">
           <input
             type="color">
@@ -631,16 +634,16 @@
     prop-val="75">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-range"> range </label>
+      <label for="o-range"> range </label>
         <a-bind property="range">
-          <input type="range" max="100" id="c-range">
+          <input type="range" max="100" id="o-range">
         </a-bind>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="range">
           <input>
         </a-bind>
@@ -654,10 +657,10 @@
     prop-val="75">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-progress"> progress </label>
+      <label for="o-progress"> progress </label>
         <a-bind property="progress">
           <progress
-            id="c-progress"
+            id="o-progress"
             max="100"></progress>
         </a-bind>
     </div>
@@ -665,7 +668,7 @@
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="progress">
           <progress
             max="100">
@@ -681,10 +684,10 @@
     prop-val="75">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-meter"> meter </label>
+      <label for="o-meter"> meter </label>
         <a-bind property="meter">
           <meter
-            id="c-meter"
+            id="o-meter"
             min="0"
             max="100"
             low="33"
@@ -697,10 +700,10 @@
     <a-code highlight slot="code">
       <textarea>
         <a-bind
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="meter">
           <meter
-            id="c-meter"
+            id="o-meter"
             min="0"
             max="100"
             low="33"
@@ -716,12 +719,12 @@
   <code-demo prop="file" prop-val="null" attr-val="null">
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
-      <label for="c-file"> file </label>
+      <label for="o-file"> file </label>
         <a-bind
           push
           property="file"
           func="getFiles">
-          <input type="file" multiple id="c-file">
+          <input type="file" multiple id="o-file">
         </a-bind>
     </div>
 
@@ -729,7 +732,7 @@
       <textarea>
         <a-bind
           push
-          model="../extra/testObject.js"
+          model="/extra/testObject.js"
           property="file"
           func="getFiles">
           <input
@@ -754,7 +757,7 @@
           elem-attr="innerHTML">
           <div
             contenteditable
-            id="c-edit"
+            id="o-edit"
             class="card"
             style="height:100%">
             no content...
@@ -781,7 +784,7 @@
             <textarea>
               <a-bind
                 once
-                model="../extra/testObject.js"
+                model="/extra/testObject.js"
                 property="editable"
                 elem-attr="innerHTML">
                 <div
@@ -796,7 +799,7 @@
           <a-code highlight indent="1">
           <textarea>
             <a-bind
-              model="../extra/testObject.js"
+              model="/extra/testObject.js"
               property="editable">
               <output></output>
             </a-bind>
@@ -814,7 +817,7 @@
 <summary>Form Submission</summary>
   <section class="flex vstart">
     <a-bindgroup
-      model="../extra/testObject.js">
+      model="/extra/testObject.js">
 
       <p>
         <a-bind
@@ -900,7 +903,7 @@
         <a-code highlight>
           <textarea>
             <a-bindgroup
-              model="../extra/testObject.js">
+              model="/extra/testObject.js">
 
               <a-bind
                 event="click"
@@ -960,25 +963,30 @@
   <section>
     <div class="flex">
       <div class="flex1 flex column">
-        <label for="foo-input">Input</label>
+        <label for="o-ex-input">Input</label>
 
-        <a-bind model="../extra/exampleObject.js" property="foo">
-          <input id="foo-input">
-        </a-bind>
+          <input
+            id="o-ex-input"
+            value="original value">
 
       </div>
       <p> </p>
       <div class="flex1 flex column">
-        <label for="foo-output">Output</label>
+        <label for="o-ex-output">Output</label>
 
         <a-bind
-          pull
-          model="../extra/exampleObject.js"
-          property="foo">
+          model="#ex-input">
           <output
-            id="foo-output"
-            for="foo-input">
+            id="#ex-output"
+            for="o-ex-input"
+            value="new value">
           </output>
+        </a-bind>
+
+        <a-bind
+          model="#exampleObject"
+          event="click">
+          <button value="bar">Bar</button>
         </a-bind>
 
       </div>
@@ -993,7 +1001,7 @@
           <a-code highlight>
             <textarea>
               <a-bind
-                model="../extra/exampleObject.js"
+                model="/extra/exampleObject.js"
                 property="foo">
                 <input id="foo-input">
               </a-bind>
@@ -1006,7 +1014,7 @@
             <textarea>
               <a-bind
                 pull
-                model="../extra/exampleObject.js"
+                model="/extra/exampleObject.js"
                 property="foo">
                 <output></output>
               </a-bind>

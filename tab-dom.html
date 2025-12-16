@@ -1,0 +1,495 @@
+<p>In these examples, there is no external model. The DOM elements themselves are the models. This is pure DOM-to-DOM binding.</p>
+
+<h2>Basic Example</h2>
+<div class="card flex column stretch">
+	<form
+		class="flex space-around"
+		onsubmit="return false">
+
+		<a-bind
+			push
+			model="#input"
+			property="value"
+			event="click">
+			<button
+				value="button value">
+				Click Me
+			</button>
+		</a-bind>
+
+		<a-bind
+			model="#output"
+			property="value">
+			<input
+				id="#input"
+				value="input value">
+		</a-bind>
+
+		<a-bind
+			pull
+			model="#input"
+			property="value">
+			<output id="output">output value</output>
+		</a-bind>
+
+		<input type="reset">
+	</form>
+
+	<details>
+		<summary class="nofrills">
+			code
+		</summary>
+
+		<a-code highlight>
+			<textarea>
+				<form
+					onsubmit="return false">
+
+					<a-bind
+						push
+						model="#input"
+						property="value"
+						event="click">
+						<button
+							value="button value">
+							Click Me
+						</button>
+					</a-bind>
+
+					<a-bind
+						model="#output"
+						property="value">
+						<input
+							id="#input"
+							value="input value">
+					</a-bind>
+
+					<a-bind
+						pull
+						model="#input"
+						property="value">
+						<output id="output">output value</output>
+					</a-bind>
+
+					<input type="reset">
+				</form>
+			</textarea>
+		</a-code>
+	</details>
+</div>
+
+<hr>
+
+<h2>(One Way) Radio inputs affect checkbox</h2>
+<div class="card">
+	<div class="flex space-around">
+		<a-bindgroup
+			class="flex space-between flex240"
+			model="#ex1-checkbox">
+
+			<div class="flex column">
+				<label for="ex1-radio-true">
+					Check
+				</label>
+				<a-bind
+					push
+					property="checked">
+					<input
+						id="ex1-radio-true"
+						type="radio"
+						name="ex1"
+						value="true">
+				</a-bind>
+			</div>
+
+			<div class="flex column">
+				<label for="ex1-radio-false">
+					Uncheck
+				</label>
+				<a-bind
+					push
+					property="checked">
+					<input
+						id="ex1-radio-false"
+						type="radio"
+						name="ex1"
+						value="">
+				</a-bind>
+			</div>
+		</a-bindgroup>
+
+		<p class="flex column">
+			<label
+				for="ex1-checkbox">
+				Result
+			</label>
+
+			<input
+				id="ex1-checkbox"
+				type="checkbox">
+		</p>
+	</div>
+
+	<details>
+		<summary class="nofrills">code</summary>
+		<a-code highlight>
+			<textarea>
+				<a-bindgroup
+					model="#ex1-checkbox">
+
+					<label
+						for="ex1-radio-true">
+						Check
+					</label>
+
+					<a-bind
+						push
+						property="checked">
+						<input
+							id="ex1-radio-true"
+							type="radio"
+							name="ex1"
+							value="true">
+					</a-bind>
+
+					<label
+						for="ex1-radio-false">
+						Uncheck
+					</label>
+
+					<a-bind
+						push
+						property="checked">
+						<input
+							id="ex1-radio-false"
+							type="radio"
+							name="ex1"
+							value="">
+					</a-bind>
+
+				</a-bindgroup>
+
+				<label
+					for="ex1-checkbox">
+					Result
+				</label>
+
+				<input
+					id="ex1-checkbox"
+					type="checkbox">
+			</textarea>
+		</a-code>
+	</details>
+</div>
+
+<hr>
+
+<h2>(One Way) Checkbox affects radio inputs</h2>
+<div class="card">
+	<div class="flex space-around">
+		<p class="flex column">
+			<label
+				for="ex2-checkbox">
+				Driver
+			</label>
+
+			<input
+				id="ex2-checkbox"
+				type="checkbox"
+				oninput="abind.update(this, 'checked', this.checked)">
+		</p>
+
+		<a-bindgroup
+			class="flex space-between flex240"
+			model="#ex2-checkbox">
+			<div class="flex column">
+				<label for="ex2-radio-true">
+					true
+				</label>
+
+				<a-bind
+					pull
+					property="checked">
+					<input
+						id="ex2-radio-true"
+						type="radio"
+						name="ex2"
+						value="true">
+				</a-bind>
+			</div>
+
+			<div class="flex column">
+				<label for="ex2-radio-false">
+					false
+				</label>
+
+				<a-bind
+					pull
+					property="checked">
+					<input
+						id="ex2-radio-false"
+						type="radio"
+						name="ex2"
+						value="false">
+				</a-bind>
+			</div>
+		</a-bindgroup>
+	</div>
+
+	<details>
+		<summary class="nofrills">code</summary>
+		<a-code highlight>
+			<textarea>
+				<label
+					for="ex2-checkbox">
+					Driver
+				</label>
+
+				<input
+					id="ex2-checkbox"
+					type="checkbox"
+					oninput="abind.update(this, 'checked', this.checked)">
+
+				<a-bindgroup
+					model="#ex2-checkbox">
+
+					<label for="ex2-radio-true">
+						true
+					</label>
+
+					<a-bind
+						pull
+						property="checked">
+						<input
+							id="ex2-radio-true"
+							type="radio"
+							name="ex2"
+							value="true">
+					</a-bind>
+
+					<label for="ex2-radio-false">
+						false
+					</label>
+
+					<a-bind
+						pull
+						property="checked">
+						<input
+							id="ex2-radio-false"
+							type="radio"
+							name="ex2"
+							value="false">
+					</a-bind>
+				</a-bindgroup>
+			</textarea>
+		</a-code>
+	</details>
+</div>
+
+<hr>
+
+<h2>(Two Way) All inputs affect each other</h2>
+<div class="card">
+	<div class="flex space-around">
+		<div class="flex column">
+			<label
+				for="ex3-checkbox">
+				checkbox
+			</label>
+
+			<input
+				id="ex3-checkbox"
+				type="checkbox"
+				oninput="abind.update(this, 'checked', this.checked)">
+			</div>
+
+		<a-bindgroup
+			class="flex flex240 space-between"
+			model="#ex3-checkbox">
+
+			<div class="flex column">
+				<label
+					for="ex3-radio-true">
+					true
+				</label>
+
+		    <a-bind
+		    	property="checked"
+		    	elem-attr="checked">
+					<input
+						id="ex3-radio-true"
+						type="radio"
+						name="ex3"
+						value="true">
+		    </a-bind>
+		  </div>
+
+		  <div class="flex column">
+		  	<label
+		  		for="ex3-radio-false">
+		  		false
+		  	</label>
+
+		    <a-bind
+		    	property="checked"
+		    	elem-attr="checked">
+					<input
+						id="ex3-radio-false"
+						type="radio"
+						name="ex3"
+						value="false">
+		    </a-bind>
+		  </div>
+		</a-bindgroup>
+	</div>
+
+	<details>
+		<summary class="nofrills">code</summary>
+		<a-code highlight>
+			<textarea>
+				<label
+					for="ex3-checkbox">
+					checkbox
+				</label>
+
+				<input
+					id="ex3-checkbox"
+					type="checkbox"
+					oninput="abind.update(this, 'checked', this.checked)">
+
+				<a-bindgroup
+					model="#ex3-checkbox">
+
+					<label
+						for="ex3-radio-true">
+						true
+					</label>
+
+					<a-bind
+						property="checked"
+						elem-attr="checked">
+						<input
+							id="ex3-radio-true"
+							type="radio"
+							name="ex3"
+							value="true">
+					</a-bind>
+
+					<label
+						for="ex3-radio-false">
+						false
+					</label>
+
+					<a-bind
+						property="checked"
+						elem-attr="checked">
+						<input
+							id="ex3-radio-false"
+							type="radio"
+							name="ex3"
+							value="false">
+					</a-bind>
+				</a-bindgroup>
+			</textarea>
+		</a-code>
+	</details>
+</div>
+
+<hr>
+
+<h2>Display Range Value</h2>
+<div class="card">
+	<div class="flex column gap0">
+		<div class="flex">
+			<label for="ex4-range">
+				Range Value:
+			</label>
+
+			<a-bind
+				model="ex4-range"
+				property="value"
+				elem-attr="textContent">
+				<span></span>
+			</a-bind>
+		</div>
+
+		<input
+			id="ex4-range"
+			type="range"
+			max="100"
+			value="50"
+			oninput="abind.update(this, 'value', this.value)">
+	</div>
+
+	<details>
+		<summary class="nofrills">code</summary>
+		<a-code highlight>
+			<textarea>
+				<label
+					for="ex4-range">
+					Range Value
+				</label>
+
+				<a-bind
+					model="ex4-range"
+					property="value"
+					elem-attr="textContent">
+					<span></span>
+				</a-bind>
+
+				<input
+					id="ex4-range"
+					type="range"
+					max="100"
+					value="50"
+					oninput="abind.update(this, 'value', this.value)">
+			</textarea>
+		</a-code>
+	</details>
+</div>
+
+<hr>
+
+<h2>CSS Variable Proxy (Themer)</h2>
+<div class="card">
+
+<style>
+  #ex5-theme {
+    --rounded: 4px;
+    border: 1px solid lime;
+    /* Multiply by 1px to convert raw range number to pixels */
+    border-radius: calc(var(--rounded) * 1px);
+    padding: 10px;
+    margin-top: 10px;
+    transition: border-radius 0.2s;
+  }
+</style>
+
+<a-bind
+	once
+  model="#ex5-theme"
+  property="style.--rounded">
+  <input
+    id="ex5-range"
+    type="range"
+    max="50">
+</a-bind>
+
+<a-bind
+	model="#ex5-range"
+	property="value">
+	<output></output>
+</a-bind>
+
+<a-bind
+  debug
+  model="#ex5-range"
+  property="value"
+  elem-attr="style.--rounded">
+  <div
+    id="ex5-theme">
+    FOO
+  </div>
+</a-bind>
+
+</div>

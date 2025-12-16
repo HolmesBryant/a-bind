@@ -16,7 +16,8 @@ export const testObject = {
 	_month: "1970-01",
 	_select: "",
 	_selectMulti: 'foo, baz',
-	_checkbox: 'foo',
+	_checkboxFoo: 'foo',
+	_checkboxBool: undefined,
 	_radioGroup: 'foo',
 	_button: "Click Me!",
 	_color: "#cd5c5c",
@@ -46,7 +47,8 @@ export const testObject = {
 		month: "1970-01",
 		select: "",
 		selectMulti: 'foo, baz',
-		checkbox: 'foo',
+		checkboxFoo: 'foo',
+		checkboxBool: undefined,
 		radioGroup: 'foo',
 		button: "Click Me!",
 		color: "#cd5c5c",
@@ -119,12 +121,9 @@ export const testObject = {
 	},
 
 	reset(event) {
-		const attrs = CustomElement.observedAttributes;
+		const props = testObject.defaults;
 
-		for (const attr of attrs) {
-			// Convert kebab-case attribute name to camelCase property name
-    	const prop = attr.replace(/-(.)/g, (match, letter) => letter.toUpperCase());
-			// this.removeAttribute(prop);
+		for (const prop in props) {
 			this[prop] = this.defaults[prop];
 		}
 	},
@@ -266,10 +265,16 @@ export const testObject = {
 		window.abind?.update?.(this, 'selectMulti', value);
 	},
 
-	get checkbox() { return this._checkbox },
-	set checkbox(value) {
-		this._checkbox = value;
-		window.abind?.update?.(this, 'checkbox', value);
+	get checkboxFoo() { return this._checkboxFoo },
+	set checkboxFoo(value) {
+		this._checkboxFoo = value;
+		window.abind?.update?.(this, 'checkboxFoo', value);
+	},
+
+	get checkboxBool() { return this._checkboxBool },
+	set checkboxBool(value) {
+		this._checkboxBool = value !== false;
+		window.abind?.update?.(this, 'checkboxBool', value);
 	},
 
 	get radioGroup() { return this._radioGroup },
