@@ -456,40 +456,66 @@
 <style>
   #ex5-theme {
     --rounded: 4px;
-    border: 1px solid lime;
+    --background: #00ff00;
+
+    border: 1px solid var(--background);
+
     /* Multiply by 1px to convert raw range number to pixels */
     border-radius: calc(var(--rounded) * 1px);
-    padding: 10px;
-    margin-top: 10px;
-    transition: border-radius 0.2s;
   }
 </style>
 
 <a-bind
-	once
-  model="#ex5-theme"
-  property="style.--rounded">
-  <input
-    id="ex5-range"
-    type="range"
-    max="50">
-</a-bind>
-
-<a-bind
-	model="#ex5-range"
-	property="value">
-	<output></output>
-</a-bind>
-
-<a-bind
-  debug
   model="#ex5-range"
   property="value"
   elem-attr="style.--rounded">
-  <div
-    id="ex5-theme">
+
+  <p
+  	id="ex5-theme">
     FOO
-  </div>
+  </p>
+
 </a-bind>
+
+<div>
+	<a-bind
+  	debug
+		pull
+		model="#ex5-theme"
+		property="css.--background">
+
+		<input
+			id="ex5-color"
+			type="color"
+			oninput="abind.update(this, 'value', this.value)">
+
+	</a-bind>
+
+	<a-bind
+		model="#ex5-color"
+		property="value">
+
+		<output></output>
+
+	</a-bind>
+</div>
+
+
+</div>
+
+<div>
+  <input
+    id="ex5-range"
+    type="range"
+    max="20"
+    value="0"
+    oninput="abind.update(this, 'value', this.value)">
+
+	<a-bind
+		model="#ex5-range"
+		property="value">
+		<output></output>
+	</a-bind>
+</div>
 
 </div>
