@@ -1,7 +1,7 @@
 import terser from '@rollup/plugin-terser';
 
 export default {
-  input: 'src/index.js',
+  input: 'src/a-bind.js',
   output: {
     file: 'dist/a-bind.min.js',
     format: 'es',

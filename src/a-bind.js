@@ -1,510 +1,538 @@
 /**
  * @file a-bind.js
- * @author Holmes Bryant <https://github.com/HolmesBryant>
+ * @description specific Data-binding for Custom Elements and ESM Modules.
+ *              Features MutationObserver support, batched DOM updates via requestAnimationFrame,
+ *              and intelligent throttling (Input Debounce / Output Rate Limiting).
+ * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
+ * @version 2.6.0
  * @license GPL-3.0
- * @version 2.5.2
  */
-import { LogUtils } from './utils/LogUtils.js';
-import { Loader } from './utils/Loader.js';
-import { DomBinder } from './utils/DomBinder.js';
-import { ModelObserver, Batcher } from './utils/observer.js';
 
-export class ABind extends HTMLElement {
-  #config = {
-    debug: false,
-    elemAttr: 'value',
-    event: 'input',
-    func: null,
-    model: null,
-    modelAttr: null,
-    once: false,
-    property: null,
-    pull: false,
-    push: false,
-    throttle: 0
-  };
+import { globalUpdateManager } from './UpdateManager.js';
+import { crosstownBus } from './Bus.js';
+import loader from './loader.js';
+import ABindgroup from './a-bindgroup.js';
+
+export { globalUpdateManager, crosstownBus, loader, ABindgroup };
+
+/**
+ * A Custom Element (<a-bind>) that provides two-way data binding between
+ * JavaScript models/variables and DOM elements.
+ *
+ * @extends HTMLElement
+ *
+ * @note If you need a global handle, use this example
+ * @example
+ * <script type="module">
+ *  import ABind from './a-bind.min.js';
+ *  window.abind = ABind;
+ * </script>
+ */
+export default class ABind extends HTMLElement {
+  #elemAttr = 'value';
+  #event = 'input';
+  #func;
+  #modelKey;
+  #modelAttr;
+  #once = false;
+  #property;
+  #pull = false;
+  #push = false;
+  #throttle = 0;
 
   #abortController;
-  #boundElement;
+  #bound;
+  #busKey;
+  #busFunc;
+  #childObserver;
+  #group;
   #hasUpdated = false;
-  #modelKey = null;
-  #modelInstance = null;
+  #inputTimer;
+  #isInitializing = true;
   #isConnected = false;
-  #isInitializing = false;
-  #subscriptionCallback = null;
-  #childObserver = null;
-  #inputTimer = null;
+  #model;
+  #updateManager = globalUpdateManager;
 
+  static #pathCache = new Map();
+
+  /**
+   * List o
+   * @static
+   * @returns {string[]} ['debug', 'elem-attr', 'event', 'func', 'model', 'model-attr', 'once', 'property', 'pull', 'push', 'throttle']
+   */
   static observedAttributes = [
-    'debug', 'elem-attr', 'event', 'func', 'model',
-    'model-attr', 'once', 'property', 'pull', 'push', 'throttle'
+    'elem-attr',
+    'event',
+    'func',
+    'model',
+    'model-attr',
+    'once',
+    'property',
+    'pull',
+    'push',
+    'throttle'
   ];
+
 
   constructor() { super(); }
 
-  // --- Public API ---
-
-  get target() { return this.#boundElement; }
-
-  get configuration() { return { ...this.#config }; }
-
-  get model() { return this.#modelInstance; }
-
-  set model(value) {
-    if (this.#modelInstance === value) return;
-    this.#teardown();
-    this.#modelInstance = value;
-    if (this.#isConnected) {
-      this.#reinitialize();
-    }
-  }
-
   // --- Lifecycle ---
 
+  /**
+   * Called when an observed attribute has been added, removed, updated, or replaced.
+   * Parses attributes and re-#initializes binding if needed.
+   * @param {string} attr - The attribute name.
+   * @param {string} oldval - The old value.
+   * @param {string} newval - The new value.
+   */
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
-    this.#updateConfig(attr, newval);
+    switch (attr) {
+      case 'elem-attr':
+        this.#elemAttr = newval;
+        break;
+      case 'event':
+        this.#event = newval;
+        break;
+      case 'func':
+        this.#func = newval;
+        break;
+      case 'model':
+        this.#modelKey = newval;
+        break;
+      case 'model-attr':
+        this.#modelAttr = newval;
+        break;
+      case 'once':
+        this.#once = newval !== null && newval !== 'false';
+        break;
+      case 'property':
+        this.#property = newval;
+        break;
+      case 'pull':
+        this.#pull = newval !== null && newval !== 'false';
+        break;
+      case 'push':
+        this.#push = newval !== null && newval !== 'false';
+        break;
+      case 'throttle':
+        this.#throttle = parseInt(newval) || 0;
+        break;
+    }
 
     if (this.#isConnected && ['model', 'property', 'model-attr'].includes(attr)) {
-      this.#reinitialize();
+      this.#updateManager.queue(this, null, () => {
+        if (this.#isConnected) this.#reinit();
+      }, this);
     }
   }
 
+  /**
+   * Called when the element is connected to the DOM.
+   * Sets up MutationObservers to wait for child elements and #initializes bindings.
+   */
   connectedCallback() {
     this.#isConnected = true;
-    this.#waitForChildren();
-  }
 
-  disconnectedCallback() {
-    this.#isConnected = false;
-    this.#teardown();
-    this.#releaseModelReference();
-    if (this.#childObserver) {
-      this.#childObserver.disconnect();
-      this.#childObserver = null;
-    }
-
-    const group = this.closest('a-bindgroup');
-    if (group) group.unregister(this);
-  }
-
-  // --- Initialization ---
-
-  #waitForChildren() {
-    if (this.firstElementChild) {
-      this.#initialize('Connected');
-      return;
-    }
-
-    if (this.#childObserver) this.#childObserver.disconnect();
-
-    this.#childObserver = new MutationObserver(() => {
-      if (this.firstElementChild) {
-        this.#childObserver.disconnect();
-        this.#childObserver = null;
-        this.#initialize('Child Inserted');
-      }
-    });
-    this.#childObserver.observe(this, { childList: true });
-  }
-
-  async #initialize(trigger) {
-    if (this.#isInitializing || !this.#isConnected) return;
-    this.#isInitializing = true;
-
-    this.#findTargetElement();
-    if (!this.#boundElement) {
-        this.#isInitializing = false;
-        return;
-    }
-
-    // NEW: Manage Disabled State during Async Load
-    // Prevents user interaction before the model is ready (The "Unbound Gap")
-    const el = this.#boundElement;
-    const canDisable = 'disabled' in el;
-    const wasDisabled = el.disabled; // Remember original state (e.g. <input disabled>)
-
-    if (canDisable) el.disabled = true;
-
-    try {
-      const source = await this.#resolveModelSource();
-
-      if (!this.#isConnected || !this.#modelInstance) return;
-
-      LogUtils.log(this.#logCtx, 'Initialized', {
-        trigger,
-        source,
-        boundElement: LogUtils.getSignature(this.#boundElement)
+    // if a-bind was inserted into DOM programatically without first appending child element
+    if (!this.firstElementChild) {
+      console.warn('a-bind: waiting for child element')
+      this.#childObserver = new MutationObserver(() => {
+        if (this.#isConnected && this.firstElementChild) {
+          this.#childObserver.disconnect();
+          this.#childObserver = null;
+          this.#init();
+        }
       });
 
-      this.#setupBinding();
-    } catch (err) {
-      console.error('a-bind error:', err);
-    } finally {
-      // NEW: Restore Disabled State
-      // Only re-enable if we disabled it AND it wasn't originally disabled by the user
-      if (canDisable && !wasDisabled && this.#isConnected) {
-          el.disabled = false;
-      }
-      this.#isInitializing = false;
+      this.#childObserver.observe(this, { childList: true });
+    } else {
+      this.#init();
     }
   }
 
-  #reinitialize() {
+  /**
+   * Called when the element is disconnected from the DOM.
+   * Cleans up observers, event listeners, and pending throttle timers.
+   */
+  disconnectedCallback() {
     this.#teardown();
-    this.#hasUpdated = false;
-    this.#initialize('Re-init');
+    if (this.#group) this.#group.unregister(this);
+    if (this.#childObserver) this.#childObserver.disconnect();
+    this.#busFunc = null;
+    this.#isConnected = false;
   }
 
-  // --- Model Resolution ---
+  // -- Static --
 
-  #findTargetElement() {
-    let element = this.firstElementChild;
-    while (element && element.localName === 'a-bind') {
-      element = element.firstElementChild;
+  static #modelIds = new WeakMap();
+  static #idCounter = 0;
+
+  /**
+   * Generates a deterministic string key for the Bus.
+   * Handles both string identifiers and object instances.
+   * @param {string|Object} model - The model identifier or instance.
+   * @param {string} property - The property path.
+   * @returns {string}
+   */
+  static getBusKey(model, property) {
+    let modelId  = ABind.#modelIds.get(model);
+    if (!modelId) {
+      modelId = `m${++ABind.#idCounter}`;
+      ABind.#modelIds.set(model, modelId);
     }
-    this.#boundElement = element;
+    return `${modelId}:${property}`;
+  }
 
-    if (!this.#boundElement && this.#config.debug) {
-      console.warn('a-bind: No valid target element found');
+  static #getPathParts(path) {
+    if (ABind.#pathCache.has(path)) {
+      return ABind.#pathCache.get(path);
+    }
+    const parts = path.split('.');
+    ABind.#pathCache.set(path, parts);
+    return parts;
+  }
+
+  static update(model, property, value) {
+    const key = ABind.getBusKey(model, property);
+    crosstownBus.announce(key, value)
+  }
+
+  // -- Private --
+
+  #addListeners() {
+    const prop = this.#property || this.#modelAttr;
+
+    // Element -> Model (Event)
+    if (!this.#pull) {
+      this.#bound.addEventListener(this.#event, event => {
+        const value = this.#bound[this.#elemAttr];
+        this.#updateModel(value, event);
+      }, {signal:this.#abortController.signal});
+    }
+
+    // Model -> Element (Observer)
+    if (!this.#push) {
+      crosstownBus.hopOn(this.#busKey, this.#busFunc);
+
+      if (this.#model.addEventListener) {
+        // If model is an input or select element
+        this.#model.addEventListener('change', event => {
+          const prop = this.#property || this.#modelAttr;
+          const value = this.#getPropertyValue(this.#model, prop);
+          this.#applyUpdate(this.#bound, this.#elemAttr, value);
+        }, {signal:this.#abortController.signal});
+
+      }
     }
   }
 
-  async #resolveModelSource() {
-    // 1. Check for Group
-    const group = this.closest('a-bindgroup');
-    if (group) {
-      await customElements.whenDefined('a-bindgroup');
-      if (!this.#isConnected) return 'Aborted';
+  /**
+   * Sets a value on a target (Element, Custom Element, or Plain Object).
+   * Prioritizes properties, handles nested paths, and falls back to attributes only for DOM elements.
+   */
+  #applyUpdate(target, name, value) {
+    if (!this.#isConnected || !target || typeof name !== 'string') return;
+    // if (target == this.#bound && this.#once && this.#hasUpdated) return;
 
-      group.register(this);
+    const isList = target instanceof HTMLSelectElement || target instanceof HTMLDataListElement;
+    if (isList) {
+      let items = null;
 
-      if (group.model) {
-        this.#modelInstance = group.model;
-        return 'Group (Immediate)';
-      } else {
-        return 'Group (Waiting)';
+      // 2. Handle Array input
+      if (Array.isArray(value)) {
+        items = value;
+      }
+      // 3. Handle Comma-Separated String input
+      else if (typeof value === 'string' && value.includes(',')) {
+        items = value.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      // 4. Handle single string (no comma) as a single option
+      else if (typeof value === 'string') {
+        items = [value.trim()];
+      }
+
+      if (items) {
+        this.#setOptions(target, items);
+        return;
       }
     }
 
-    // 2. Check for Manual/Existing Model
-    if (this.#modelInstance) return 'Manual';
-
-    // 3. Load from Attribute
-    if (this.#config.model) {
-      this.#modelInstance = await Loader.resolve(this.#config.model);
-      if (!this.#isConnected) return 'Aborted';
-
-      if (this.#modelInstance && typeof this.#config.model === 'string') {
-        this.#modelKey = this.#config.model;
-        Loader.incrementRef(this.#modelKey);
-      }
-      return `Loader (${this.#config.model})`;
-    }
-
-    return 'None';
-  }
-
-  // --- Binding & Events ---
-
-  #setupBinding() {
-    this.#abortController = new AbortController();
-
-    // 1. DOM Listeners (Pull)
-    const canListen = this.#config.property || this.#config.func || this.#config.modelAttr;
-    if (canListen && this.#config.event && !this.#config.pull) {
-      this.#boundElement.addEventListener(
-        this.#config.event,
-        (e) => this.#handleElementEvent(e),
-        { signal: this.#abortController.signal }
-      );
-    }
-
-    // 2. Model Listeners (Push)
-    if (!this.#config.push) {
-      this.#subscribeToModel();
-      this.applyUpdate(undefined, 'Initial Sync');
-    }
-  }
-
-  #subscribeToModel() {
-    const observer = ModelObserver.get(this.#modelInstance, true);
-    const prop = this.#config.property || this.#config.modelAttr;
-
-    if (observer && prop) {
-      this.#subscriptionCallback = (value) => {
-        if (this.#config.once && this.#hasUpdated) return;
-        Batcher.add(this, value, `Model Change (${prop})`);
-      };
-      observer.subscribe(prop, this.#subscriptionCallback);
-    }
-  }
-
-  #handleElementEvent(event) {
-    if (this.#config.func) {
-      this.#executeFunction(event);
+    // Handle CSS Variables
+    if (name.startsWith('--') && target.style) {
+      target.style.setProperty(name, value);
+      if (target === this.#bound) this.#hasUpdated = true;
       return;
     }
 
-    if (this.#config.push) return;
-    if (!this.#config.property && !this.#config.modelAttr) return;
+    // Handle Nested Paths (e.g., 'style.color', 'config.theme.dark')
+    if (name.includes('.')) {
+      // clone to avoid mutating cache
+      const parts = [...ABind.#getPathParts(name)];
+      const lastProp =  parts.pop();
+      let current = target;
 
-    const value = this.#extractValueFromEvent(event);
-    LogUtils.log(this.#logCtx, 'DOM Event', { type: event.type, value });
-
-    if (this.#config.throttle > 0) {
-      if (this.#inputTimer) clearTimeout(this.#inputTimer);
-      this.#inputTimer = setTimeout(() => {
-        this.#updateModel(value);
-        this.#inputTimer = null;
-      }, this.#config.throttle);
-    } else {
-      this.#updateModel(value);
-    }
-  }
-
-  #extractValueFromEvent(event) {
-    const el = this.#boundElement;
-
-    // 1. Select Multiple
-    if (el.localName === 'select' && el.multiple) {
-      return Array.from(el.selectedOptions).map(o => o.value);
-    }
-
-    // 2. Checkbox
-    if (el.type === 'checkbox') {
-        const currentModelVal = this.#getModelValue();
-        if (Array.isArray(currentModelVal)) {
-            const val = el.getAttribute('value') || el.value;
-            const idx = currentModelVal.indexOf(val);
-            const newArr = [...currentModelVal];
-
-            if (el.checked && idx === -1) newArr.push(val);
-            else if (!el.checked && idx > -1) newArr.splice(idx, 1);
-            return newArr;
+      for (const part of parts) {
+        if (current[part] === undefined || current[part] === null) {
+          if (typeof target.setAttribute === 'function') {
+            target.setAttribute(name, value);
+          }
+          return;
         }
-        return el.checked;
-    }
 
-    // 3. Radio
-    if (el.type === 'radio') {
-        if (el.checked) {
-            if (el.value === 'true') return true;
-            if (el.value === 'false') return false;
-            return el.value === 'on' ? true : el.value;
-        }
-        return undefined;
-    }
-
-    // 4. Custom Element
-    if (event.target !== el && event.target.value !== undefined) {
-      return event.target.value;
-    }
-
-    // 5. Standard fallback
-    const val = this.#getDomValue(el, this.#config.elemAttr);
-    if (val === 'true') return true;
-    if (val === 'false') return false;
-    return val;
-  }
-
-  // --- Updates ---
-
-  applyUpdate(value, reason) {
-    if (value === undefined) {
-      value = this.#getModelValue();
-    }
-
-    const isDebug = this.#config.debug;
-    const prevDom = isDebug ? this.#getDomValue(this.#boundElement, this.#config.elemAttr) : undefined;
-
-    // Apply the update
-    const attrs = this.#config.elemAttr.split(',').map(s => s.trim());
-    attrs.forEach(attr => DomBinder.update(this.#boundElement, attr, value));
-    this.#hasUpdated = true;
-
-    // Capture the ACTUAL final state from the DOM
-    const postDom = isDebug ? this.#getDomValue(this.#boundElement, this.#config.elemAttr) : undefined;
-
-    LogUtils.log(this.#logCtx, 'Update DOM', {
-        reason,
-        value,
-        previous: prevDom,
-        actual: postDom // The "Post Update" value
-    });
-  }
-
-  #updateModel(value) {
-    if (value === undefined) return;
-
-    const oldValue = this.#getModelValue();
-    if (oldValue === value) return;
-
-    if (this.#config.modelAttr) {
-      this.#setModelAttr(value);
-    } else {
-      this.#setObjectProperty(this.#modelInstance, this.#config.property, value);
-    }
-
-    // Capture the final state from the Model
-    const postModel = this.#config.debug ? this.#getModelValue() : undefined;
-
-    LogUtils.log(this.#logCtx, 'Update Model', {
-      value,
-      previous: oldValue,
-      actual: postModel // The "Post Update" value
-    });
-
-    const observer = ModelObserver.get(this.#modelInstance, false);
-    const prop = this.#config.property || this.#config.modelAttr;
-    if (observer && prop) observer.publish(prop, value);
-  }
-
-  // --- Helpers ---
-
-  #getDomValue(el, attr) {
-    if (attr.startsWith('style.')) {
-      const prop = attr.substring(6);
-      const val = getComputedStyle(el).getPropertyValue(prop);
-      return val ? val.trim() : '';
-    }
-    if (attr in el) return el[attr];
-    if (el.hasAttribute(attr)) return el.getAttribute(attr);
-    return el.value;
-  }
-
-  #getModelValue() {
-    if (!this.#modelInstance) return undefined;
-    if (this.#config.modelAttr) {
-      if (this.#config.modelAttr.startsWith('style.')) {
-        return this.#modelInstance.style?.[this.#config.modelAttr.substring(6)];
+        current = current[part];
       }
-      return this.#modelInstance.getAttribute?.(this.#config.modelAttr);
+
+      try {
+        if (current instanceof CSSStyleDeclaration) {
+          current.setProperty(lastProp, value);
+        } else {
+          current[lastProp] = value;
+        }
+
+        if (target === this.#bound) this.#hasUpdated = true;
+      } catch (error) {
+        console.warn(`a-bind: Failed to set nested property "${name}"`, error);
+      }
+
+      return;
     }
 
-    // Computed Style from Model Element
-    if (this.#modelInstance instanceof HTMLElement && this.#config.property.startsWith('style.')) {
-        const prop = this.#config.property.substring(6);
-        const val = getComputedStyle(this.#modelInstance).getPropertyValue(prop);
-        return val ? val.trim() : '';
+    // Main Logic: Property vs Attribute fallback
+    const isElement = typeof target.setAttribute === 'function';
+
+    if (name in target) {
+      // It's a property
+      try {
+        target[name] = value;
+      } catch (error) {
+        // Fallback for read-only properties on elements
+        if (isElement) target.setAttribute(name, value);
+      }
+    } else if (isElement) {
+      // It's not a property, but it is an element: set as attribute
+      if (value === null || value === undefined) {
+        target.removeAttribute(name);
+      } else {
+        target.setAttribute(name, value);
+      }
     }
 
-    return this.#getObjectProperty(this.#modelInstance, this.#config.property);
-  }
-
-  #setModelAttr(value) {
-    if (this.#config.modelAttr.startsWith('style.')) {
-      this.#modelInstance.style.setProperty(this.#config.modelAttr.substring(6), value);
-    } else {
-      this.#modelInstance.setAttribute(this.#config.modelAttr, value);
-    }
+    if (target === this.#bound) this.#hasUpdated = true;
   }
 
   #executeFunction(event) {
-    if (!this.#config.func) return;
-    const parts = this.#config.func.split('.');
-    const fnName = parts.pop();
-    const ctxPath = parts.join('.');
+    if (!this.#func) return;
+    let context;
 
-    let ctx = ctxPath ? this.#getObjectProperty(this.#modelInstance, ctxPath) : this.#modelInstance;
-    if (!ctx || typeof ctx[fnName] !== 'function') {
-      ctx = ctxPath ? this.#getObjectProperty(window, ctxPath) : window;
-    }
-
-    if (ctx && typeof ctx[fnName] === 'function') {
-      ctx[fnName].call(ctx, event, this.#boundElement, this.#modelInstance);
-    } else {
-      console.warn(`a-bind: Function ${this.#config.func} not found.`);
-    }
-  }
-
-  #teardown() {
-    this.#abortController?.abort();
-    if (this.#inputTimer) clearTimeout(this.#inputTimer);
-
-    const observer = ModelObserver.get(this.#modelInstance, false);
-    const prop = this.#config.property || this.#config.modelAttr;
-    if (observer && prop && this.#subscriptionCallback) {
-      observer.unsubscribe(prop, this.#subscriptionCallback);
-    }
-    this.#subscriptionCallback = null;
-  }
-
-  #releaseModelReference() {
-    if (this.#modelKey) {
-      Loader.decrementRef(this.#modelKey);
-      this.#modelKey = null;
-    }
-  }
-
-  #updateConfig(attr, value) {
-    const isBool = (v) => v !== null && v !== 'false';
-    switch (attr) {
-      case 'debug': this.#config.debug = isBool(value); break;
-      case 'model': this.#config.model = value; break;
-      case 'property': this.#config.property = value; break;
-      case 'model-attr': this.#config.modelAttr = value; break;
-      case 'event': this.#config.event = value; break;
-      case 'elem-attr': this.#config.elemAttr = value || 'value'; break;
-      case 'func': this.#config.func = value; break;
-      case 'throttle': this.#config.throttle = parseInt(value) || 0; break;
-      case 'pull': this.#config.pull = isBool(value); break;
-      case 'push': this.#config.push = isBool(value); break;
-      case 'once': this.#config.once = isBool(value); break;
-    }
-  }
-
-  #getObjectProperty(obj, path) {
-    if (!path || !obj) return undefined;
-    const parts = path.split('.');
-    if (this.#isUnsafePath(parts)) return undefined;
     try {
-        return parts.reduce((acc, part) => acc && acc[part], obj);
-    } catch (e) { return undefined; }
+      const parts = ABind.#getPathParts(this.#func);
+      // don't pop!
+      const fnName = parts[parts.length - 1];
+
+      if (parts.length > 1) {
+        const contextPath = parts.slice(0, -1).join('.');
+        context = this.#getPropertyValue(this.#model, contextPath);
+        if (!context || typeof context[fnName] !== 'function') {
+          context = this.#getPropertyValue(window, contextPath);
+        }
+      } else {
+        console.debug(`${fnName} not found in model. Looking for global objects`);
+        context = this.#model;
+        if (typeof context[fnName] !== 'function') context = window;
+      }
+
+      if (context && typeof context[fnName] === 'function') {
+        context[fnName].call(context, event, this.#bound, this.#model);
+      } else {
+        console.warn(`a-bind: Function ${this.#func} not found.`);
+      }
+    } catch (error) {
+      console.error('a-bind: executeFunction()', error);
+    }
   }
 
-  #setObjectProperty(obj, path, value) {
-    if (!obj || !path) return;
-    const parts = path.split('.');
-    if (this.#isUnsafePath(parts)) return;
-
-    const last = parts.pop();
-    const target = parts.length ? this.#getObjectProperty(obj, parts.join('.')) : obj;
-    if (target && typeof target === 'object') {
-        if (target instanceof CSSStyleDeclaration && last.startsWith('--')) {
-            target.setProperty(last, value);
-        } else {
-            target[last] = value;
-        }
+  #getBoundElement() {
+    let element = this;
+    // handle bound elements inside nested a-bind instances
+    while (element && element.localName === 'a-bind') {
+      element = element.firstElementChild;
     }
+    return element;
+  }
+
+  /**
+   * Accounts for nested properties ie. user.name
+   */
+  #getPropertyValue(obj, path) {
+    if (!path) return obj;
+    const parts = ABind.#getPathParts(path);
+    if (this.#isUnsafePath(parts)) return undefined;
+    return parts.reduce((acc, part) => acc && acc[part], obj);
+  }
+
+  async #init() {
+    if (this.#modelKey) {
+      this.#model = await loader.load(this.#modelKey);
+    } else if (this.#model) {
+      this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
+    } else {
+      throw new Error('a-bind: #init: No model found');
+    }
+
+    // Check if inside a group
+    this.#group = this.closest('a-bindgroup');
+    if (this.#group) await this.#group.register(this);
+
+    this.#abortController = new AbortController();
+    this.bound = this.#getBoundElement();
+    const prop = this.#property || this.#modelAttr;
+    this.#busKey = ABind.getBusKey(this.#model, prop);
+    this.#busFunc = this.#updateBound.bind(this);
+
+    if (!this.#push) {
+      // #initial sync Model => Bound
+      const value = (this.#property) ?
+        this.#getPropertyValue(this.#model, this.#property) :
+        this.#model.getAttribute?.(this.#modelAttr);
+
+      if (value) {
+        try {
+          this.#hasUpdated = true;
+          this.#applyUpdate(this.#bound, this.#elemAttr, value);
+        } catch (error) {
+          console.error('a-bind: #init: ', error);
+          throw new Error('a-bind: #init failed');
+        }
+      }
+    }
+
+    this.#addListeners();
+    this.#isInitializing = false;
   }
 
   #isUnsafePath(parts) {
     return parts.some(p => p === '__proto__' || p === 'constructor' || p === 'prototype');
   }
 
-  get #logCtx() {
-    const trace = {};
-    if (this.#config.debug) {
-        trace.modelInstance = this.#modelInstance;
-        trace.boundElement = this.#boundElement;
-        trace.modelProp = this.#config.property || this.#config.modelAttr || 'N/A';
-        try {
-            trace.modelValue = this.#modelInstance ? this.#getModelValue() : '<null>';
-        } catch (e) { trace.modelValue = '<error>'; }
-        trace.elemProp = this.#config.elemAttr;
-        try {
-            if (this.#boundElement) {
-                trace.elemValue = this.#getDomValue(this.#boundElement, this.#config.elemAttr);
-            } else { trace.elemValue = '<no-element>'; }
-        } catch (e) { trace.elemValue = '<error>'; }
-    }
-    return {
-      debug: this.#config.debug,
-      type: 'bind',
-      tagName: 'a-bind',
-      signature: `${LogUtils.getSignature(this)} → ${LogUtils.getSignature(this.#boundElement)}`,
-      trace
-    };
+  async #reinit() {
+    if (this.#isInitializing) return;
+    this.#isInitializing = true;
+    this.#teardown();
+    await this.#init();
+    this.#isInitializing = false;
   }
+
+  /**
+   * Safely builds options using the Option constructor.
+   */
+  #setOptions(target, items) {
+    target.innerHTML = ''; // Clear existing
+    items.forEach(item => {
+      const text = typeof item === 'object' ? (item.text || item.label) : item;
+      const val = typeof item === 'object' ? (item.value || item.id) : item;
+      target.add(new Option(text, val));
+    });
+    this.#hasUpdated = true;
+  }
+
+  #teardown() {
+    this.#model = null;
+    this.#bound = null;
+    crosstownBus.hopOff(this.#busKey, this.#busFunc);
+
+    if (this.#abortController) {
+      this.#abortController.abort();
+      this.#abortController = null;
+    }
+  }
+
+  #updateBound(value) {
+    const prop = this.#property || this.#modelAttr;
+    this.#updateManager.queue(this.#bound, value, (val) => {
+      this.#applyUpdate(this.#bound, this.#elemAttr, val);
+    }, this);
+
+    if (this.#once && this.#hasUpdated) {
+      crosstownBus.hopOff(ABind.getBusKey(this.#model, prop));
+    }
+  }
+
+  #updateModel(value, event) {
+    const prop = this.#property || this.#modelAttr;
+    if (this.#func) return this.#executeFunction(event);
+
+    const taskKey = `${this.#busKey}:model`;
+    const doUpdate = (value) => this.#applyUpdate(this.#model, prop, value);
+    if (this.#throttle > 0) {
+      if (this.#inputTimer) clearTimeout(this.#inputTimer);
+      this.#inputTimer = setTimeout(() => {
+        this.#updateManager.queue(taskKey, value, doUpdate, this);
+        this.#inputTimer = null;
+      }, this.#throttle)
+    } else {
+      this.#updateManager.queue(taskKey, value, doUpdate, this);
+    }
+  }
+
+  // -- Getters / Setters --
+
+  // -- properties --
+
+  get debug() { return this.hasAttribute('debug') }
+  get bus() { return crosstownBus }
+  get busKey() { return this.#busKey }
+
+  get bound() { return this.#bound }
+  set bound(value) {
+    if (value instanceof HTMLElement) {
+      this.#bound = value;
+    } else {
+      console.error('a-bind: Bound element must be HTML element', value);
+    }
+  }
+
+  get model(){ return this.#model }
+  set model(value){
+    if (typeof value === 'object' && value !== null) {
+      this.#model = value;
+    } else {
+      console.error('a-bind: model must be of type "object"')
+    }
+  }
+
+  // -- attributes --
+
+  get elemAttr(){ return this.#elemAttr }
+  set elemAttr(value){ this.setAttribute('elem-attr', value) }
+
+  get event(){ return this.#event }
+  set event(value){ this.setAttribute('event', value) }
+
+  get func(){ return this.#func }
+  set func(value){ this.setAttribute('func', value) }
+
+  get modelAttr(){ return this.#modelAttr }
+  set modelAttr(value){ this.setAttribute('model-attr', value) }
+
+  // this resolves to the attribute 'model'
+  get modelKey(){ return this.#modelKey }
+  set modelKey(value){ this.setAttribute('model', value) }
+
+  get once(){ return this.#once }
+  set once(value){ this.toggleAttribute('once', value !== false) }
+
+  get property(){ return this.#property }
+  set property(value){ this.setAttribute('property', value) }
+
+  get pull(){ return this.#pull }
+  set pull(value){ this.toggleAttribute('pull', value !== false) }
+
+  get push(){ return this.#push }
+  set push(value){ this.toggleAttribute('push', value !== false) }
+
+  get throttle(){ return this.#throttle }
+  set throttle(value){ this.setAttribute('throttle', parseInt(value)) }
 }
+
+if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);

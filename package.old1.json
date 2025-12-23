@@ -7,7 +7,7 @@
   "module": "./dist/a-bind.min.js",
   "exports": {
     ".": "./dist/a-bind.min.js",
-    "./src": "./src/a-bind.js"
+    "./src": "./src/index.js"
   },
   "files": [
     "dist",
@@ -16,8 +16,7 @@
   "scripts": {
     "dev": "vite",
     "test": "tests/index.html",
-    "build": "rollup -c",
-    "builddev": "rollup"
+    "build": "rollup -c"
   },
   "author": "Holmes Bryant <https://github.com/HolmesBryant>",
   "license": "GPL-3.0-or-later",

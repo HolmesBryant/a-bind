@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>a-bind Test Suite</title>
+    <script type="module" src="../src/a-bind.js"></script>
     <script type="module" src="a-bind.test.js"></script>
-    <script type="module" src="a-test-results.js"></script>
+    <script type="module" src="a-testrunner.min.js"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -21,7 +22,10 @@
     </style>
 </head>
 <body>
-    <h1>a-bind Test Suite</h1>
-    <a-testresults id="test-results"></a-testresults>
+
+
+    <hr>
+
+    <a-testrunner id="test-results"></a-testrunner>
 </body>
 </html>

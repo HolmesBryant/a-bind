@@ -2,85 +2,57 @@
  * @file a-bindgroup.js
  * @author Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
- * @version 2.5.2
+ * @version 2.6.0
  */
 
-import { Loader } from './utils/Loader.js';
-import { LogUtils } from './utils/LogUtils.js';
+import loader from './loader.js';
 
-export class ABindgroup extends HTMLElement {
-  #debug = false;
+export default class ABindgroup extends HTMLElement {
+  isConnected = false;
   #model;
-  #modelKey = null;
-  #modelInstance = null;
+  #modelInstance;
   #children = new Set();
 
-  static observedAttributes = ['debug', 'model'];
+  /**
+   * Shared registry to map instances back to keys for Bus communication
+   * @type {Map<any, string>}
+   */
+  static modelRegistry = new Map();
 
-  constructor() { super(); }
+  static observedAttributes = ['model'];
 
-  // --- Public API ---
+  constructor() { super() }
 
-  get debug() { return this.#debug }
-  set debug(value) { this.toggleAttribute('debug', value !== false )}
-
-  get model() { return this.#modelInstance; }
-  set model(value) {
-    this.#modelInstance = value;
-    this.#notifyChildren();
-  }
-
-  get elements() { return Array.from(this.#children); }
-
-  // --- Lifecycle ---
+  get model() { return this.#model }
+  set model(value) { this.setAttribute('model', value) }
 
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
-    if (attr === 'debug') this.#debug = newval !== 'false';
     if (attr === 'model') {
       this.#model = newval;
-      if (this.isConnected) this.#initializeGroup();
+      if (this.isConnected) this.#init();
     }
   }
 
   async connectedCallback() {
-    if (this.#model) await this.#initializeGroup();
+    this.isConnected = true;
+    this.#init();
   }
 
   disconnectedCallback() {
-    if (this.#modelKey) Loader.decrementRef(this.#modelKey);
     this.#children.clear();
   }
 
-  // --- Logic ---
+  // --- Public ---
 
-  async #initializeGroup() {
-    const key = this.#model;
-    if (!key) return;
-
-    LogUtils.log(this.#logCtx, 'Loading Model', { key });
-
-    try {
-      const instance = await Loader.resolve(key);
-      if (!this.isConnected) return;
-      if (!instance) throw new Error(`Could not resolve model: ${key}`);
-
-      this.#modelInstance = instance;
-      this.#modelKey = key;
-      if (typeof key === 'string') Loader.incrementRef(key);
-
-      this.#notifyChildren();
-      LogUtils.log(this.#logCtx, 'Model Loaded', { childCount: this.#children.size });
-
-    } catch (err) {
-      console.error('a-bindgroup:', err);
-    }
-  }
-
-  register(child) {
+  async register(child) {
     this.#children.add(child);
-    if (this.#modelInstance && !child.model) {
-      child.model = this.#modelInstance;
+    if (!child.model) {
+      if (this.#modelInstance) {
+        child.resolvedModel = this.#modelInstance;
+      } else {
+        child.resolvedModel = await this.#resolveModel();
+      }
     }
   }
 
@@ -88,19 +60,33 @@ export class ABindgroup extends HTMLElement {
     this.#children.delete(child);
   }
 
-  #notifyChildren() {
-    if (!this.#modelInstance) return;
-    for (const child of this.#children) {
-      child.model = this.#modelInstance;
+  // --- Private ---
+
+  async #init() {
+    if (!this.isConnected) return;
+    if (!this.#model) {
+      console.error('a-bindgroup requires a "model" attribute');
+      return null;
     }
+
+    await this.#resolveModel();
   }
 
-  get #logCtx() {
-    return {
-      debug: this.#debug,
-      type: 'group',
-      tagName: 'a-bindgroup',
-      signature: LogUtils.getSignature(this)
-    };
+  async #resolveModel() {
+    if (this.#modelInstance) return this.#modelInstance;
+    try {
+      const instance = await loader.load(this.#model);
+      if (!instance) {
+        throw new Error(`Could not resolve model: ${this.#model}`);
+      }
+
+      this.#modelInstance = instance;
+      ABindgroup.modelRegistry.set(instance, this.#model);
+      return this.#modelInstance;
+    } catch (error) {
+      console.error('a-bindgroup: ', error);
+    }
   }
 }
+
+if (!customElements.get('a-bindgroup')) customElements.define('a-bindgroup', ABindgroup);
