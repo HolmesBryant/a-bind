@@ -43,10 +43,9 @@ export default class ABind extends HTMLElement {
   #abortController;
   #bound;
   #busKey;
-  #busFunc;
+  #updateSubscribers;
   #childObserver;
   #group;
-  #hasUpdated = false;
   #inputTimer;
   #isInitializing = true;
   #isConnected = false;
@@ -54,6 +53,7 @@ export default class ABind extends HTMLElement {
   #updateManager = globalUpdateManager;
 
   static #pathCache = new Map();
+  static #maxPathCacheSize = 500;
 
   /**
    * List o
@@ -104,16 +104,16 @@ export default class ABind extends HTMLElement {
         this.#modelAttr = newval;
         break;
       case 'once':
-        this.#once = newval !== null && newval !== 'false';
+        this.#once = this.hasAttribute('once');
         break;
       case 'property':
         this.#property = newval;
         break;
       case 'pull':
-        this.#pull = newval !== null && newval !== 'false';
+        this.#pull = this.hasAttribute('pull');
         break;
       case 'push':
-        this.#push = newval !== null && newval !== 'false';
+        this.#push = this.hasAttribute('push');
         break;
       case 'throttle':
         this.#throttle = parseInt(newval) || 0;
@@ -159,8 +159,10 @@ export default class ABind extends HTMLElement {
     this.#teardown();
     if (this.#group) this.#group.unregister(this);
     if (this.#childObserver) this.#childObserver.disconnect();
-    this.#busFunc = null;
+    this.#updateSubscribers = null;
     this.#isConnected = false;
+    this.#model = null;
+    this.#bound = null;
   }
 
   // -- Static --
@@ -184,11 +186,33 @@ export default class ABind extends HTMLElement {
     return `${modelId}:${property}`;
   }
 
+  /**
+   * Retrieves path parts from cache or generates them.
+   * Uses LRU logic to prevent memory exhaustion.
+   */
   static #getPathParts(path) {
+    // Check if path is already cached
     if (ABind.#pathCache.has(path)) {
-      return ABind.#pathCache.get(path);
+      const parts = ABind.#pathCache.get(path);
+
+      // LRU Move item to end of Map:
+      ABind.#pathCache.delete(path);
+      ABind.#pathCache.set(path, parts);
+
+      return [...parts];
     }
+
+    // Generate the value. Prevent mutation
+    // const parts = Object.freeze(path.split('.'));
     const parts = path.split('.');
+
+    // If cache is full, remove the oldest item.
+    if (ABind.#pathCache.size >= ABind.#maxPathCacheSize) {
+      const oldestKey = ABind.#pathCache.keys().next().value;
+      ABind.#pathCache.delete(oldestKey);
+    }
+
+    // Cache the new result
     ABind.#pathCache.set(path, parts);
     return parts;
   }
@@ -212,8 +236,8 @@ export default class ABind extends HTMLElement {
     }
 
     // Model -> Element (Observer)
-    if (!this.#push) {
-      crosstownBus.hopOn(this.#busKey, this.#busFunc);
+    if (!this.#push || !this.#once) {
+      crosstownBus.hopOn(this.#busKey, this.#updateSubscribers);
 
       if (this.#model.addEventListener) {
         // If model is an input or select element
@@ -233,21 +257,21 @@ export default class ABind extends HTMLElement {
    */
   #applyUpdate(target, name, value) {
     if (!this.#isConnected || !target || typeof name !== 'string') return;
-    // if (target == this.#bound && this.#once && this.#hasUpdated) return;
 
+    // is target a Select or Datalist element?
     const isList = target instanceof HTMLSelectElement || target instanceof HTMLDataListElement;
     if (isList) {
       let items = null;
 
-      // 2. Handle Array input
+      // handle Array input
       if (Array.isArray(value)) {
         items = value;
       }
-      // 3. Handle Comma-Separated String input
+      // handle comma separated values
       else if (typeof value === 'string' && value.includes(',')) {
         items = value.split(',').map(s => s.trim()).filter(Boolean);
       }
-      // 4. Handle single string (no comma) as a single option
+      // handle single string (no comma) as a single option
       else if (typeof value === 'string') {
         items = [value.trim()];
       }
@@ -261,14 +285,13 @@ export default class ABind extends HTMLElement {
     // Handle CSS Variables
     if (name.startsWith('--') && target.style) {
       target.style.setProperty(name, value);
-      if (target === this.#bound) this.#hasUpdated = true;
       return;
     }
 
     // Handle Nested Paths (e.g., 'style.color', 'config.theme.dark')
     if (name.includes('.')) {
       // clone to avoid mutating cache
-      const parts = [...ABind.#getPathParts(name)];
+      const parts = ABind.#getPathParts(name);
       const lastProp =  parts.pop();
       let current = target;
 
@@ -290,7 +313,6 @@ export default class ABind extends HTMLElement {
           current[lastProp] = value;
         }
 
-        if (target === this.#bound) this.#hasUpdated = true;
       } catch (error) {
         console.warn(`a-bind: Failed to set nested property "${name}"`, error);
       }
@@ -307,6 +329,7 @@ export default class ABind extends HTMLElement {
         target[name] = value;
       } catch (error) {
         // Fallback for read-only properties on elements
+        console.debug('target property might be read-only, setting Attribute instead.');
         if (isElement) target.setAttribute(name, value);
       }
     } else if (isElement) {
@@ -317,8 +340,6 @@ export default class ABind extends HTMLElement {
         target.setAttribute(name, value);
       }
     }
-
-    if (target === this.#bound) this.#hasUpdated = true;
   }
 
   #executeFunction(event) {
@@ -337,9 +358,10 @@ export default class ABind extends HTMLElement {
           context = this.#getPropertyValue(window, contextPath);
         }
       } else {
-        console.debug(`${fnName} not found in model. Looking for global objects`);
         context = this.#model;
-        if (typeof context[fnName] !== 'function') context = window;
+        if (typeof context[fnName] !== 'function') {
+          console.warn(`${fnName}() not found in model. Execution blocked.`);
+        }
       }
 
       if (context && typeof context[fnName] === 'function') {
@@ -372,10 +394,11 @@ export default class ABind extends HTMLElement {
   }
 
   async #init() {
-    if (this.#modelKey) {
-      this.#model = await loader.load(this.#modelKey);
-    } else if (this.#model) {
+
+    if (this.#model) {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
+    } else if (this.#modelKey) {
+      this.#model = await loader.load(this.#modelKey);
     } else {
       throw new Error('a-bind: #init: No model found');
     }
@@ -388,17 +411,16 @@ export default class ABind extends HTMLElement {
     this.bound = this.#getBoundElement();
     const prop = this.#property || this.#modelAttr;
     this.#busKey = ABind.getBusKey(this.#model, prop);
-    this.#busFunc = this.#updateBound.bind(this);
+    this.#updateSubscribers = this.#updateBound.bind(this);
 
     if (!this.#push) {
-      // #initial sync Model => Bound
+      // initial sync Model => Bound
       const value = (this.#property) ?
         this.#getPropertyValue(this.#model, this.#property) :
         this.#model.getAttribute?.(this.#modelAttr);
 
       if (value) {
         try {
-          this.#hasUpdated = true;
           this.#applyUpdate(this.#bound, this.#elemAttr, value);
         } catch (error) {
           console.error('a-bind: #init: ', error);
@@ -427,19 +449,15 @@ export default class ABind extends HTMLElement {
    * Safely builds options using the Option constructor.
    */
   #setOptions(target, items) {
-    target.innerHTML = ''; // Clear existing
     items.forEach(item => {
       const text = typeof item === 'object' ? (item.text || item.label) : item;
       const val = typeof item === 'object' ? (item.value || item.id) : item;
       target.add(new Option(text, val));
     });
-    this.#hasUpdated = true;
   }
 
   #teardown() {
-    this.#model = null;
-    this.#bound = null;
-    crosstownBus.hopOff(this.#busKey, this.#busFunc);
+    crosstownBus.hopOff(this.#busKey, this.#updateSubscribers);
 
     if (this.#abortController) {
       this.#abortController.abort();
@@ -452,17 +470,14 @@ export default class ABind extends HTMLElement {
     this.#updateManager.queue(this.#bound, value, (val) => {
       this.#applyUpdate(this.#bound, this.#elemAttr, val);
     }, this);
-
-    if (this.#once && this.#hasUpdated) {
-      crosstownBus.hopOff(ABind.getBusKey(this.#model, prop));
-    }
   }
 
   #updateModel(value, event) {
     const prop = this.#property || this.#modelAttr;
     if (this.#func) return this.#executeFunction(event);
 
-    const taskKey = `${this.#busKey}:model`;
+    // const taskKey = `${this.#busKey}:model`;
+    const taskKey = Symbol(`${this.#busKey}`);
     const doUpdate = (value) => this.#applyUpdate(this.#model, prop, value);
     if (this.#throttle > 0) {
       if (this.#inputTimer) clearTimeout(this.#inputTimer);
@@ -482,6 +497,7 @@ export default class ABind extends HTMLElement {
   get debug() { return this.hasAttribute('debug') }
   get bus() { return crosstownBus }
   get busKey() { return this.#busKey }
+  get prop() { return this.#property || this.#modelAttr }
 
   get bound() { return this.#bound }
   set bound(value) {

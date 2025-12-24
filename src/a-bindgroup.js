@@ -9,7 +9,7 @@ import loader from './loader.js';
 
 export default class ABindgroup extends HTMLElement {
   isConnected = false;
-  #model;
+  #modelKey;
   #modelInstance;
   #children = new Set();
 
@@ -23,13 +23,13 @@ export default class ABindgroup extends HTMLElement {
 
   constructor() { super() }
 
-  get model() { return this.#model }
+  get model() { return this.#modelKey }
   set model(value) { this.setAttribute('model', value) }
 
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
     if (attr === 'model') {
-      this.#model = newval;
+      this.#modelKey = newval;
       if (this.isConnected) this.#init();
     }
   }
@@ -49,9 +49,9 @@ export default class ABindgroup extends HTMLElement {
     this.#children.add(child);
     if (!child.model) {
       if (this.#modelInstance) {
-        child.resolvedModel = this.#modelInstance;
+        child.model = this.#modelInstance;
       } else {
-        child.resolvedModel = await this.#resolveModel();
+        child.model = await this.#resolveModel();
       }
     }
   }
@@ -64,7 +64,7 @@ export default class ABindgroup extends HTMLElement {
 
   async #init() {
     if (!this.isConnected) return;
-    if (!this.#model) {
+    if (!this.#modelKey) {
       console.error('a-bindgroup requires a "model" attribute');
       return null;
     }
@@ -75,13 +75,13 @@ export default class ABindgroup extends HTMLElement {
   async #resolveModel() {
     if (this.#modelInstance) return this.#modelInstance;
     try {
-      const instance = await loader.load(this.#model);
+      const instance = await loader.load(this.#modelKey);
       if (!instance) {
-        throw new Error(`Could not resolve model: ${this.#model}`);
+        throw new Error(`Could not resolve model: ${this.#modelKey}`);
       }
 
       this.#modelInstance = instance;
-      ABindgroup.modelRegistry.set(instance, this.#model);
+      ABindgroup.modelRegistry.set(instance, this.#modelKey);
       return this.#modelInstance;
     } catch (error) {
       console.error('a-bindgroup: ', error);

@@ -66,7 +66,8 @@ class Loader {
       try {
         const mod = await import(key);
         return this.#instantiate(mod.default, ...args);
-      } catch (e) {
+      } catch (error) {
+        console.warn(`loader: cannot resolve ${key}`, error);
         return null;
       }
     }
@@ -87,12 +88,6 @@ class Loader {
       return this.#getDomElement(key);
     }
 
-    // Global Check
-    /*if (Object.prototype.hasOwnProperty.call(globalThis, key)) {
-      console.warn(`Loader: Access to global "${key}" is forbidden.`);
-      return null;
-    }*/
-
     console.error(`Loader: Resource "${key}" could not be resolved as a module or DOM element.`);
     return null;
   }
@@ -107,21 +102,22 @@ class Loader {
    */
   async #getDomElement(selector) {
     if (typeof document === 'undefined') return null;
+    // remove angle brackets for valid query selector
     selector = selector.replace(/[<>]/g, '');
     const query = () => document.querySelector(selector);
-    let el = query();
+    let elem = query();
 
-    if (!el && document.readyState === 'loading') {
-      this.#domReadyPromise ??= new Promise(r => window.addEventListener('DOMContentLoaded', r, { once: true }));
+    if (!elem && document.readyState === 'loading') {
+      this.#domReadyPromise ??= new Promise(resolve => window.addEventListener('DOMContentLoaded', resolve, { once: true }));
       await this.#domReadyPromise;
-      el = query();
+      elem = query();
     }
 
-    if (el?.localName.includes('-')) {
-      await customElements.whenDefined(el.localName);
+    if (elem?.localName.includes('-')) {
+      await customElements.whenDefined(elem.localName);
     }
 
-    return el;
+    return elem;
   }
 
   /**
