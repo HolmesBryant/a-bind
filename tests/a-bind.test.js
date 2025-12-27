@@ -4,8 +4,10 @@
 
 import ATestRunner from './ATestRunner.min.js';
 import ABind from '../src/a-bind.js';
+import ABindgroup from '../src/a-bindgroup.js';
 
 const runner = new ATestRunner(import.meta.url);
+runner.output="#test-results";
 
 const {
 	benchmark,
@@ -354,33 +356,47 @@ group("Dynamic Attribute Changes", async () => {
 });
 
 group("ABindgroup Integration", async () => {
-  test("Children inherit model from group", async () => {
-    const groupElem = document.createElement('a-bindgroup');
-    // We can set modelInstance directly for testing
-    const sharedModel = { foo: 'bar' };
+  test("a-bind children inherit model from group", async () => {
+    const group = document.createElement('a-bindgroup');
+    const model = { foo: 'bar' };
 
-    const bindElem = document.createElement('a-bind');
-    bindElem.setAttribute('property', 'foo');
+    const instance = document.createElement('a-bind');
+    instance.setAttribute('property', 'foo');
     const input = document.createElement('input');
 
-    bindElem.append(input);
-    groupElem.append(bindElem);
-    document.body.append(groupElem);
+    instance.append(input);
+    group.append(instance);
+    document.body.append(group);
 
     // Manually inject model to group (bypassing loader for this test)
-    groupElem.model = 'dummy';
-    // Force the internal model instance (simulation)
-    bindElem.model = sharedModel;
+    group.model = model;
+    const sharedModel = instance.model === group.model;
+    group.remove();
+    return sharedModel;
+  }, true);
 
-    await when(() => input.value === 'bar');
-    const val = input.value;
+  test ('Respects pre-existing a-bind instance model', () => {
+    const modelOne = { foo: 'bar' };
+  	const group = document.createElement('a-bindgroup');
+    const instance = document.createElement('a-bind');
+    const input = document.createElement('input');
+    function modelTwo() { this.bar = 'baz' }
 
-    groupElem.remove();
-    return val;
-  }, 'bar');
+  	group.model = modelOne;
+
+    instance.setAttribute('property', 'foo');
+    instance.model = modelTwo;
+
+    instance.append(input);
+    group.append(instance);
+    document.body.append(group);
+    const areEqual = equal(instance.model, modelTwo);
+    group.remove();
+    return areEqual;
+  }, true);
 });
 
-/*group("Security & Edge Cases", async () => {
+group("Security & Edge Cases", async () => {
     test("Blocks unsafe paths (__proto__)", async () => {
         const model = {};
         const { instance, reset } = await setup(model, { property: '__proto__.polluted' });
@@ -412,6 +428,6 @@ group("ABindgroup Integration", async () => {
         instance.remove();
         return val;
     }, 'ready');
-});*/
+});
 
 runner.run();

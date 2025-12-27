@@ -8,35 +8,54 @@
 import loader from './loader.js';
 
 export default class ABindgroup extends HTMLElement {
-  isConnected = false;
+  #isConnected = false;
   #modelKey;
   #modelInstance;
   #children = new Set();
-
-  /**
-   * Shared registry to map instances back to keys for Bus communication
-   * @type {Map<any, string>}
-   */
-  static modelRegistry = new Map();
+  #childObserver;
 
   static observedAttributes = ['model'];
 
   constructor() { super() }
 
-  get model() { return this.#modelKey }
-  set model(value) { this.setAttribute('model', value) }
+  get model() { return this.#modelInstance }
+  set model(value) {
+    if (typeof value === 'string') {
+      this.setAttribute('model', value);
+    } else {
+      this.#modelInstance = value;
+      if (this.#isConnected) this.#init();
+    }
+  }
+
+  get modelKey() { return this.#modelKey }
+  set modelKey(value) { this.#modelKey = value }
 
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
     if (attr === 'model') {
       this.#modelKey = newval;
-      if (this.isConnected) this.#init();
+      if (this.#isConnected) this.#init();
     }
   }
 
   async connectedCallback() {
-    this.isConnected = true;
-    this.#init();
+    this.#isConnected = true;
+    // if a-bindgroup was inserted into DOM programatically without first appending children
+    if (!this.firstElementChild) {
+      console.warn('a-bindgroup: waiting for children')
+      this.#childObserver = new MutationObserver(() => {
+        if (this.#isConnected && this.firstElementChild) {
+          this.#childObserver.disconnect();
+          this.#childObserver = null;
+          this.#init();
+        }
+      });
+
+      this.#childObserver.observe(this, { childList: true });
+    } else if (this.#modelKey) {
+      this.#init();
+    }
   }
 
   disconnectedCallback() {
@@ -48,11 +67,8 @@ export default class ABindgroup extends HTMLElement {
   async register(child) {
     this.#children.add(child);
     if (!child.model) {
-      if (this.#modelInstance) {
-        child.model = this.#modelInstance;
-      } else {
-        child.model = await this.#resolveModel();
-      }
+      child.model = this.#modelInstance;
+      child.modelKey = this.#modelKey;
     }
   }
 
@@ -63,26 +79,41 @@ export default class ABindgroup extends HTMLElement {
   // --- Private ---
 
   async #init() {
-    if (!this.isConnected) return;
-    if (!this.#modelKey) {
-      console.error('a-bindgroup requires a "model" attribute');
-      return null;
+    if (!this.#isConnected) return;
+
+    if (!this.#modelInstance && !this.#modelKey) {
+      return console.error('a-bindgroup: A model is required');
+    } else if (this.#modelInstance && !this.#modelKey) {
+      this.#modelKey = Object.getPrototypeOf(this.#modelInstance).constructor.name;
+    } else {
+      this.#modelInstance = await this.#resolveModel();
     }
 
-    await this.#resolveModel();
+    this.#registerChildren();
+  }
+
+  #registerChildren() {
+    const children = this.querySelectorAll('a-bind');
+    for (const child of children) {
+      this.register(child);
+    }
   }
 
   async #resolveModel() {
+    if (!this.#modelKey) {
+      console.error('a-bindgroup: model is required');
+      return null;
+    }
+
     if (this.#modelInstance) return this.#modelInstance;
+
     try {
       const instance = await loader.load(this.#modelKey);
       if (!instance) {
         throw new Error(`Could not resolve model: ${this.#modelKey}`);
       }
 
-      this.#modelInstance = instance;
-      ABindgroup.modelRegistry.set(instance, this.#modelKey);
-      return this.#modelInstance;
+      return instance;
     } catch (error) {
       console.error('a-bindgroup: ', error);
     }

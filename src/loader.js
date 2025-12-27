@@ -67,7 +67,7 @@ class Loader {
         const mod = await import(key);
         return this.#instantiate(mod.default, ...args);
       } catch (error) {
-        console.warn(`loader: cannot resolve ${key}`, error);
+        console.error(`loader: cannot resolve ${key}`, error);
         return null;
       }
     }

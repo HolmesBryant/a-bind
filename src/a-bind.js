@@ -99,6 +99,7 @@ export default class ABind extends HTMLElement {
         break;
       case 'model':
         this.#modelKey = newval;
+        // model is resolved in reinit();
         break;
       case 'model-attr':
         this.#modelAttr = newval;
@@ -214,7 +215,7 @@ export default class ABind extends HTMLElement {
 
     // Cache the new result
     ABind.#pathCache.set(path, parts);
-    return parts;
+    return [...parts];
   }
 
   static update(model, property, value) {
@@ -290,8 +291,14 @@ export default class ABind extends HTMLElement {
 
     // Handle Nested Paths (e.g., 'style.color', 'config.theme.dark')
     if (name.includes('.')) {
-      // clone to avoid mutating cache
       const parts = ABind.#getPathParts(name);
+
+      // security check: block prototype pollution
+      if (this.#isUnsafePath(parts)) {
+        console.warn(`a-bind: Blocked attempt to modify unsafe path "${name}"`);
+        return;
+      }
+
       const lastProp =  parts.pop();
       let current = target;
 
@@ -399,13 +406,14 @@ export default class ABind extends HTMLElement {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
     } else if (this.#modelKey) {
       this.#model = await loader.load(this.#modelKey);
-    } else {
-      throw new Error('a-bind: #init: No model found');
     }
 
     // Check if inside a group
     this.#group = this.closest('a-bindgroup');
-    if (this.#group) await this.#group.register(this);
+    if (!this.#model && this.#group) {
+      // let group assign model
+      return;
+    }
 
     this.#abortController = new AbortController();
     this.bound = this.#getBoundElement();
@@ -508,14 +516,9 @@ export default class ABind extends HTMLElement {
     }
   }
 
-  get model(){ return this.#model }
-  set model(value){
-    if (typeof value === 'object' && value !== null) {
-      this.#model = value;
-    } else {
-      console.error('a-bind: model must be of type "object"')
-    }
-  }
+  // this resolves to the attribute 'model'
+  get modelKey(){ return this.#modelKey }
+  set modelKey(value){ this.setAttribute('model', value) }
 
   // -- attributes --
 
@@ -528,12 +531,17 @@ export default class ABind extends HTMLElement {
   get func(){ return this.#func }
   set func(value){ this.setAttribute('func', value) }
 
+  get model(){ return this.#model }
+  set model(value){
+    if (typeof value === 'function' || typeof value === 'object' && value !== null) {
+      this.#model = value;
+    } else {
+      this.setAttribute('model', value);
+    }
+  }
+
   get modelAttr(){ return this.#modelAttr }
   set modelAttr(value){ this.setAttribute('model-attr', value) }
-
-  // this resolves to the attribute 'model'
-  get modelKey(){ return this.#modelKey }
-  set modelKey(value){ this.setAttribute('model', value) }
 
   get once(){ return this.#once }
   set once(value){ this.toggleAttribute('once', value !== false) }
