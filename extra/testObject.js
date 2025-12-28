@@ -1,4 +1,4 @@
-export const testObject = {
+export default {
 	_text: "Initial Text",
 	_datalist: 'One, Two, Three',
 	_datalistHtml: '<option>One</option><option>Two</option><option>Three</option>',

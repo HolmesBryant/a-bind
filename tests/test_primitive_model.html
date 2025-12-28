@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ABind Primitive Model Test</title>
+    <script type="module">
+        import ABind from '../src/a-bind.js';
+
+        function assert(condition, message) {
+            if (!condition) {
+                console.error('FAILED: ' + message);
+                document.body.insertAdjacentHTML('beforeend', `<div style="color:red">FAILED: ${message}</div>`);
+            } else {
+                console.log('PASSED: ' + message);
+                document.body.insertAdjacentHTML('beforeend', `<div style="color:green">PASSED: ${message}</div>`);
+            }
+        }
+
+        try {
+            console.log('Testing String Model ID...');
+            const key1 = ABind.getBusKey('my-string-model', 'someProp');
+            // Expected behavior might change depending on implementation details, but it shouldn't crash.
+            // Current buggy behavior: Crashes because WeakMap key must be object.
+            assert(!!key1, 'String model key generated successfully: ' + key1);
+
+            console.log('Testing Object Model ID...');
+            const obj = { id: 1 };
+            const key2 = ABind.getBusKey(obj, 'someProp');
+            assert(key2.startsWith('abind::m'), 'Object model key generated successfully: ' + key2);
+
+            console.log('Test Complete');
+        } catch (e) {
+            console.error('CRASHED', e);
+            document.body.insertAdjacentHTML('beforeend', `<div style="color:red; font-weight:bold">CRASHED: ${e.message}</div>`);
+        }
+    </script>
+</head>
+<body>
+    <h1>ABind Primitive Model Test</h1>
+</body>
+</html>

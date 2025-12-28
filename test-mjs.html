@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script type="module">
+  try {
+    const mod = await import('/tests/models/CounterModel.mjs');
+    document.body.innerText = 'Success: ' + mod.default.name;
+  } catch (e) {
+    document.body.innerText = 'Error: ' + e.toString();
+  }
+</script>
+</body>
+</html>

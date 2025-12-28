@@ -73,10 +73,10 @@ class Loader {
     }
 
     // CSS Selector
-    const isSelector = key.includes('#') || key.startsWith('[') || key.includes('>');
+    const isSelector = key.includes('#') || key.startsWith('[') || key.includes('>') || key.includes('-') || /^[a-z0-9]+$/i.test(key);
     if (isSelector) {
       // Only warn about dot-ambiguity if it actually looks like a file
-      if (key.startsWith('.') && ( key.endsWith('.js') || key.endsWith('.mjs') )) {
+      if (key.startsWith('.') && (key.endsWith('.js') || key.endsWith('.mjs'))) {
         console.warn(`Loader: Ambiguous key. Did you mean "./${key}"? Treating as CSS selector: ${key}`);
       }
 
@@ -137,20 +137,8 @@ class Loader {
     }
   }
 
-  /**
-   * Validates if a path is allowed to be imported based on the whitelist or default security regex.
-   * @private
-   * @param {string} path
-   * @returns {boolean}
-   */
-  #isImportable(path) {
-    // If whitelist is set, strictly follow it.
-    if (this.#allowed) return this.#allowed.includes(path);
 
-    const normalized = path.replace(/\\/g, '/');
-    // Default: Only allow local relative JS files
-    return /^(\.\/|\.\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
-  }
+
 
   /**
    * Returns an iterator of all currently cached resource keys.
@@ -169,7 +157,28 @@ class Loader {
    * @param {string|string[]} arr - A single path or an array of permitted paths.
    */
   set allowed(arr) { this.#allowed = Array.isArray(arr) ? arr : [arr] }
-};
+
+  /**
+   * Sets a custom validator function for import paths.
+   * @param {Function} fn - Returns true if path is allowed.
+   */
+  set validator(fn) { this.#validator = fn }
+  #validator = null;
+
+  /**
+   * Validates if a path is allowed to be imported.
+   * Order: Validator -> Whitelist -> Default Regex (Strict)
+   * @private
+   */
+  #isImportable(path) {
+    if (this.#validator) return this.#validator(path);
+    if (this.#allowed) return this.#allowed.includes(path);
+
+    const normalized = path.replace(/\\/g, '/');
+    // Default: Only allow local relative JS files (No ../ allowed)
+    return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
+  }
+}
 
 const loader = new Loader();
 Object.freeze(loader);

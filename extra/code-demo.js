@@ -6,17 +6,14 @@ export default class CodeDemo extends HTMLElement {
   #attrVal;
   #prop = null;
   #propVal;
+  #model = null;
 
   // -- Private --
   #demosContainer;
   #codeContainer;
   #initialized = false;
 
-  // Public
-
   // -- Static --
-
-  static model = 'nope';
 
   static observedAttributes = ['attr', 'attr-val', 'prop', 'prop-val', 'model'];
 
@@ -60,7 +57,7 @@ export default class CodeDemo extends HTMLElement {
     if (attr === 'attr-val') this.#attrVal = newval;
     if (attr === 'prop') this.#prop = newval;
     if (attr === 'prop-val') this.#propVal = newval;
-    if (attr === 'model') CodeDemo.model = newval;
+    if (attr === 'model') this.#model = newval;
 
     // Trigger render if connected
     if (this.#initialized && this.isConnected) {
@@ -90,7 +87,6 @@ export default class CodeDemo extends HTMLElement {
   }
 
   disconnectedCallback() {
-    CodeDemo.model = null;
     this.#demosContainer = null;
     this.#codeContainer = null;
     this.#initialized = false;
@@ -119,8 +115,8 @@ export default class CodeDemo extends HTMLElement {
 
   renderAttrDemo(value) {
     let newval;
-		const container = this.querySelector('[slot="attr"]');
-		if (!container) return;
+    const container = this.querySelector('[slot="attr"]');
+    if (!container) return;
 
     const slot = this.shadowRoot.querySelector('[name="attr"]');
     if (!slot) {
@@ -158,8 +154,8 @@ export default class CodeDemo extends HTMLElement {
 
   renderPropDemo(value) {
     let newval;
-  	const container = this.querySelector('[slot="prop"]');
-  	if (!container) return;
+    const container = this.querySelector('[slot="prop"]');
+    if (!container) return;
 
     const slot = this.shadowRoot.querySelector('[name="prop"]');
     if (!slot) {
@@ -178,22 +174,10 @@ export default class CodeDemo extends HTMLElement {
     bindPull.innerHTML = '<output>...</output>';
     label.append(span, bindPull);
 
-    /*if (this.#propVal !== 'null') {
-      newval = this.#propVal || 'bar';
-      const bindPush = document.createElement('a-bind');
-      bindPush.toggleAttribute('push', true);
-      bindPush.setAttribute('property', value);
-      bindPush.setAttribute('event', 'click');
-      const btn = this.#createEl('button', '', `Set property to '${newval}'`);
-      btn.value = newval;
-      bindPush.appendChild(btn);
-      wrapper.append(label, bindPush);
-    }*/
-
     if (this.#propVal !== 'null') {
       const bindPush = document.createElement('a-bind');
       bindPush.toggleAttribute('push', true);
-      bindPush.setAttribute('model-attr', value);
+      bindPush.setAttribute('property', value); // Fixed: was model-attr
       bindPush.setAttribute('event', 'click');
 
       newval = this.#propVal || 'bar';
@@ -215,32 +199,39 @@ export default class CodeDemo extends HTMLElement {
     const textarea = document.createElement('textarea');
     acode.setAttribute('highlight', '');
     acode.setAttribute('indent', '2');
+    
+    // Improved indentation
+    const modelStr = this.model;
     textarea.textContent = `
-			<a-bind
-				pull
-    model="${this.model}"
-				${type}="${value}">
-			 	<output></output>
-			</a-bind>
+<a-bind
+  pull
+  model="${modelStr}"
+  ${type}="${value}">
+  <output></output>
+</a-bind>
 
-			<a-bind
-				push
-    model="${this.model}"
-				${type}="${value}"
-				event="click">
-			  <button
-			  	value='${btnVal}'>
-			  	...
-			  </button>
-			</a-bind>
-    `;
+<a-bind
+  push
+  model="${modelStr}"
+  ${type}="${value}"
+  event="click">
+  <button
+    value='${btnVal}'>
+    ...
+  </button>
+</a-bind>`;
 
     acode.append(textarea);
     wrapper.append(acode);
     this.#codeContainer.prepend(wrapper);
   }
 
-  get model() { return CodeDemo.model; }
+  get model() {
+    if (this.#model) return this.#model;
+    const group = this.closest('a-bindgroup');
+    return group ? group.getAttribute('model') : '';
+  }
+  
   set model(value) { this.setAttribute('model', value); }
 }
 

@@ -95,7 +95,9 @@ export default class ABindgroup extends HTMLElement {
   #registerChildren() {
     const children = this.querySelectorAll('a-bind');
     for (const child of children) {
-      this.register(child);
+      if (child.closest('a-bindgroup') === this) {
+        this.register(child);
+      }
     }
   }
 

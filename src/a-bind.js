@@ -12,6 +12,7 @@ import { globalUpdateManager } from './UpdateManager.js';
 import { crosstownBus } from './Bus.js';
 import loader from './loader.js';
 import ABindgroup from './a-bindgroup.js';
+import PathResolver from './PathResolver.js';
 
 export { globalUpdateManager, crosstownBus, loader, ABindgroup };
 
@@ -52,8 +53,6 @@ export default class ABind extends HTMLElement {
   #model;
   #updateManager = globalUpdateManager;
 
-  static #pathCache = new Map();
-  static #maxPathCacheSize = 500;
 
   /**
    * List o
@@ -179,44 +178,20 @@ export default class ABind extends HTMLElement {
    * @returns {string}
    */
   static getBusKey(model, property) {
-    let modelId  = ABind.#modelIds.get(model);
-    if (!modelId) {
-      modelId = `m${++ABind.#idCounter}`;
-      ABind.#modelIds.set(model, modelId);
+    let modelId;
+    if (typeof model === 'object' && model !== null || typeof model === 'function') {
+      modelId = ABind.#modelIds.get(model);
+      if (!modelId) {
+        modelId = `m${++ABind.#idCounter}`;
+        ABind.#modelIds.set(model, modelId);
+      }
+    } else {
+      modelId = String(model);
     }
-    return `${modelId}:${property}`;
+    return `abind::${modelId}:${property}`;
   }
 
-  /**
-   * Retrieves path parts from cache or generates them.
-   * Uses LRU logic to prevent memory exhaustion.
-   */
-  static #getPathParts(path) {
-    // Check if path is already cached
-    if (ABind.#pathCache.has(path)) {
-      const parts = ABind.#pathCache.get(path);
 
-      // LRU Move item to end of Map:
-      ABind.#pathCache.delete(path);
-      ABind.#pathCache.set(path, parts);
-
-      return [...parts];
-    }
-
-    // Generate the value. Prevent mutation
-    // const parts = Object.freeze(path.split('.'));
-    const parts = path.split('.');
-
-    // If cache is full, remove the oldest item.
-    if (ABind.#pathCache.size >= ABind.#maxPathCacheSize) {
-      const oldestKey = ABind.#pathCache.keys().next().value;
-      ABind.#pathCache.delete(oldestKey);
-    }
-
-    // Cache the new result
-    ABind.#pathCache.set(path, parts);
-    return [...parts];
-  }
 
   static update(model, property, value) {
     const key = ABind.getBusKey(model, property);
@@ -233,7 +208,7 @@ export default class ABind extends HTMLElement {
       this.#bound.addEventListener(this.#event, event => {
         const value = this.#bound[this.#elemAttr];
         this.#updateModel(value, event);
-      }, {signal:this.#abortController.signal});
+      }, { signal: this.#abortController.signal });
     }
 
     // Model -> Element (Observer)
@@ -246,7 +221,7 @@ export default class ABind extends HTMLElement {
           const prop = this.#property || this.#modelAttr;
           const value = this.#getPropertyValue(this.#model, prop);
           this.#applyUpdate(this.#bound, this.#elemAttr, value);
-        }, {signal:this.#abortController.signal});
+        }, { signal: this.#abortController.signal });
 
       }
     }
@@ -291,15 +266,15 @@ export default class ABind extends HTMLElement {
 
     // Handle Nested Paths (e.g., 'style.color', 'config.theme.dark')
     if (name.includes('.')) {
-      const parts = ABind.#getPathParts(name);
+      const parts = PathResolver.getParts(name);
 
       // security check: block prototype pollution
-      if (this.#isUnsafePath(parts)) {
+      if (PathResolver.isUnsafe(parts)) {
         console.warn(`a-bind: Blocked attempt to modify unsafe path "${name}"`);
         return;
       }
 
-      const lastProp =  parts.pop();
+      const lastProp = parts.pop();
       let current = target;
 
       for (const part of parts) {
@@ -354,7 +329,7 @@ export default class ABind extends HTMLElement {
     let context;
 
     try {
-      const parts = ABind.#getPathParts(this.#func);
+      const parts = PathResolver.getParts(this.#func);
       // don't pop!
       const fnName = parts[parts.length - 1];
 
@@ -394,10 +369,7 @@ export default class ABind extends HTMLElement {
    * Accounts for nested properties ie. user.name
    */
   #getPropertyValue(obj, path) {
-    if (!path) return obj;
-    const parts = ABind.#getPathParts(path);
-    if (this.#isUnsafePath(parts)) return undefined;
-    return parts.reduce((acc, part) => acc && acc[part], obj);
+    return PathResolver.getValue(obj, path);
   }
 
   async #init() {
@@ -441,9 +413,7 @@ export default class ABind extends HTMLElement {
     this.#isInitializing = false;
   }
 
-  #isUnsafePath(parts) {
-    return parts.some(p => p === '__proto__' || p === 'constructor' || p === 'prototype');
-  }
+
 
   async #reinit() {
     if (this.#isInitializing) return;
@@ -471,6 +441,11 @@ export default class ABind extends HTMLElement {
       this.#abortController.abort();
       this.#abortController = null;
     }
+
+    this.#updateManager.cancel(this);
+    if (this.#busKey) {
+      this.#updateManager.cancel(`abind-update::${this.#busKey}`);
+    }
   }
 
   #updateBound(value) {
@@ -484,8 +459,8 @@ export default class ABind extends HTMLElement {
     const prop = this.#property || this.#modelAttr;
     if (this.#func) return this.#executeFunction(event);
 
-    // const taskKey = `${this.#busKey}:model`;
-    const taskKey = Symbol(`${this.#busKey}`);
+    // Use stable key for UpdateManager to ensure batching works
+    const taskKey = `abind-update::${this.#busKey}`;
     const doUpdate = (value) => this.#applyUpdate(this.#model, prop, value);
     if (this.#throttle > 0) {
       if (this.#inputTimer) clearTimeout(this.#inputTimer);
@@ -517,46 +492,47 @@ export default class ABind extends HTMLElement {
   }
 
   // this resolves to the attribute 'model'
-  get modelKey(){ return this.#modelKey }
-  set modelKey(value){ this.setAttribute('model', value) }
+  get modelKey() { return this.#modelKey }
+  set modelKey(value) { this.setAttribute('model', value) }
 
   // -- attributes --
 
-  get elemAttr(){ return this.#elemAttr }
-  set elemAttr(value){ this.setAttribute('elem-attr', value) }
+  get elemAttr() { return this.#elemAttr }
+  set elemAttr(value) { this.setAttribute('elem-attr', value) }
 
-  get event(){ return this.#event }
-  set event(value){ this.setAttribute('event', value) }
+  get event() { return this.#event }
+  set event(value) { this.setAttribute('event', value) }
 
-  get func(){ return this.#func }
-  set func(value){ this.setAttribute('func', value) }
+  get func() { return this.#func }
+  set func(value) { this.setAttribute('func', value) }
 
-  get model(){ return this.#model }
-  set model(value){
+  get model() { return this.#model }
+  set model(value) {
     if (typeof value === 'function' || typeof value === 'object' && value !== null) {
       this.#model = value;
+      if (this.#isConnected) this.#reinit();
     } else {
       this.setAttribute('model', value);
     }
   }
 
-  get modelAttr(){ return this.#modelAttr }
-  set modelAttr(value){ this.setAttribute('model-attr', value) }
+  get modelAttr() { return this.#modelAttr }
+  set modelAttr(value) { this.setAttribute('model-attr', value) }
 
-  get once(){ return this.#once }
-  set once(value){ this.toggleAttribute('once', value !== false) }
+  get once() { return this.#once }
+  set once(value) { this.toggleAttribute('once', value !== false) }
 
-  get property(){ return this.#property }
-  set property(value){ this.setAttribute('property', value) }
+  get property() { return this.#property }
+  set property(value) { this.setAttribute('property', value) }
 
-  get pull(){ return this.#pull }
-  set pull(value){ this.toggleAttribute('pull', value !== false) }
+  get pull() { return this.#pull }
+  set pull(value) { this.toggleAttribute('pull', value !== false) }
 
-  get push(){ return this.#push }
-  set push(value){ this.toggleAttribute('push', value !== false) }
+  get push() { return this.#push }
+  set push(value) { this.toggleAttribute('push', value !== false) }
 
-  get throttle(){ return this.#throttle }
-  set throttle(value){ this.setAttribute('throttle', parseInt(value)) }
+  get throttle() { return this.#throttle }
+  set throttle(value) { this.setAttribute('throttle', parseInt(value)) }
 }
 
 if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);
