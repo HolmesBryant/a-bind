@@ -30,6 +30,7 @@ export { globalUpdateManager, crosstownBus, loader, ABindgroup };
  * </script>
  */
 export default class ABind extends HTMLElement {
+  #debug;
   #elemAttr = 'value';
   #event = 'input';
   #func;
@@ -73,7 +74,7 @@ export default class ABind extends HTMLElement {
   ];
 
 
-  constructor() { super(); }
+  constructor() {super(); }
 
   // --- Lifecycle ---
 
@@ -163,6 +164,7 @@ export default class ABind extends HTMLElement {
     this.#isConnected = false;
     this.#model = null;
     this.#bound = null;
+    this.log?.('disconnectedCallback()');
   }
 
   // -- Static --
@@ -191,8 +193,6 @@ export default class ABind extends HTMLElement {
     return `abind::${modelId}:${property}`;
   }
 
-
-
   static update(model, property, value) {
     const key = ABind.getBusKey(model, property);
     crosstownBus.announce(key, value)
@@ -201,6 +201,11 @@ export default class ABind extends HTMLElement {
   // -- Private --
 
   #addListeners() {
+    if (!this.#model) {
+      return console.warn('a-bind.addListeners: No model present.', this)
+    }
+
+    this.log?.('addListeners()', {});
     const prop = this.#property || this.#modelAttr;
 
     // Element -> Model (Event)
@@ -212,12 +217,14 @@ export default class ABind extends HTMLElement {
     }
 
     // Model -> Element (Observer)
-    if (!this.#push || !this.#once) {
+    if (!this.#push && !this.#once) {
+      // Subscribe to pub/sub
       crosstownBus.hopOn(this.#busKey, this.#updateSubscribers);
+      if (this.#push) return;
 
+      // If model is an input or select element
       if (this.#model.addEventListener) {
-        // If model is an input or select element
-        this.#model.addEventListener('change', event => {
+        this.#model.addEventListener('input', event => {
           const prop = this.#property || this.#modelAttr;
           const value = this.#getPropertyValue(this.#model, prop);
           this.#applyUpdate(this.#bound, this.#elemAttr, value);
@@ -228,94 +235,43 @@ export default class ABind extends HTMLElement {
   }
 
   /**
-   * Sets a value on a target (Element, Custom Element, or Plain Object).
-   * Prioritizes properties, handles nested paths, and falls back to attributes only for DOM elements.
+   * Main entry point for applying updates to the DOM or Model.
    */
   #applyUpdate(target, name, value) {
     if (!this.#isConnected || !target || typeof name !== 'string') return;
+    this.log?.('applyUpdate()', {target, name, value});
 
-    // is target a Select or Datalist element?
-    const isList = target instanceof HTMLSelectElement || target instanceof HTMLDataListElement;
-    if (isList) {
-      let items = null;
-
-      // handle Array input
-      if (Array.isArray(value)) {
-        items = value;
-      }
-      // handle comma separated values
-      else if (typeof value === 'string' && value.includes(',')) {
-        items = value.split(',').map(s => s.trim()).filter(Boolean);
-      }
-      // handle single string (no comma) as a single option
-      else if (typeof value === 'string') {
-        items = [value.trim()];
-      }
-
-      if (items) {
-        this.#setOptions(target, items);
-        return;
-      }
+    // Boolean update logic
+    if (name === 'checked' && target instanceof HTMLElement && (target.type === 'checkbox' || target.type === 'radio')) {
+      return this.#handleBooleanUpdate(target, value);
     }
 
-    // Handle CSS Variables
+    // Select/Datalist logic
+    if (target instanceof HTMLSelectElement || target instanceof HTMLDataListElement) {
+      return this.#handleListUpdate(target, value);
+    }
+
+    // CSS variables
     if (name.startsWith('--') && target.style) {
-      target.style.setProperty(name, value);
-      return;
+      return target.style.setProperty(name, value);
     }
 
-    // Handle Nested Paths (e.g., 'style.color', 'config.theme.dark')
+    // Nested paths
     if (name.includes('.')) {
-      const parts = PathResolver.getParts(name);
-
-      // security check: block prototype pollution
-      if (PathResolver.isUnsafe(parts)) {
-        console.warn(`a-bind: Blocked attempt to modify unsafe path "${name}"`);
-        return;
-      }
-
-      const lastProp = parts.pop();
-      let current = target;
-
-      for (const part of parts) {
-        if (current[part] === undefined || current[part] === null) {
-          if (typeof target.setAttribute === 'function') {
-            target.setAttribute(name, value);
-          }
-          return;
-        }
-
-        current = current[part];
-      }
-
-      try {
-        if (current instanceof CSSStyleDeclaration) {
-          current.setProperty(lastProp, value);
-        } else {
-          current[lastProp] = value;
-        }
-
-      } catch (error) {
-        console.warn(`a-bind: Failed to set nested property "${name}"`, error);
-      }
-
-      return;
+      return this.#handleNestedUpdate(target, name, value);
     }
 
-    // Main Logic: Property vs Attribute fallback
+    // Standard property/attribute
     const isElement = typeof target.setAttribute === 'function';
+    const parsedValue = this.#parsedValue(value);
 
     if (name in target) {
-      // It's a property
       try {
-        target[name] = value;
+        target[name] = parsedValue;
       } catch (error) {
-        // Fallback for read-only properties on elements
-        console.debug('target property might be read-only, setting Attribute instead.');
         if (isElement) target.setAttribute(name, value);
       }
     } else if (isElement) {
-      // It's not a property, but it is an element: set as attribute
       if (value === null || value === undefined) {
         target.removeAttribute(name);
       } else {
@@ -324,8 +280,20 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  async attachLogger() {
+    const mods = await import('./Logger.js');
+    const mod = mods.default;
+    const logger = new mod(this);
+    return (label, obj) => {
+      const boundVal = this.bound?.[this.elemAttr];
+      label = this.bound ? `${label}: ${this.bound.localName}: ${boundVal}` : label;
+      logger.log(label, obj);
+    }
+  }
+
   #executeFunction(event) {
     if (!this.#func) return;
+    this.log?.('executeFunction()', event);
     let context;
 
     try {
@@ -362,6 +330,8 @@ export default class ABind extends HTMLElement {
     while (element && element.localName === 'a-bind') {
       element = element.firstElementChild;
     }
+
+    this.log?.('getBoundElement()', element);
     return element;
   }
 
@@ -369,10 +339,90 @@ export default class ABind extends HTMLElement {
    * Accounts for nested properties ie. user.name
    */
   #getPropertyValue(obj, path) {
+    this.log?.('getPropertyValue()', {obj, path});
     return PathResolver.getValue(obj, path);
   }
 
+   /**
+   * logic for Radio and Checkbox 'checked' state.
+   */
+
+  #handleBooleanUpdate(target, value) {
+    const modelValue = this.#parsedValue(value);
+
+    // Compare against the 'value' attribute if it exists
+    // otherwise, compare against boolean true
+    const comparisonValue = target.hasAttribute('value')
+      ? this.#parsedValue(target.getAttribute('value'))
+      : true;
+
+    target.checked = (modelValue === comparisonValue);
+
+    this.log?.('handleBooleanUpdate()', {target, value, targetChecked: target.checked});
+  }
+
+  /**
+   * logic for Select and Datalist options.
+   */
+  #handleListUpdate(target, value) {
+    let items = null;
+    if (Array.isArray(value)) {
+      items = value;
+    } else if (typeof value === 'string') {
+      items = value.split(',').map( item => item.trim()).filter(Boolean);
+    } else if (typeof value === 'string') {
+      items = [value.trim()];
+    }
+
+    if (items) this.#setOptions(target, items);
+    this.log?.('handleListUpdate()', {target, value, items});
+  }
+
+  /**
+   * logic for nested paths (e.g., style.color).
+   */
+  #handleNestedUpdate(target, name, value) {
+    this.log?.('handleNestedUpdate()', {target, name, value});
+    const parts = PathResolver.getParts(name);
+    if (PathResolver.isUnsafe(parts)) {
+      console.warn(`a-bind: Blocked attempt to modify unsafe path "${name}"`);
+      return;
+    }
+
+    const lastProp = parts.pop();
+    let current = target;
+
+    for (const part of parts) {
+      if (current[part] === undefined || current[part] === null) {
+        // ONLY fallback to setAttribute if we aren't dealing with styles.
+        if (!name.startsWith('style.') && typeof target.setAttribute === 'function') {
+          target.setAttribute(name, value);
+        }
+        return;
+      }
+
+      current = current[part];
+    }
+
+    try {
+      if (current instanceof CSSStyleDeclaration) {
+        // if it has a dash use setProperty, otherwise set the property directly.
+        if (lastProp.includes('-')) {
+          current.setProperty(lastProp, value);
+        } else {
+          current[lastProp] = value;
+        }
+      } else {
+        current[lastProp] = this.#parsedValue(value);
+      }
+    } catch (error) {
+      console.warn(`a-bind: Failed to set nested property "${name}"`, error);
+    }
+  }
+
   async #init() {
+    if (this.debug) this.log = await this.attachLogger();
+    this.log?.('init()');
 
     if (this.#model) {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
@@ -382,8 +432,9 @@ export default class ABind extends HTMLElement {
 
     // Check if inside a group
     this.#group = this.closest('a-bindgroup');
-    if (!this.#model && this.#group) {
-      // let group assign model
+    if (this.#group && (!this.#model || (!this.#property && !this.#modelAttr))) {
+      this.log?.('init(): waiting for group to provide missing model or property');
+      this.#isInitializing = false;
       return;
     }
 
@@ -399,7 +450,7 @@ export default class ABind extends HTMLElement {
         this.#getPropertyValue(this.#model, this.#property) :
         this.#model.getAttribute?.(this.#modelAttr);
 
-      if (value) {
+      if (value !== undefined) {
         try {
           this.#applyUpdate(this.#bound, this.#elemAttr, value);
         } catch (error) {
@@ -407,15 +458,30 @@ export default class ABind extends HTMLElement {
           throw new Error('a-bind: #init failed');
         }
       }
+    } else if (this.#push) {
+      // initial sync Bound => Model
+      const isCheckedType = this.#bound.type === 'radio' || this.#bound.type === 'checkbox';
+      if (isCheckedType && this.#bound.checked) {
+        const val = this.#bound.hasAttribute('value') ? this.#bound.value : true;
+        this.#updateModel(val, { target: this.#bound });
+      } else if (!isCheckedType && this.#bound[this.#elemAttr]) {
+        this.#updateModel(this.#bound[this.#elemAttr], { target: this.#bound });
+      }
     }
 
     this.#addListeners();
     this.#isInitializing = false;
   }
 
-
+  #parsedValue(value) {
+    if (value === 'true') value = true;
+    if (value === 'false') value = false;
+    this.log?.('parsedValue()', value);
+    return value;
+  }
 
   async #reinit() {
+    this.log?.('reinit()', {});
     if (this.#isInitializing) return;
     this.#isInitializing = true;
     this.#teardown();
@@ -424,14 +490,25 @@ export default class ABind extends HTMLElement {
   }
 
   /**
-   * Safely builds options using the Option constructor.
+   * Builds option elements using the Option constructor.
    */
   #setOptions(target, items) {
-    items.forEach(item => {
-      const text = typeof item === 'object' ? (item.text || item.label) : item;
-      const val = typeof item === 'object' ? (item.value || item.id) : item;
-      target.add(new Option(text, val));
-    });
+    const optionElements = items.map( item => {
+      if (item === null || item === undefined) return null;
+
+      const text = typeof item === 'object' ?
+        (item.text || item.label || item.name || JSON.stringify(item)) :
+        String(item);
+
+      const val = typeof item === 'object' ?
+        (item.value !== undefined ? item.value : (item.id || text)) :
+        String(item);
+
+      return new Option(text, val);
+    }).filter(Boolean); // remove nulls if an item is invalid
+
+    target.replaceChildren(...optionElements);
+    this.log?.('setOptions()', {target, items});
   }
 
   #teardown() {
@@ -446,10 +523,12 @@ export default class ABind extends HTMLElement {
     if (this.#busKey) {
       this.#updateManager.cancel(`abind-update::${this.#busKey}`);
     }
+    this.log?.('teardown()', {});
   }
 
   #updateBound(value) {
     const prop = this.#property || this.#modelAttr;
+    this.log?.('updateBound()', {prop, value});
     this.#updateManager.queue(this.#bound, value, (val) => {
       this.#applyUpdate(this.#bound, this.#elemAttr, val);
     }, this);
@@ -459,9 +538,23 @@ export default class ABind extends HTMLElement {
     const prop = this.#property || this.#modelAttr;
     if (this.#func) return this.#executeFunction(event);
 
-    // Use stable key for UpdateManager to ensure batching works
+    // Use the identity 'value' if present, otherwise stick to boolean 'checked'
+    const isRadio = this.#bound instanceof HTMLInputElement && this.#bound.type === 'radio';
+    if (isRadio && this.#elemAttr === 'checked' && this.#bound.hasAttribute('value')) {
+      value = this.#bound.value;
+    }
+
+    // Use key for UpdateManager to ensure batching works
     const taskKey = `abind-update::${this.#busKey}`;
-    const doUpdate = (value) => this.#applyUpdate(this.#model, prop, value);
+    const doUpdate = (newValue) => {
+      const currentValue = this.#getPropertyValue(this.#model, prop);
+      const hasChanged = this.#parsedValue(newValue) !== this.#parsedValue(currentValue);
+      if (hasChanged && newValue !== undefined) {
+        this.#applyUpdate(this.#model, prop, newValue);
+        crosstownBus.announce(this.#busKey, newValue);
+      }
+    }
+
     if (this.#throttle > 0) {
       if (this.#inputTimer) clearTimeout(this.#inputTimer);
       this.#inputTimer = setTimeout(() => {
@@ -471,6 +564,8 @@ export default class ABind extends HTMLElement {
     } else {
       this.#updateManager.queue(taskKey, value, doUpdate, this);
     }
+
+    this.log?.('updateModel()', {value, eventTarget: event.target, targetValue: event.target.value, event});
   }
 
   // -- Getters / Setters --

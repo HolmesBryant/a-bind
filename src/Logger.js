@@ -1,35 +1,32 @@
-import ATestRunner from './ATestRunner.js';
-
-const runner = new ATestRunner(import.meta.url);
-const {equal, genCombos, group, info, log,skip, spyOn, test, wait, when} = runner;
-
 export default class Logger {
-	binder;
+	host;
 
-	constructor(binder) {
-		this.binder = binder;
+	constructor(host) {
+		this.host = host;
 	}
 
 	log(label, object) {
-		group(label, () => {
-			const modelValue = this.binder.getModelProperty();
-			const elemValue = this.binder.boundElement.value;
-			log('a-bind instance', this.binder);
-			log('model', this.binder.resolvedModel);
-			log('bound element', this.binder.boundElement);
-			log('vars', object);
-			group(`Model value: ${modelValue}`, () => {
-				info(`old value: ${this.binder.oldValue}`);
-				info(`new value: ${this.binder.newValue}`);
-			});
-			test("Bound element is HTML element", this.binder.boundElement instanceof HTMLElement, true);
-			test("Model value matches Bound Element value", runner.equal(modelValue, elemValue), true)
-		});
-	}
-
-
-	run() {
-		console.clear();
-		runner.run();
+		console.groupCollapsed(label);
+			if (object) console.log('args', object);
+			// console.log(this.host);
+			console.log('model', this.host.model);
+			console.log(`model[${this.host.prop}]`, this.host.model?.[this.host.prop]);
+			console.log('bound', this.host.bound);
+			console.log(`bound[${this.host.elemAttr}]`, this.host.bound?.[this.host.elemAttr]);
+			console.groupCollapsed('Other Properties');
+				console.log('elemAttr', this.host.elemAttr);
+				console.log('property', this.host.property);
+				console.log('modelAttr', this.host.modelAttr);
+				console.log('prop', this.host.prop);
+				console.log('event', this.host.event);
+				console.log('func', this.host.func);
+				console.log('busKey', this.host.busKey);
+				console.log('modelKey', this.host.modelKey);
+				console.log('once', this.host.once);
+				console.log('pull', this.host.pull);
+				console.log('push', this.host.push);
+				console.log('throttle', this.host.throttle);
+			console.groupEnd();
+		console.groupEnd();
 	}
 }

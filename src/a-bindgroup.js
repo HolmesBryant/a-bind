@@ -8,13 +8,15 @@
 import loader from './loader.js';
 
 export default class ABindgroup extends HTMLElement {
+  #childObserver;
+  #children = new Set();
   #isConnected = false;
+  #modelAttr;
   #modelKey;
   #modelInstance;
-  #children = new Set();
-  #childObserver;
+  #property;
 
-  static observedAttributes = ['model'];
+  static observedAttributes = ['model', 'model-attr', 'property'];
 
   constructor() { super() }
 
@@ -28,14 +30,30 @@ export default class ABindgroup extends HTMLElement {
     }
   }
 
+  get modelAttr() { return this.#modelAttr }
+  set modelAttr(value) { this.setAttribute('model-attr', value) }
+
   get modelKey() { return this.#modelKey }
   set modelKey(value) { this.#modelKey = value }
 
+  get property() { return this.#property }
+  set property(value) { this.setAttribute('property', value) }
+
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
-    if (attr === 'model') {
-      this.#modelKey = newval;
-      if (this.#isConnected) this.#init();
+    switch (attr) {
+      case 'model':
+        this.#modelKey = newval;
+        if (this.#isConnected) this.#init();
+        break;
+      case 'model-attr':
+        this.#modelAttr = newval;
+        this.#updateChildrenDefaults();
+        break;
+      case 'property':
+        this.#property = newval;
+        this.#updateChildrenDefaults();
+        break;
     }
   }
 
@@ -66,10 +84,11 @@ export default class ABindgroup extends HTMLElement {
 
   async register(child) {
     this.#children.add(child);
-    if (!child.model) {
+    this.#applyDefaultsToChild(child);
+    /*if (!child.model) {
       child.model = this.#modelInstance;
       child.modelKey = this.#modelKey;
-    }
+    }*/
   }
 
   unregister(child) {
@@ -78,11 +97,21 @@ export default class ABindgroup extends HTMLElement {
 
   // --- Private ---
 
+  #applyDefaultsToChild(child) {
+    // only apply if child hasn't defined its own
+    if (!child.model) child.model = this.#modelInstance;
+
+    if (!child.property && !child.modelAttr) {
+      if (this.#property) child.property = this.#property;
+      if (this.#modelAttr) child.modelAttr = this.#modelAttr;
+    }
+  }
+
   async #init() {
     if (!this.#isConnected) return;
 
     if (!this.#modelInstance && !this.#modelKey) {
-      return console.error('a-bindgroup: A model is required');
+      return // silent wait
     } else if (this.#modelInstance && !this.#modelKey) {
       this.#modelKey = Object.getPrototypeOf(this.#modelInstance).constructor.name;
     } else {
@@ -118,6 +147,12 @@ export default class ABindgroup extends HTMLElement {
       return instance;
     } catch (error) {
       console.error('a-bindgroup: ', error);
+    }
+  }
+
+  #updateChildrenDefaults() {
+    for (const child of this.#children) {
+      this.#applyDefaultsToChild(child);
     }
   }
 }

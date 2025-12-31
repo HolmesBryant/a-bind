@@ -1,14 +1,98 @@
-<p>In these examples, there is no external model. The DOM elements themselves are the models. This is pure DOM-to-DOM binding.</p>
+<p>In these examples, there is no external model. The models are HTML elements. This is pure DOM-to-DOM binding.</p>
 
-<h2>Basic Example</h2>
+<h2>Basic example</h2>
+<div class="card">
+	<div class="flex stretch">
+		<div class="flex column flex1">
+			<label for="ex1-model">
+				Model
+			</label>
+
+			<a-bind
+				model="#ex1-model"
+				property="value">
+			<input
+				id="ex1-model"
+				value="foo">
+			</a-bind>
+		</div>
+
+		<div class="flex column flex1">
+			<label for="ex1-bound-input">
+				Bound Input
+			</label>
+
+			<a-bind
+				model="#ex1-model"
+				property="value">
+				<input id="ex1-bound-input">
+			</a-bind>
+		</div>
+
+		<div class="flex column flex1">
+			<label for="ex1-bound-output">
+				Bound Output
+			</label>
+
+			<a-bind
+				pull
+				model="#ex1-model"
+				property="value">
+				<output
+					id="ex1-bound-output">
+					...
+				</output>
+			</a-bind>
+		</div>
+	</div>
+
+	<details>
+		<summary class="nofrills">Code</summary>
+
+		<div class="flex stretch">
+			<a-code highlight class="flex1">
+				<textarea>
+					<a-bind
+						model="#ex1-model"
+						property="value">
+					<input
+						id="ex1-model"
+						value="foo">
+					</a-bind>
+				</textarea>
+			</a-code>
+
+			<a-code highlight class="flex1">
+				<textarea>
+					<a-bind
+						model="#ex1-model"
+						property="value">
+						<input>
+					</a-bind>
+				</textarea>
+			</a-code>
+
+			<a-code highlight class="flex1">
+				<textarea>
+					<a-bind
+						pull
+						model="#ex1-model"
+						property="value">
+						<output>
+						</output>
+					</a-bind>
+				</textarea>
+			</a-code>
+		</div>
+	</details>
+</div>
+
+<h2>Button changes input (push). Output reflects input (pull).</h2>
 <div class="card flex column stretch">
-	<form
-		class="flex space-around"
-		onsubmit="return false">
-
+	<form onsubmit="return false" class="flex space-around">
 		<a-bind
 			push
-			model="#input"
+			model="#ex2-model"
 			property="value"
 			event="click">
 			<button
@@ -17,19 +101,15 @@
 			</button>
 		</a-bind>
 
-		<a-bind
-			model="#output"
-			property="value">
-			<input
-				id="#input"
-				value="input value">
-		</a-bind>
+		<input
+			id="ex2-model"
+			value="model value">
 
 		<a-bind
 			pull
-			model="#input"
+			model="#ex2-model"
 			property="value">
-			<output id="output">output value</output>
+			<output>output value</output>
 		</a-bind>
 
 		<input type="reset">
@@ -47,7 +127,7 @@
 
 					<a-bind
 						push
-						model="#input"
+						model="#ex2-model"
 						property="value"
 						event="click">
 						<button
@@ -56,19 +136,17 @@
 						</button>
 					</a-bind>
 
-					<a-bind
-						model="#output"
-						property="value">
-						<input
-							id="#input"
-							value="input value">
-					</a-bind>
+					<input
+						id="ex2-model"
+						value="model value">
 
 					<a-bind
 						pull
-						model="#input"
+						model="#ex2-model"
 						property="value">
-						<output id="output">output value</output>
+						<output>
+							output value
+						</output>
 					</a-bind>
 
 					<input type="reset">
@@ -82,52 +160,57 @@
 
 <h2>(One Way) Radio inputs affect checkbox</h2>
 <div class="card">
-	<div class="flex space-around">
-		<a-bindgroup
-			class="flex space-between flex240"
-			model="#ex1-checkbox">
+	<div class="flex space-around stretch">
+		<fieldset class="flex1">
+			<legend>Bound Elements</legend>
 
-			<div class="flex column">
-				<label for="ex1-radio-true">
-					Check
-				</label>
-				<a-bind
-					push
-					property="checked">
-					<input
-						id="ex1-radio-true"
-						type="radio"
-						name="ex1"
-						value="true">
-				</a-bind>
-			</div>
+			<a-bindgroup
+				class="flex space-around"
+				model="#ex3-model">
 
-			<div class="flex column">
-				<label for="ex1-radio-false">
-					Uncheck
-				</label>
-				<a-bind
-					push
-					property="checked">
-					<input
-						id="ex1-radio-false"
-						type="radio"
-						name="ex1"
-						value="">
-				</a-bind>
-			</div>
-		</a-bindgroup>
+				<div class="flex column">
+					<label for="ex3-radio-true">
+						Check
+					</label>
 
-		<p class="flex column">
-			<label
-				for="ex1-checkbox">
-				Result
-			</label>
+					<a-bind
+						push
+						property="checked"
+						event="change">
+						<input
+							checked
+							id="ex3-radio-true"
+							type="radio"
+							name="ex3"
+							value="true">
+					</a-bind>
+				</div>
 
+				<div class="flex column">
+					<label for="ex3-radio-false">
+						Uncheck:
+					</label>
+					<a-bind
+						push
+						property="checked"
+						event="change">
+						<input
+							id="ex3-radio-false"
+							type="radio"
+							name="ex3"
+							value="false">
+					</a-bind>
+				</div>
+			</a-bindgroup>
+		</fieldset>
+
+		<fieldset class="flex flex1 center middle">
+			<legend>Model</legend>
 			<input
-				id="ex1-checkbox"
+				disabled
+				id="ex3-model"
 				type="checkbox">
-		</p>
+		</fieldset>
 	</div>
 
 	<details>
@@ -135,47 +218,33 @@
 		<a-code highlight>
 			<textarea>
 				<a-bindgroup
-					model="#ex1-checkbox">
+					model="#ex3-model">
 
-					<label
-						for="ex1-radio-true">
-						Check
-					</label>
+						<a-bind
+							push
+							property="checked"
+							event="change">
+							<input
+								checked
+								type="radio"
+								name="ex3"
+								value="true">
+						</a-bind>
 
-					<a-bind
-						push
-						property="checked">
-						<input
-							id="ex1-radio-true"
-							type="radio"
-							name="ex1"
-							value="true">
-					</a-bind>
-
-					<label
-						for="ex1-radio-false">
-						Uncheck
-					</label>
-
-					<a-bind
-						push
-						property="checked">
-						<input
-							id="ex1-radio-false"
-							type="radio"
-							name="ex1"
-							value="">
-					</a-bind>
-
+						<a-bind
+							push
+							property="checked"
+							event="change">
+							<input
+								type="radio"
+								name="ex3"
+								value="false">
+						</a-bind>
 				</a-bindgroup>
 
-				<label
-					for="ex1-checkbox">
-					Result
-				</label>
-
 				<input
-					id="ex1-checkbox"
+					disabled
+					id="ex3-model"
 					type="checkbox">
 			</textarea>
 		</a-code>
@@ -186,101 +255,65 @@
 
 <h2>(One Way) Checkbox affects radio inputs</h2>
 <div class="card">
-	<div class="flex space-around">
-		<p class="flex column">
-			<label
-				for="ex2-checkbox">
-				Driver
-			</label>
+	<div class="flex stretch">
+		<fieldset class="flex1 flex center middle">
+			<legend>Model</legend>
 
-			<input
-				id="ex2-checkbox"
-				type="checkbox"
-				oninput="abind.update(this, 'checked', this.checked)">
-		</p>
+			<a-bind
+				push
+				model="#ex4-model"
+				model-attr="checked"
+				elem-attr="checked"
+				event="change">
+				<input
+					id="ex4-model"
+					type="checkbox">
+			</a-bind>
+		</fieldset>
 
-		<a-bindgroup
-			class="flex space-between flex240"
-			model="#ex2-checkbox">
-			<div class="flex column">
-				<label for="ex2-radio-true">
-					true
-				</label>
+		<fieldset class="flex1">
+			<legend>Bound Elements</legend>
 
-				<a-bind
-					pull
-					property="checked">
-					<input
-						id="ex2-radio-true"
-						type="radio"
-						name="ex2"
-						value="true">
-				</a-bind>
-			</div>
+			<a-bindgroup model="#ex4-model" class="flex space-around">
+		    <div class="flex column">
+		      <label for="ex4-radio-true">true</label>
 
-			<div class="flex column">
-				<label for="ex2-radio-false">
-					false
-				</label>
+		      <a-bind
+		      	pull
+		        elem-attr="checked"
+		        property="checked">
+		        <input
+		        	disabled
+		          id="ex4-radio-true"
+		          type="radio"
+		          name="ex4"
+		          value="true">
+		      </a-bind>
+		    </div>
 
-				<a-bind
-					pull
-					property="checked">
-					<input
-						id="ex2-radio-false"
-						type="radio"
-						name="ex2"
-						value="false">
-				</a-bind>
-			</div>
-		</a-bindgroup>
+		    <div class="flex column">
+		      <label for="ex4-radio-false">false</label>
+		      <a-bind
+		      	pull
+		        elem-attr="checked"
+		        property="checked">
+		        <input
+		        	disabled
+		          id="ex4-radio-false"
+		          type="radio"
+		          name="ex4"
+		          value="false">
+		      </a-bind>
+		    </div>
+			</a-bindgroup>
+		</fieldset>
 	</div>
 
 	<details>
 		<summary class="nofrills">code</summary>
 		<a-code highlight>
 			<textarea>
-				<label
-					for="ex2-checkbox">
-					Driver
-				</label>
 
-				<input
-					id="ex2-checkbox"
-					type="checkbox"
-					oninput="abind.update(this, 'checked', this.checked)">
-
-				<a-bindgroup
-					model="#ex2-checkbox">
-
-					<label for="ex2-radio-true">
-						true
-					</label>
-
-					<a-bind
-						pull
-						property="checked">
-						<input
-							id="ex2-radio-true"
-							type="radio"
-							name="ex2"
-							value="true">
-					</a-bind>
-
-					<label for="ex2-radio-false">
-						false
-					</label>
-
-					<a-bind
-						pull
-						property="checked">
-						<input
-							id="ex2-radio-false"
-							type="radio"
-							name="ex2"
-							value="false">
-					</a-bind>
-				</a-bindgroup>
 			</textarea>
 		</a-code>
 	</details>
@@ -290,103 +323,77 @@
 
 <h2>(Two Way) All inputs affect each other</h2>
 <div class="card">
-	<div class="flex space-around">
-		<div class="flex column">
-			<label
-				for="ex3-checkbox">
-				checkbox
-			</label>
+	<div class="flex stretch space-around">
+		<fieldset class="flex1 flex center middle">
+			<legend>Model</legend>
 
-			<input
-				id="ex3-checkbox"
-				type="checkbox"
-				oninput="abind.update(this, 'checked', this.checked)">
-			</div>
+			<input id="ex5-model" type="checkbox">
+		</fieldset>
 
-		<a-bindgroup
-			class="flex flex240 space-between"
-			model="#ex3-checkbox">
+		<fieldset class="flex1">
+			<legend>Bound Elements</legend>
 
-			<div class="flex column">
-				<label
-					for="ex3-radio-true">
-					true
-				</label>
+			<a-bindgroup
+				class="flex space-around"
+				model="#ex5-model">
 
-		    <a-bind
-		    	property="checked"
-		    	elem-attr="checked">
-					<input
-						id="ex3-radio-true"
-						type="radio"
-						name="ex3"
-						value="true">
-		    </a-bind>
-		  </div>
+				<div class="flex column">
+					<label for='ex5-radio-true'>True</label>
 
-		  <div class="flex column">
-		  	<label
-		  		for="ex3-radio-false">
-		  		false
-		  	</label>
+			    <a-bind
+			    	property="checked"
+			    	elem-attr="checked">
+						<input
+							id="ex5-radio-true"
+							type="radio"
+							name="ex5"
+							value="true">
+			    </a-bind>
+			  </div>
 
-		    <a-bind
-		    	property="checked"
-		    	elem-attr="checked">
-					<input
-						id="ex3-radio-false"
-						type="radio"
-						name="ex3"
-						value="false">
-		    </a-bind>
-		  </div>
-		</a-bindgroup>
+			  <div class="flex column">
+			  	<label for="ex5-radio-false">False</label>
+
+			    <a-bind
+			    	property="checked"
+			    	elem-attr="checked">
+						<input
+				    	id="ex5-radio-false"
+							type="radio"
+							name="ex5"
+							value="false">
+			    </a-bind>
+			  </div>
+			</a-bindgroup>
+		</fieldset>
 	</div>
 
 	<details>
 		<summary class="nofrills">code</summary>
 		<a-code highlight>
 			<textarea>
-				<label
-					for="ex3-checkbox">
-					checkbox
-				</label>
-
 				<input
-					id="ex3-checkbox"
-					type="checkbox"
-					oninput="abind.update(this, 'checked', this.checked)">
+					id="ex5-model"
+					type="checkbox">
 
 				<a-bindgroup
-					model="#ex3-checkbox">
-
-					<label
-						for="ex3-radio-true">
-						true
-					</label>
+					model="#ex5-model">
 
 					<a-bind
 						property="checked"
 						elem-attr="checked">
 						<input
-							id="ex3-radio-true"
 							type="radio"
-							name="ex3"
+							name="ex5"
 							value="true">
 					</a-bind>
 
-					<label
-						for="ex3-radio-false">
-						false
-					</label>
-
 					<a-bind
 						property="checked"
 						elem-attr="checked">
 						<input
-							id="ex3-radio-false"
 							type="radio"
-							name="ex3"
+							name="ex5"
 							value="false">
 					</a-bind>
 				</a-bindgroup>
@@ -401,12 +408,13 @@
 <div class="card">
 	<div class="flex column gap0">
 		<div class="flex">
-			<label for="ex4-range">
+			<label for="ex6-model">
 				Range Value:
 			</label>
 
 			<a-bind
-				model="#ex4-range"
+				pull
+				model="#ex6-model"
 				property="value"
 				elem-attr="textContent">
 				<span></span>
@@ -414,35 +422,30 @@
 		</div>
 
 		<input
-			id="ex4-range"
+			id="ex6-model"
 			type="range"
 			max="100"
-			value="50"
-			oninput="abind.update(this, 'value', this.value)">
+			value="50">
 	</div>
 
 	<details>
 		<summary class="nofrills">code</summary>
 		<a-code highlight>
 			<textarea>
-				<label
-					for="ex4-range">
-					Range Value
-				</label>
-
+				Range Value
 				<a-bind
-					model="ex4-range"
+					pull
+					model="#ex6-model"
 					property="value"
 					elem-attr="textContent">
 					<span></span>
 				</a-bind>
 
 				<input
-					id="ex4-range"
+					id="ex6-model"
 					type="range"
 					max="100"
-					value="50"
-					oninput="abind.update(this, 'value', this.value)">
+					value="50">
 			</textarea>
 		</a-code>
 	</details>
@@ -450,72 +453,311 @@
 
 <hr>
 
-<h2>CSS Variable Proxy (Themer)</h2>
-<div class="card">
+<h2>Binding CSS Variables</h2>
 
+<!-- Ensure the style block or stylesheet is loaded and parsed BEFORE the a-bind elements are parsed -->
 <style>
-  #ex5-theme {
-    --rounded: 4px;
-    --background: #00ff00;
-
-    border: 1px solid var(--background);
+  #ex7-theme {
+    --ex7-accentcolor: #00ff00;
+    --ex7-accenttext: #1f0040;
+    --ex7-rounded: 4;
 
     /* Multiply by 1px to convert raw range number to pixels */
-    border-radius: calc(var(--rounded) * 1px);
+    --ex7-radius: calc(var(--ex7-rounded) * 1px);
+
+    border: 1px solid var(--ex7-accentcolor);
+    border-radius: var(--ex7-radius);
+    padding: var(--ex7-radius);
+  }
+
+  #ex7-theme button {
+  	border: 1px solid var(--ex7-accentcolor);
+  	border-radius: var(--ex7-radius);
+  	padding: var(--ex7-radius);
+  }
+
+  #ex7-theme button.primary {
+  	background: var(--ex7-accentcolor);
+  	color: var(--ex7-accenttext);
   }
 </style>
 
-<a-bind
-  model="#ex5-range"
-  property="value"
-  elem-attr="style.--rounded">
+<div class="card">
+	<div class="flex stretch space-around">
 
-  <p
-  	id="ex5-theme">
-    FOO
-  </p>
+		<a-bindgroup
+			class="flex column"
+			model="#ex7-theme"
+			property="--ex7-accentcolor">
 
-</a-bind>
+			<label for="ex7-accent-color">
+				Accent Color
+			</label>
 
-<div>
-	<a-bind
-  	debug
-		pull
-		model="#ex5-theme"
-		property="css.--background">
+			<a-bind once>
+				<input
+					id="ex7-accent-color"
+					type="color">
+			</a-bind>
 
-		<input
-			id="ex5-color"
-			type="color"
-			oninput="abind.update(this, 'value', this.value)">
+			<!--
+				Bind both 'value' and 'style.background-color'.
+				Default elem-attr is 'value'and output element
+				uses value property, so first a-bind
+				doesn't need elem-attr.
+			-->
+			<a-bind pull>
 
+				<a-bind
+					pull
+					elem-attr="style.background-color">
+
+					<a-bind
+						pull
+						property="--ex7-accenttext"
+						elem-attr="style.color">
+
+						<output> </output>
+					</a-bind>
+				</a-bind>
+			</a-bind>
+		</a-bindgroup>
+
+		<a-bindgroup
+			class="flex column"
+			model="#ex7-theme"
+			property="--ex7-accenttext">
+
+			<label for="ex7-accent-text">
+				Accent Text
+			</label>
+
+			<a-bind once>
+				<input
+					id="ex7-accent-text"
+					type="color">
+			</a-bind>
+
+			<!-- binding to 'style.'
+			can use either kebab-case
+			or camelCase property names -->
+			<a-bind pull>
+
+				<a-bind
+					elem-attr="style.backgroundColor">
+
+					<a-bind
+						property="--ex7-accentcolor"
+						elem-attr="style.color">
+
+						<output>
+						</output>
+					</a-bind>
+				</a-bind>
+			</a-bind>
+		</a-bindgroup>
+
+		<a-bindgroup
+			class="flex column"
+			model="#ex7-theme"
+			property="--ex7-rounded">
+
+			<label for="ex7-radius">
+				Padding / Border Radius
+			</label>
+
+			<a-bind once>
+				<input
+					id="ex7-radius"
+					type="range"
+					max="50">
+			</a-bind>
+
+			<a-bind pull class="flex">
+				<output class="flex center">
+				</output>px
+			</a-bind>
+		</a-bindgroup>
+	</div>
+
+	<hr>
+
+	<!--
+    Wrap the section in three a-binds.
+    Each one maps a specific input's 'value' property
+    to a specific CSS variable on the #ex7-theme element.
+  -->
+
+  <a-bind
+  	model="#ex7-accent-color"
+  	property="value"
+  	elem-attr="--accent-color">
+
+  	<a-bind
+  		model="#ex7-accent-text"
+  		property="value"
+  		elem-attr="--accent-text">
+
+  		<a-bind
+  			model="#ex7-radius"
+  			property="value"
+  			elem-attr="--rounded">
+
+				<section id="ex7-theme">
+					<p>Lorem ipsum ...</p>
+					<button class="primary">Primary Button</button>
+					<button>Normal Button</button>
+				</section>
+
+			</a-bind>
+		</a-bind>
 	</a-bind>
 
-	<a-bind
-		model="#ex5-color"
-		property="value">
+	<hr>
 
-		<output></output>
+	<details open>
+		<summary class="nofrills">Code</summary>
 
-	</a-bind>
-</div>
+		<a-code highlight>
+			<textarea>
+				<!-- Ensure the style block or stylesheet is loaded
+				and parsed BEFORE the a-bind elements are parsed -->
+				<style>
+					#ex7-theme {
+						--ex7-accentcolor: #00ff00;
+						--ex7-accenttext: #1f0040;
+						--ex7-rounded: 4;
 
+						/* Multiply by 1px to convert raw range number to pixels */
+						--ex7-radius: calc(var(--ex7-rounded) * 1px);
 
-</div>
+						border: 1px solid var(--ex7-accentcolor);
+						border-radius: var(--ex7-radius);
+						padding: var(--ex7-radius);
+					}
 
-<div>
-  <input
-    id="ex5-range"
-    type="range"
-    max="20"
-    value="0"
-    oninput="abind.update(this, 'value', this.value)">
+					#ex7-theme button {
+						border: 1px solid var(--ex7-accentcolor);
+						border-radius: var(--ex7-radius);
+						padding: var(--ex7-radius);
+					}
 
-	<a-bind
-		model="#ex5-range"
-		property="value">
-		<output></output>
-	</a-bind>
-</div>
+					#ex7-theme button.primary {
+						background: var(--ex7-accentcolor);
+						color: var(--ex7-accenttext);
+					}
+				</style>
 
-</div>
+				<a-bindgroup
+					model="#ex7-theme"
+					property="--ex7-accentcolor">
+
+					Accent Color
+					<a-bind once>
+						<input type="color">
+					</a-bind>
+
+					<!--
+						Bind 'value', 'style.background-color', and 'style.color'.
+						Default elem-attr is 'value' and output element
+						uses value property, so first a-bind
+						does not need elem-attr.
+					-->
+					<a-bind pull>
+
+						<a-bind
+							pull
+							elem-attr="style.background-color">
+
+							<a-bind
+								pull
+								property="--ex7-accenttext"
+								elem-attr="style.color">
+
+								<output> </output>
+
+							</a-bind>
+						</a-bind>
+					</a-bind>
+				</a-bindgroup>
+
+				<a-bindgroup
+					model="#ex7-theme"
+					property="--ex7-accenttext">
+
+					Accent Text
+					<a-bind once>
+						<input type="color">
+					</a-bind>
+
+					<!-- binding to 'style.'
+					can use either kebab-case
+					or camelCase property names -->
+					<a-bind pull>
+
+						<a-bind
+							elem-attr="style.backgroundColor">
+
+							<a-bind
+								property="--ex7-accentcolor"
+								elem-attr="style.color">
+
+								<output> </output>
+
+							</a-bind>
+						</a-bind>
+					</a-bind>
+				</a-bindgroup>
+
+				<a-bindgroup
+					model="#ex7-theme"
+					property="--ex7-rounded">
+
+					Padding / Border Radius
+					<a-bind once>
+						<input type="range" max="50">
+					</a-bind>
+
+					<a-bind pull>
+						<output> </output>px
+					</a-bind>
+				</a-bindgroup>
+
+				<!--
+					Wrap the section in three a-binds.
+					Each one maps a specific input's 'value' property
+					to a specific CSS variable on the #ex7-theme element.
+			  -->
+
+			  <a-bind
+					model="#ex7-accent-color"
+					property="value"
+					elem-attr="--accent-color">
+
+					<a-bind
+						model="#ex7-accent-text"
+						property="value"
+						elem-attr="--accent-text">
+
+						<a-bind
+							model="#ex7-radius"
+							property="value"
+							elem-attr="--rounded">
+
+							<section id="ex7-theme">
+								<p>Lorem ipsum ...</p>
+								<button class="primary">
+									Primary Button
+								</button>
+								<button>
+									Normal Button
+								</button>
+							</section>
+
+						</a-bind>
+					</a-bind>
+				</a-bind>
+			</textarea>
+		</a-code>
+	</details>
+</div><!-- /card -->

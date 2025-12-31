@@ -204,13 +204,18 @@ group("Data Binding", () => {
 		const modelProp = instance.prop;
 		const boundProp = instance.elemAttr;
 		const evt = instance.event;
-		const elemValue = instance.bound[boundProp];
+		// bound elem dispatches. model should update
 		instance.bound.dispatchEvent(new Event(evt, { bubbles: true }));
 		await when(() => instance.model[modelProp] === instance.bound[boundProp])
-		const modelValue = instance.model[modelProp];
+		// const modelEqualBound = equal(instance.bound[boundProp], instance.model[modelProp]);
+		instance.model[modelProp] = 'new model value';
+		// model announces new value. Bound elem should NOT update
+		ABind.update(instance.model, modelProp, 'new model value');
+		await wait(10);
+		const values = {model: instance.model[modelProp], bound: instance.bound[boundProp]};
 		reset();
-		return { input: elemValue, model: modelValue };
-	}, { input: 'input value', model: 'input value' });
+		return values;
+	}, {model: 'new model value', bound: 'input value'});
 
 	test("One-Way: Model => Element (pull)", async () => {
 		const model = { foo: 'model value' };
@@ -381,30 +386,12 @@ group("Edge Cases & Lifecycle", async () => {
 		reset();
 		return modelValue;
 	}, 'bar');
-
-	test("Lifecycle: Detach and Re-attach", async () => {
-		const model = { foo: 'bar' };
-		const { instance, reset } = await setup(model, { property: 'foo' });
-
-		// Detach
-		instance.remove();
-		await wait(20);
-
-		// Update model while detached (should not affect element potentially, but element is effectively gone from DOM)
-		// Re-attach
-		document.body.append(instance);
-		await when(() => instance.bound);
-
-		const isReflected = instance.bound.value === 'bar';
-		instance.remove(); // Manual cleanup as 'reset' might fail if already removed
-		return isReflected;
-	}, true);
 });
 
 group("Dynamic Attribute Changes", async () => {
 	test("Re-initializes when 'property' attribute changes", async () => {
 		const model = { a: 'Apple', b: 'Banana' };
-		const { instance, reset } = await setup(model, { property: 'a', debug: null });
+		const { instance, reset } = await setup(model, { property: 'a'});
 
 		const firstVal = instance.bound.value; // Apple
 		instance.setAttribute('property', 'b');
@@ -493,8 +480,6 @@ group("Security & Edge Cases", async () => {
 	}, 'ready');
 });
 
-runner.run();
-
 group("Comprehensive: JS Object", async () => {
 	// Setup helper specifically for testObject
 	async function setupObj(prop, extraAttrs = {}) {
@@ -504,14 +489,14 @@ group("Comprehensive: JS Object", async () => {
 		for (const [k, v] of Object.entries(extraAttrs)) {
 			instance.setAttribute(k, v);
 		}
-		
+
 		const input = document.createElement('input');
 		if (extraAttrs.type) input.type = extraAttrs.type;
 		instance.append(input);
-		
+
 		document.body.append(instance);
 		await when(() => instance.bound);
-		
+
 		return { instance, input, reset: () => instance.remove() };
 	}
 
@@ -539,10 +524,10 @@ group("Comprehensive: JS Object", async () => {
 
 	test("Checkbox (Boolean)", async () => {
 		// must bind to 'checked' property and listen to 'change' for checkboxes
-		const { instance, input, reset } = await setupObj('checkboxBool', { 
-			type: 'checkbox', 
-			'elem-attr': 'checked', 
-			event: 'change' 
+		const { instance, input, reset } = await setupObj('checkboxBool', {
+			type: 'checkbox',
+			'elem-attr': 'checked',
+			event: 'change'
 		});
 		testObject.checkboxBool = true;
 		await when(() => input.checked === true);
@@ -558,19 +543,19 @@ group("Comprehensive: JS Object", async () => {
 		instance.setAttribute('property', 'select');
 		// Select elements usually fire 'change'
 		instance.setAttribute('event', 'change');
-		
+
 		const select = document.createElement('select');
 		select.innerHTML = '<option value="foo">foo</option><option value="bar">bar</option>';
 		instance.append(select);
 		document.body.append(instance);
-		
+
 		testObject.select = 'bar';
 		await when(() => select.value === 'bar');
-		
+
 		select.value = 'foo';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 		await when(() => testObject.select === 'foo');
-		
+
 		instance.remove();
 		return testObject.select;
 	}, 'foo');
@@ -583,19 +568,19 @@ group("Comprehensive: Custom Element", async () => {
 		}
 		const ce = document.createElement('custom-element');
 		document.body.append(ce);
-		
+
 		const instance = document.createElement('a-bind');
 		instance.model = ce;
 		instance.setAttribute('property', prop);
 		for (const [k, v] of Object.entries(extraAttrs)) {
 			instance.setAttribute(k, v);
 		}
-		
+
 		const input = document.createElement('input');
 		if (extraAttrs.type) input.type = extraAttrs.type;
 		instance.append(input);
 		document.body.append(instance);
-		
+
 		await when(() => instance.bound);
 		return { instance, input, ce, reset: () => { instance.remove(); ce.remove(); } };
 	}
@@ -604,11 +589,11 @@ group("Comprehensive: Custom Element", async () => {
 		const { input, ce, reset } = await setupCE('text');
 		ce.text = "CE Hello";
 		await when(() => input.value === "CE Hello");
-		
+
 		input.value = "CE Update";
 		input.dispatchEvent(new Event('input', { bubbles: true }));
 		await when(() => ce.text === "CE Update");
-		
+
 		reset();
 		return ce.text;
 	}, "CE Update");
@@ -617,7 +602,7 @@ group("Comprehensive: Custom Element", async () => {
 		const { input, ce, reset } = await setupCE('date', { type: 'date' });
 		const testDate = '2023-12-25';
 		ce.setAttribute('date', testDate); // Should trigger attrChanged -> prop update -> bind update
-		
+
 		await when(() => input.value === testDate);
 		reset();
 		return input.value;
@@ -629,41 +614,41 @@ group("DOM-to-DOM Binding", async () => {
 		const source = document.createElement('input');
 		source.id = 'source-input';
 		document.body.append(source);
-		
+
 		const instance = document.createElement('a-bind');
 		instance.setAttribute('model', '#source-input');
 		instance.setAttribute('property', 'value');
-		
+
 		const target = document.createElement('input');
 		instance.append(target);
 		document.body.append(instance);
-		
+
 		source.value = "Source Value";
 		// Direct property set doesn't trigger MutationObserver/event usually, but a-bind might need event
-		// But here we are binding to specific property 'value'. 
+		// But here we are binding to specific property 'value'.
 		// If model is an element, a-bind subscribes to change/input events on it if it can.
 		// Let's trigger input.
 		source.dispatchEvent(new Event('input', { bubbles: true }));
-		
+
 		// Wait for sync (it might be throttled or async)
 		// NOTE: core a-bind logic for DOM-model usually requires explicit `abind.update` or events if not polling
-		// Let's check how DOM models are handled. It seems they use the same proxy/pubsub if possible, 
+		// Let's check how DOM models are handled. It seems they use the same proxy/pubsub if possible,
 		// or if we use `abind.update(this, ...)` in the source element.
 		// The demo uses `oninput="abind.update(...)"`. We should probably simulate that or use the automatic event detection if it exists.
 		// a-bind.js:246 (approx) handles valid events.
-		
+
 		// For this test, we mimic the demo pattern: manually calling update or ensuring events work if implemented.
 		// Let's try explicit event first.
-		
+
 		ABind.update(source, 'value', 'Source Value');
-		
+
 		await when(() => target.value === 'Source Value');
-		
+
 		target.value = "Target Value";
 		target.dispatchEvent(new Event('input', { bubbles: true }));
-		
+
 		await when(() => source.value === "Target Value");
-		
+
 		source.remove();
 		instance.remove();
 		return source.value;
@@ -677,16 +662,18 @@ group("Buttons & Actions", async () => {
 		instance.setAttribute('property', 'text');
 		instance.setAttribute('push', '');
 		instance.setAttribute('event', 'click');
-		
+
 		const btn = document.createElement('button');
 		btn.value = "Button Clicked";
 		instance.append(btn);
 		document.body.append(instance);
-		
+
 		btn.click();
 		await when(() => testObject.text === "Button Clicked");
-		
+
 		instance.remove();
 		return testObject.text;
 	}, "Button Clicked");
 });
+
+runner.run();

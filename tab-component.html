@@ -529,7 +529,7 @@
   </code-demo>
 </details>
 
-<details name="component-props">
+<details open name="component-props">
 <summary>Buttons</summary>
   <!-- button (text mirrors value) -->
   <code-demo attr="button" prop="button">
@@ -537,25 +537,39 @@
     <div slot="prop"></div>
     <div slot="input" class="flex column flex1 gap0">
       <label for="c-button-a"> button (text mirrors value) </label>
+
+      <a-bindgroup
+        model="custom-element"
+        property="button">
+
         <a-bind
-          property="button"
-          elem-attr="value, textContent"
           event="click"
           func="notify">
-          <button id="c-button-a"></button>
+
+          <a-bind pull>
+
+            <a-bind
+              pull
+              elem-attr="textContent">
+
+              <button id="c-button-a">...</button>
+            </a-bind>
+          </a-bind>
         </a-bind>
+
+      </a-bindgroup>
     </div>
 
     <a-code highlight slot="code">
       <textarea>
-        <a-bind
+        <!-- <a-bind
           model="custom-element"
           property="button"
           elem-attr="value, textContent"
           event="click"
           func="notify">
           <button></button>
-        </a-bind>
+        </a-bind> -->
       </textarea>
     </a-code>
   </code-demo>

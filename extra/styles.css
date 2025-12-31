@@ -126,6 +126,11 @@ body {
   [contenteditable]:hover
   { border-color: var(--accent-color); }
 
+  input:checked:disabled,
+	option:checked:disabled,
+	select:checked:disabled
+	{ outline: 1px solid var(--accent-color) }
+
 /**** Text ****/
 	a
 	{ color: var(--accent-color) }
@@ -177,6 +182,13 @@ body {
 	summary
 	{ cursor: pointer; }
 
+	button:disabled,
+	input:disabled,
+	option:disabled,
+	select:disabled,
+	textarea:disabled
+	{ cursor: not-allowed; }
+
 /**** Shadows ****/
 	aside
 	{ box-shadow: 0 2px 5px black; }
@@ -185,7 +197,7 @@ body {
 	[contenteditable]
 	{ caret-color: var(--accent-color); }
 
-/**** Structure ****/
+/**** Misc ****/
 	body *
 	{ box-sizing: border-box; }
 

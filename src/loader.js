@@ -30,6 +30,8 @@ class Loader {
    */
   #pending = new Map();
 
+  #validator = null;
+
   /**
    * Loads a resource based on the provided key. Caches results for subsequent calls.
    * @param {string|*} key - The module path or CSS selector to load.
@@ -61,6 +63,8 @@ class Loader {
    * @returns {Promise<*>}
    */
   async #resolve(key, ...args) {
+    let elem;
+
     // Module Loading
     if (this.#isImportable(key)) {
       try {
@@ -85,11 +89,14 @@ class Loader {
         return null;
       }
 
-      return this.#getDomElement(key);
+      elem = await this.#getDomElement(key);
+      if (elem) return elem;
     }
 
-    console.error(`Loader: Resource "${key}" could not be resolved as a module or DOM element.`);
-    return null;
+    if (!elem) {
+      console.error(`Loader: Resource "${key}" could not be resolved as a module or DOM element.`);
+      return null;
+    }
   }
 
   /**
@@ -121,7 +128,21 @@ class Loader {
   }
 
   /**
-   * Instantiates a class/function or returns the object/function if no constructor.
+   * Validates if a path is allowed to be imported.
+   * Order: Validator -> Whitelist -> Default Regex (Strict)
+   * @private
+   */
+  #isImportable(path) {
+    if (this.#validator) return this.#validator(path);
+    if (this.#allowed) return this.#allowed.includes(path);
+
+    const normalized = path.replace(/\\/g, '/');
+    // Default: Only allow local relative JS files (No ../ allowed)
+    return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
+  }
+
+  /**
+   * #instantiates a class/function or returns the object/function if no constructor.
    * @private
    * @param {*} obj
    * @param {...*} args
@@ -136,8 +157,6 @@ class Loader {
       return obj;
     }
   }
-
-
 
 
   /**
@@ -163,21 +182,6 @@ class Loader {
    * @param {Function} fn - Returns true if path is allowed.
    */
   set validator(fn) { this.#validator = fn }
-  #validator = null;
-
-  /**
-   * Validates if a path is allowed to be imported.
-   * Order: Validator -> Whitelist -> Default Regex (Strict)
-   * @private
-   */
-  #isImportable(path) {
-    if (this.#validator) return this.#validator(path);
-    if (this.#allowed) return this.#allowed.includes(path);
-
-    const normalized = path.replace(/\\/g, '/');
-    // Default: Only allow local relative JS files (No ../ allowed)
-    return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
-  }
 }
 
 const loader = new Loader();
