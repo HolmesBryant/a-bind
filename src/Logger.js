@@ -6,11 +6,14 @@ export default class Logger {
 	}
 
 	log(label, object) {
+		const value = this.host.model?.[this.host.prop] || this.host.model?.getAttribute?.(this.host.prop);
 		console.groupCollapsed(label);
 			if (object) console.log('args', object);
 			// console.log(this.host);
-			console.log('model', this.host.model);
-			console.log(`model[${this.host.prop}]`, this.host.model?.[this.host.prop]);
+			console.groupCollapsed('model');
+				console.log(this.host.model);
+			console.groupEnd();
+			console.log(`model[${this.host.prop}]`, value);
 			console.log('bound', this.host.bound);
 			console.log(`bound[${this.host.elemAttr}]`, this.host.bound?.[this.host.elemAttr]);
 			console.groupCollapsed('Other Properties');

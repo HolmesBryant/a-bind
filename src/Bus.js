@@ -16,6 +16,25 @@ class Bus {
    * @type {Map<any, Set<Function>>}
    */
   #bozos = new Map();
+  static #modelIds = new WeakMap();
+  static #idCounter = 0;
+
+  static getKey(model, property) {
+    let modelId;
+    if (typeof model === 'object' &&
+      model !== null ||
+      typeof model === 'function') {
+      modelId = Bus.#modelIds.get(model);
+      if (!modelId) {
+        modelId = `m${++Bus.#idCounter}`;
+        Bus.#modelIds.set(model, modelId);
+      }
+    } else {
+      modelId = String(model);
+    }
+
+    return `abus::${modelId}:${property}`;
+  }
 
   /**
    * Checks if a specific event has any registered listeners.

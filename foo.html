@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>FOO</title>
+	<script type="module" src="src/index.js"></script>
+
+	<script type="module">
+		import loader from './src/loader.js';
+		const app = {
+			text: 'initial text',
+			select: 'two',
+			selectMulti: ['one', 'three'],
+
+			selectOptions: [
+				{label: 'Option One', value: 'one'},
+				{label: 'Option Two', value: 'two'},
+				{label: 'Option Three', value: 'three'}
+			],
+
+			sections: [
+				{
+					title: 'Section One',
+					label: 'text input',
+					control: [{type:"text"}]
+				},
+				{
+					title: 'Section Two',
+					label: 'number input',
+					control: [{type:"number"}]
+				}
+			]
+		}
+
+		loader.define('app', app);
+	</script>
+
+	<link rel="stylesheet" href="extra/styles.css">
+</head>
+<body>
+
+<h1>Foo</h1>
+
+<a-bindgroup model="app">
+	<a-bind prop="text">
+		<output></output>
+	</a-bind>
+
+	<a-bind prop="select">
+		<select>
+			<option>one</option>
+			<option>two</option>
+			<option>three</option>
+		</select>
+	</a-bind>
+
+	<a-bind prop="selectMulti">
+		<select multiple>
+			<option>one</option>
+			<option>two</option>
+			<option>three</option>
+		</select>
+	</a-bind>
+
+	<hr>
+
+	<a-bind prop="select">
+		<select id="dynamic-select"></select>
+	</a-bind>
+
+	<a-repeat target="#dynamic-select" prop="selectOptions">
+		<template><option value="{{value}}">{{label}}</option></template>
+	</a-repeat>
+</a-bindgroup>
+</body>
+</html>

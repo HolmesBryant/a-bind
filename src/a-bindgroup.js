@@ -10,13 +10,15 @@ import loader from './loader.js';
 export default class ABindgroup extends HTMLElement {
   #childObserver;
   #children = new Set();
+  #debug;
   #isConnected = false;
   #modelAttr;
   #modelKey;
   #modelInstance;
   #property;
 
-  static observedAttributes = ['model', 'model-attr', 'property'];
+
+  static observedAttributes = ['model', 'attr', 'prop', 'debug'];
 
   constructor() { super() }
 
@@ -31,13 +33,13 @@ export default class ABindgroup extends HTMLElement {
   }
 
   get modelAttr() { return this.#modelAttr }
-  set modelAttr(value) { this.setAttribute('model-attr', value) }
+  set modelAttr(value) { this.setAttribute('attr', value) }
 
   get modelKey() { return this.#modelKey }
   set modelKey(value) { this.#modelKey = value }
 
   get property() { return this.#property }
-  set property(value) { this.setAttribute('property', value) }
+  set property(value) { this.setAttribute('prop', value) }
 
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
@@ -46,14 +48,16 @@ export default class ABindgroup extends HTMLElement {
         this.#modelKey = newval;
         if (this.#isConnected) this.#init();
         break;
-      case 'model-attr':
+      case 'attr':
         this.#modelAttr = newval;
         this.#updateChildrenDefaults();
         break;
-      case 'property':
+      case 'prop':
         this.#property = newval;
         this.#updateChildrenDefaults();
         break;
+      case 'debug':
+        this.#debug = this.hasAttribute('debug');
     }
   }
 
@@ -61,11 +65,12 @@ export default class ABindgroup extends HTMLElement {
     this.#isConnected = true;
     // if a-bindgroup was inserted into DOM programatically without first appending children
     if (!this.firstElementChild) {
-      console.warn('a-bindgroup: waiting for children')
+      if (this.#debug) console.warn('a-bindgroup: waiting for children');
       this.#childObserver = new MutationObserver(() => {
         if (this.#isConnected && this.firstElementChild) {
           this.#childObserver.disconnect();
           this.#childObserver = null;
+          if (this.#debug) console.warn('a-bindgroup: children have arrived');
           this.#init();
         }
       });
@@ -85,10 +90,6 @@ export default class ABindgroup extends HTMLElement {
   async register(child) {
     this.#children.add(child);
     this.#applyDefaultsToChild(child);
-    /*if (!child.model) {
-      child.model = this.#modelInstance;
-      child.modelKey = this.#modelKey;
-    }*/
   }
 
   unregister(child) {
@@ -98,6 +99,7 @@ export default class ABindgroup extends HTMLElement {
   // --- Private ---
 
   #applyDefaultsToChild(child) {
+    if (this.#debug) child.toggleAttribute('debug', true);
     // only apply if child hasn't defined its own
     if (!child.model) child.model = this.#modelInstance;
 
@@ -122,7 +124,7 @@ export default class ABindgroup extends HTMLElement {
   }
 
   #registerChildren() {
-    const children = this.querySelectorAll('a-bind');
+    const children = this.querySelectorAll('a-bind, a-repeat');
     for (const child of children) {
       if (child.closest('a-bindgroup') === this) {
         this.register(child);
