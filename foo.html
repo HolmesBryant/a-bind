@@ -8,10 +8,12 @@
 
 	<script type="module">
 		import loader from './src/loader.js';
+
 		const app = {
 			text: 'initial text',
-			select: 'two',
-			selectMulti: ['one', 'three'],
+			progress: 42,
+			selected: 'two',
+			selectedMulti: ['one', 'three'],
 
 			selectOptions: [
 				{label: 'Option One', value: 'one'},
@@ -22,13 +24,25 @@
 			sections: [
 				{
 					title: 'Section One',
-					label: 'text input',
-					control: [{type:"text"}]
+					label: 'Text Input',
+					inputId: 'input-text',
+					inputType: 'text',
+					inputProp: 'text',
+					template: '#tmpl-input',
 				},
 				{
 					title: 'Section Two',
-					label: 'number input',
-					control: [{type:"number"}]
+					label: 'Progress Input',
+					inputId: 'elem-progress',
+					inputProp: 'progress',
+					template: '#tmpl-progress',
+				},
+				{
+					title: 'Section Three',
+					label: 'Select Input',
+					inputId: 'input-select',
+					inputProp: 'selected',
+					template: '#tmpl-select',
 				}
 			]
 		}
@@ -36,42 +50,46 @@
 		loader.define('app', app);
 	</script>
 
-	<link rel="stylesheet" href="extra/styles.css">
 </head>
 <body>
 
 <h1>Foo</h1>
 
-<a-bindgroup model="app">
-	<a-bind prop="text">
-		<output></output>
-	</a-bind>
+<div id="container"></div>
 
-	<a-bind prop="select">
-		<select>
-			<option>one</option>
-			<option>two</option>
-			<option>three</option>
-		</select>
-	</a-bind>
+<a-repeat target="#container" model="app" prop="sections">
+	<template id="tmpl-input">
+		<section>
+			<h3>{{title}}</h3>
+			<label for="{{inputId}}">{{label}}</label><br>
+			<input type="{{inputType}}" id="{{inputId}}">
+		</section>
+	</template>
 
-	<a-bind prop="selectMulti">
-		<select multiple>
-			<option>one</option>
-			<option>two</option>
-			<option>three</option>
-		</select>
-	</a-bind>
+	<template id="tmpl-progress">
+		<section>
+			<h3>{{title}}</h3>
+			<label for="{{inputId}}">{{label}}</label><br>
+			<progress id="{{inputId}}" max="100"></progress>
+		</section>
+	</template>
 
-	<hr>
+	<template id="tmpl-select">
+		<section>
+			<h3>{{title}}</h3>
+			<label for="{{inputId}}">{{label}}</label><br>
 
-	<a-bind prop="select">
-		<select id="dynamic-select"></select>
-	</a-bind>
+			<select id="{{inputId}}"></select>
 
-	<a-repeat target="#dynamic-select" prop="selectOptions">
-		<template><option value="{{value}}">{{label}}</option></template>
-	</a-repeat>
-</a-bindgroup>
+      <a-repeat scope="app" prop="selectOptions" target="#{{inputId}}">
+
+        <template>
+          <option value="{{value}}">{{label}}</option>
+        </template>
+      </a-repeat>
+		</section>
+	</template>
+</a-repeat>
+
 </body>
 </html>

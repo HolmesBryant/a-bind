@@ -87,13 +87,12 @@ class TestComponent extends HTMLElement {
           <legend>Text & Dynamic Datalist</legend>
           <div class="row">
             <label>Fruit (Text):</label>
-            <a-bind debug prop="selectedFruit">
+            <a-bind prop="selectedFruit">
                <input type="text" list="fruit-list" placeholder="Type a fruit...">
             </a-bind>
           </div>
           <div class="row">
             <label>Current Value:</label>
-            <!-- Fix: a-bind wraps the code element -->
             <a-bind prop="selectedFruit" elem-prop="textContent">
                <code></code>
             </a-bind>
@@ -101,7 +100,9 @@ class TestComponent extends HTMLElement {
 
           <datalist id="fruit-list">
             <a-repeat prop="dynamicList">
-              <template><option value="{{ item }}"></option></template>
+              <template>
+                <option value="{{ item }}"></option>
+              </template>
             </a-repeat>
           </datalist>
         </fieldset>
