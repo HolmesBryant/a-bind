@@ -60,6 +60,11 @@ export default class ARepeat extends HTMLElement {
         this.#subscribe();
         break;
       case 'scope':
+        if (newval === "this") {
+          this.#scope = this.getRootNode().host;
+          if (this.#isConnected) this.#subscribe();
+          return;
+        }
         loader.load(newval)
         .then( scope => {
           this.#scope = scope;

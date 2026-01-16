@@ -140,6 +140,10 @@ export default class ABindgroup extends HTMLElement {
 
     if (this.#modelInstance) return this.#modelInstance;
 
+    if (this.#modelKey === "this") {
+      return this.getRootNode().host;
+    }
+
     try {
       const instance = await loader.load(this.#modelKey);
       if (!instance) {

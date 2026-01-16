@@ -1,273 +1,359 @@
-import { ABind, ABindgroup, ARepeat } from '../src/index.js';
+import ABind from '../src/index.js';
 
 const DEFAULTS = {
-  heading: 'Binding Sandbox',
-  quantity: 50,
-  pickedColor: '#646cff',
-  birthDate: '2023-01-01',
-  notes: 'Initial textarea content...',
-  activeFile: '',
-  dynamicList: ['Apple', 'Banana', 'Cherry', 'Dragonfruit', 'Elderberry'],
-  selectedFruit: 'Cherry',
-  countryList: [
-    { value: 'us', label: 'United States' },
-    { value: 'ca', label: 'Canada' },
-    { value: 'uk', label: 'United Kingdom' },
-    { value: 'jp', label: 'Japan' }
-  ],
-  selectedCountry: 'ca',
-  multiSelection: ['us', 'jp'],
-  mirrorLabel: 'I reflect my model!',
-  dialogOpen: false
+  text: 'initial text',
+  date: '1990-12-25',
+  progress: 42,
+  color: '#11df44',
+  checkbox: 'foo',
+  radio: 'foo',
+  range: 50,
+  button: 'button value',
+  selected: 'two',
+  selectedMulti: ['one', 'three'],
+  file: null,
+  optionsA: "Foo, Bar, Baz",
+
+  optionsB: [
+    {label: 'Option One', value: 'one'},
+    {label: 'Option Two', value: 'two'},
+    {label: 'Option Three', value: 'three'}
+  ]
 };
 
 class TestComponent extends HTMLElement {
+  #text;
+  #date;
+  #progress;
+  #color;
+  #checkbox;
+  #radio;
+  #range;
+  #button;
+  #selected;
+  #selectedMulti;
+  #file;
+  #optionsA;
+  #optionsB;
+
+  sections = [
+    {
+      title: 'Text Input with Dynamic Datalist',
+      label: 'input type="text" list="datalist"',
+      inputId: 'input-text',
+      inputType: 'text',
+      inputProp: 'text',
+      template: '#tmpl-input',
+    },
+    {
+      title: 'The Datalist',
+      label: 'datalist',
+      inputId: 'datalist',
+      inputProp: 'options-b',
+      template: '#tmpl-datalist',
+    },
+    {
+      title: 'Section Two',
+      label: 'Progress Input',
+      inputId: 'elem-progress',
+      inputProp: 'progress',
+      template: '#tmpl-progress',
+    },
+    {
+      title: 'Section Three',
+      label: 'Select Input',
+      inputId: 'input-select',
+      inputProp: 'selected',
+      template: '#tmpl-select',
+    }
+  ];
+
+  static observedAttributes = [
+    'text',
+    'date',
+    'progress',
+    'color',
+    'checkbox',
+    'radio',
+    'range',
+    'button',
+    'selected',
+    'selected-multi',
+    'file',
+    'options-a',
+    'options-b',
+  ];
+
+  static template = document.createElement('template');
+  static {
+    this.template.innerHTML = `
+      <style>
+        :host {
+          display: block;
+        }
+
+        hr {
+          background: var(--accent-color);
+          border-radius: 2px;
+          height: 2px;
+        }
+
+        output {
+          border: 1px dotted var(--border-color);
+          display: flex;
+          padding: 2px;
+        }
+
+        section {
+          background: var(--bg2-color);
+          padding: var(--pad);
+        }
+
+        summary {
+          border: 1px solid var(--border-color);
+          cursor: pointer;
+        }
+
+        details:hover > summary,
+        details[open] > summary {
+          background: var(--accent-color);
+        }
+
+        .flex {
+          display: flex;
+          gap: var(--gap);
+        }
+
+        .column {
+          align-items: center;
+          flex-direction: column;
+        }
+
+        .flex1 {
+          flex: 1;
+        }
+
+        .card {
+          background: var(--bg3-color);
+          border: 1px solid var(--border-color);
+          padding: 1rem 5px;
+        }
+      </style>
+
+      <a-bindgroup model="this">
+        <div id="container"></div>
+
+        <a-repeat prop="sections">
+          <template id="tmpl-input">
+            <section>
+              <h3>{{title}}</h3>
+              <div class="flex">
+
+                <div class="card flex column flex1">
+                  <label for="out-{{inputId}}">Attribute: <i>{{inputProp}}</i></label>
+                  <a-bind pull attr="text">
+                    <output id="out-{{inputId}}" for="{{inputId}}"></output>
+                  </a-bind>
+                </div>
+
+                <div class="card flex1">
+                  <form method="dialog" class="flex column">
+                  <label for="{{inputId}}">{{label}}</label>
+                  <a-bind attr="text">
+                    <input type="{{inputType}}" id="{{inputId}}">
+                  </a-bind>
+
+                  <input type="reset" value="clear">
+                  </form>
+                </div>
+
+              </div><!--/card-->
+
+              <details>
+                <summary>code</summary>
+                <div class="flex">
+                  <div class="card flex1">
+                      foo
+                  </div>
+
+                  <div class="card flex1">
+                    bar
+                  </div>
+                </div>
+            </section>
+            <hr>
+          </template>
+
+          <template id="tmpl-datalist">
+            <section>
+              <h3>{{title}}</h3>
+              <div class="card flex column">
+                <div class="flex column flex1">
+                  <label for="out-{{inputId}}">
+                    Attribute: <em>{{inputProp}}</em>
+                  </label>
+
+                  <a-bind attr="{{inputProp}}">
+                    <output id="out-{{inputId}}" for="{{inputId}}">...</output>
+                  </a-bind>
+                </div>
+
+                <datalist id="{{inputId}}"></datalist>
+
+                <a-repeat scope="this" prop="optionsB" target="#{{inputId}}">
+                  <template>
+                    <option value="{{value}}">{{label}}</option>
+                  </template>
+                </a-repeat
+                </div>
+              </div><!--/card-->
+            </section>
+          </template>
+
+          <template id="tmpl-progress">
+            <section>
+              <h3>{{title}}</h3>
+              <label for="{{inputId}}">{{label}}</label><br>
+              <progress id="{{inputId}}" max="100"></progress>
+            </section>
+          </template>
+
+          <template id="tmpl-select">
+            <section>
+              <h3>{{title}}</h3>
+              <label for="{{inputId}}">{{label}}</label><br>
+
+              <select id="{{inputId}}"></select>
+
+              <a-repeat scope="app" prop="selectOptions" target="#{{inputId}}">
+
+                <template>
+                  <option value="{{value}}">{{label}}</option>
+                </template>
+              </a-repeat>
+            </section>
+          </template>
+        </a-repeat>
+      </a-bindgroup>
+    `;
+  }
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
   }
 
-  connectedCallback() {
-    // 1. Initialize properties
-    Object.assign(this, JSON.parse(JSON.stringify(DEFAULTS)));
+  get text() { return this.#text }
+  set text(value) { this.setAttribute('text', value) }
 
-    // 2. Render the DOM
-    this.render();
+  get date() {return this.#date }
+  set date(value) { this.setAttribute('date', value) }
 
-    // 3. Assign 'this' directly to the a-bindgroup instance.
-    // This must happen after render so the element exists.
-    const group = this.shadowRoot.querySelector('a-bindgroup');
-    if (group) {
-      group.model = this;
+  get progress() { return this.#progress }
+  set progress(value) { this.setAttribute('progress', value) }
+
+  get color() { return this.#color }
+  set color(value) { this.setAttribute('color', value) }
+
+  get checkbox() { return this.#checkbox }
+  set checkbox(value) { this.setAttribute('checkbox', value) }
+
+  get radio() { return this.#radio }
+  set radio(value) { this.setAttribute('radio', value) }
+
+  get range() { return this.#range }
+  set range(value) { this.setAttribute('range', value) }
+
+  get button() { return this.#button }
+  set button(value) { this.setAttribute('button', value) }
+
+  get selected() { return this.#selected }
+  set selected(value) { this.setAttribute('selected', value) }
+  get selectedMulti() { return this.#selectedMulti }
+  set selectedMulti(value) { this.setAttribute('selected-multi', JSON.stringify(value)) }
+
+  get file() { return this.#file }
+  set file(value) { this.setAttribute('file', value) }
+
+  get optionsA() { return this.#optionsA }
+  set optionsA(value) { this.setAttribute('options-a', value) }
+
+  get optionsB() { return this.#optionsB }
+  set optionsB(value) { this.setAttribute('options-b', JSON.stringify(value)) }
+
+  attributeChangedCallback(attr, oldval, newval) {
+    if (newval === oldval) return;
+    let update = true;
+
+    switch (attr) {
+    case 'text':
+      this.#text = newval;
+      break;
+    case 'date':
+      this.#date = newval;
+      break;
+    case 'progress':
+      this.#progress = newval;
+      break;
+    case 'color':
+      this.#color = newval;
+      break;
+    case 'checkbox':
+      this.#checkbox = newval;
+      break;
+    case 'radio':
+      this.#radio = newval;
+      break;
+    case 'range':
+      this.#range = newval;
+      break;
+    case 'button':
+      this.#button = newval;
+      break;
+    case 'selected':
+      this.#selected = newval;
+      break;
+    case 'selected-multi':
+      const selected = JSON.parse(newval);
+      this.#selectedMulti = selected;
+      update = false;
+      ABind.update(this, attr, selected);
+      break;
+    case 'file':
+      this.#file = newval;
+      break;
+    case 'options-a':
+      this.#optionsA = newval;
+      break;
+    case 'options-b':
+      const options = JSON.parse(newval);
+      this.#optionsB = options;
+      update = false;
+      ABind.update(this, attr, options);
+      break;
     }
+
+    if (update) ABind.update(this, attr, newval);
   }
 
-  openDialog(e) {
+  connectedCallback() {
+    this.reset();
+    this.shadowRoot.append(TestComponent.template.content.cloneNode(true));
+    customElements.whenDefined('a-repeat').then(() => {
+        this.shadowRoot.querySelector('#input-text').setAttribute('list','datalist');
+    });
+  }
+
+  openDialog(event) {
     const dialog = this.shadowRoot.querySelector('dialog');
     dialog.showModal();
   }
 
-  closeDialog() {
-    this.shadowRoot.querySelector('dialog').close();
-  }
-
-  resetAll() {
+  reset() {
     Object.keys(DEFAULTS).forEach(key => {
-      this[key] = JSON.parse(JSON.stringify(DEFAULTS[key]));
+      this[key] = DEFAULTS[key];
       ABind.update(this, key, this[key]);
     });
-  }
-
-  render() {
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host { display: block; font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 2rem; background: #f9f9f9; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { margin-top: 0; }
-        fieldset { border: 1px solid #ccc; border-radius: 4px; margin-bottom: 1rem; padding: 1rem; background: white; }
-        legend { font-weight: bold; color: #333; }
-        .row { display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
-        label { flex: 0 0 150px; font-weight: 500; }
-        input, select, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        textarea { width: 100%; height: 80px; resize: vertical; }
-        button { cursor: pointer; padding: 8px 16px; background: #eee; border: 1px solid #ccc; border-radius: 4px; transition: background 0.2s; }
-        button:hover { background: #ddd; }
-        .btn-mirror { background: #e3f2fd; border-color: #2196f3; color: #0d47a1; }
-        dialog { border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 8px; padding: 2rem; }
-        progress { width: 100%; height: 20px; }
-        code { background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; }
-      </style>
-
-      <a-bindgroup>
-        <a-bind prop="heading" elem-prop="textContent">
-          <h1>Default Header</h1>
-        </a-bind>
-
-        <!-- 1. Text & Datalist -->
-        <fieldset>
-          <legend>Text & Dynamic Datalist</legend>
-          <div class="row">
-            <label>Fruit (Text):</label>
-            <a-bind prop="selectedFruit">
-               <input type="text" list="fruit-list" placeholder="Type a fruit...">
-            </a-bind>
-          </div>
-          <div class="row">
-            <label>Current Value:</label>
-            <a-bind prop="selectedFruit" elem-prop="textContent">
-               <code></code>
-            </a-bind>
-          </div>
-
-          <datalist id="fruit-list">
-            <a-repeat prop="dynamicList">
-              <template>
-                <option value="{{ item }}"></option>
-              </template>
-            </a-repeat>
-          </datalist>
-        </fieldset>
-
-        <!-- 2. Numbers & Ranges -->
-        <fieldset>
-          <legend>Numbers & Synchronization</legend>
-          <div class="row">
-            <label>Number Input:</label>
-            <a-bind prop="quantity">
-              <input type="number" min="0" max="100">
-            </a-bind>
-          </div>
-          <div class="row">
-            <label>Range Input:</label>
-            <a-bind prop="quantity">
-              <input type="range" min="0" max="100">
-            </a-bind>
-          </div>
-          <div class="row">
-            <label>Progress:</label>
-            <a-bind prop="quantity" push>
-              <progress max="100"></progress>
-            </a-bind>
-          </div>
-        </fieldset>
-
-        <!-- 3. Colors & Date -->
-        <fieldset>
-          <legend>Color & Date</legend>
-          <div class="row">
-            <label>Color Picker:</label>
-            <a-bind prop="pickedColor">
-              <input type="color">
-            </a-bind>
-
-            <a-bind prop="pickedColor" elem-prop="style.backgroundColor">
-               <div style="width: 30px; height: 30px; border:1px solid #000; margin-left: 10px;"></div>
-            </a-bind>
-
-            <!-- Fix: a-bind wraps the span -->
-            <a-bind prop="pickedColor" elem-prop="textContent">
-               <span style="margin-left: 10px;"></span>
-            </a-bind>
-          </div>
-
-          <div class="row">
-            <label>Date Input:</label>
-            <a-bind prop="birthDate">
-               <input type="date">
-            </a-bind>
-          </div>
-        </fieldset>
-
-        <!-- 4. Selects -->
-        <fieldset>
-          <legend>Selects & Options</legend>
-          <div class="row">
-            <label>Dynamic Select:</label>
-            <a-bind prop="selectedCountry">
-              <select>
-                <option value="" disabled>Select a country</option>
-                <a-repeat prop="countryList">
-                  <template>
-                    <option value="{{ item.value }}">{{ item.label }}</option>
-                  </template>
-                </a-repeat>
-              </select>
-            </a-bind>
-          </div>
-          <div class="row">
-            <label>Selected Code:</label>
-            <!-- Fix: a-bind wraps the code element -->
-            <a-bind prop="selectedCountry" elem-prop="textContent">
-               <code></code>
-            </a-bind>
-          </div>
-
-          <div class="row">
-            <label>Select Multiple:</label>
-            <a-bind prop="multiSelection">
-              <select multiple style="height: 80px;">
-                 <a-repeat prop="countryList">
-                  <template>
-                    <option value="{{ item.value }}">{{ item.label }}</option>
-                  </template>
-                </a-repeat>
-              </select>
-            </a-bind>
-          </div>
-           <div class="row">
-            <label>Multi Values:</label>
-            <!-- Fix: a-bind wraps the code element -->
-            <a-bind prop="multiSelection" elem-prop="textContent">
-               <code></code>
-            </a-bind>
-          </div>
-        </fieldset>
-
-        <!-- 5. Files & Textarea -->
-        <fieldset>
-          <legend>Misc Inputs</legend>
-          <div class="row">
-            <label>File (Pull Only):</label>
-            <a-bind prop="activeFile" pull>
-              <input type="file">
-            </a-bind>
-            <!-- Fix: a-bind wraps the code element -->
-            <a-bind prop="activeFile" elem-prop="textContent">
-               <code style="margin-left: 1rem"></code>
-            </a-bind>
-          </div>
-
-          <div class="row">
-             <label>Textarea:</label>
-             <a-bind prop="notes">
-               <textarea></textarea>
-             </a-bind>
-          </div>
-        </fieldset>
-
-        <!-- 6. Buttons -->
-        <fieldset>
-          <legend>Buttons & Functions</legend>
-
-          <div class="row">
-            <a-bind func="openDialog">
-              <button>Open Dialog (Action)</button>
-            </a-bind>
-          </div>
-
-          <div class="row">
-            <label>Label Editor:</label>
-            <a-bind prop="mirrorLabel"><input type="text"></a-bind>
-
-            <a-bind prop="mirrorLabel" elem-prop="textContent">
-               <button class="btn-mirror">Initial Text</button>
-            </a-bind>
-          </div>
-
-          <div class="row">
-            <a-bind func="resetAll">
-              <button style="background:#ffcdd2; border-color:#ef9a9a;">
-                 Reset All Defaults
-              </button>
-            </a-bind>
-          </div>
-        </fieldset>
-
-        <dialog>
-          <h2>Dialog Opened</h2>
-          <p>
-            Current Header:
-            <!-- Fix: a-bind wraps the strong tag -->
-            <a-bind prop="heading" elem-prop="textContent">
-                <strong></strong>
-            </a-bind>
-          </p>
-          <form method="dialog">
-            <button>Close</button>
-          </form>
-        </dialog>
-
-      </a-bindgroup>
-    `;
   }
 }
 
