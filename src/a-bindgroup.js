@@ -5,7 +5,7 @@
  * @version 2.6.0
  */
 
-import loader from './loader.js';
+import { loader } from './loader.js';
 
 export default class ABindgroup extends HTMLElement {
   #childObserver;

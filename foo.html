@@ -5,98 +5,84 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>FOO</title>
 	<script type="module" src="src/index.js"></script>
+	<script type="module" src="extra/testObject.js"></script>
+	<script type="module" src="extra/a-code.min.js"></script>
 
-	<script type="module">
-		import loader from './src/loader.js';
-
-		const app = {
-			text: 'initial text',
-			date: '1990-12-25',
-			progress: 42,
-			color: '#11df44',
-			checkbox: 'foo',
-			radio: 'foo',
-			range: 50,
-			button: 'button value',
-			selected: 'two',
-			selectedMulti: ['one', 'three'],
-			file: null,
-
-			selectOptions: [
-				{label: 'Option One', value: 'one'},
-				{label: 'Option Two', value: 'two'},
-				{label: 'Option Three', value: 'three'}
-			],
-
-			sections: [
-				{
-					title: 'Section One',
-					label: 'Text Input',
-					inputId: 'input-text',
-					inputType: 'text',
-					inputProp: 'text',
-					template: '#tmpl-input',
-				},
-				{
-					title: 'Section Two',
-					label: 'Progress Input',
-					inputId: 'elem-progress',
-					inputProp: 'progress',
-					template: '#tmpl-progress',
-				},
-				{
-					title: 'Section Three',
-					label: 'Select Input',
-					inputId: 'input-select',
-					inputProp: 'selected',
-					template: '#tmpl-select',
-				}
-			]
-		}
-
-		loader.define('app', app);
-	</script>
-
+	<link rel="stylesheet" href="extra/styles.css">
 </head>
 <body>
 
 <h1>Foo</h1>
 
-<div id="container"></div>
+<a-bindgroup model="testObject">
+	<a-repeat prop="sections">
+  <template id="tmpl-section">
+    <section class="flex column stretch">
+      <div class="flex stretch">
+        <div class="flex column flex1 card">
+          <label for="{{inputId}}-output">
+            Property: <i>{{prop}}</i>
+          </label>
 
-<a-repeat target="#container" model="app" prop="sections">
-	<template id="tmpl-input">
-		<section>
-			<h3>{{title}}</h3>
-			<label for="{{inputId}}">{{label}}</label><br>
-			<input type="{{inputType}}" id="{{inputId}}">
-		</section>
-	</template>
+          <a-bind prop="{{prop}}" class="output">
+            <output id="{{inputId}}-output" for="{{inputId}}"></output>
+          </a-bind>
+        </div><!-- card -->
 
-	<template id="tmpl-progress">
-		<section>
-			<h3>{{title}}</h3>
-			<label for="{{inputId}}">{{label}}</label><br>
-			<progress id="{{inputId}}" max="100"></progress>
-		</section>
-	</template>
+        <div class="flex column flex1 card">
+          <label for="{{inputId}}">
+            {{label}}
+          </label>
 
-	<template id="tmpl-select">
-		<section>
-			<h3>{{title}}</h3>
-			<label for="{{inputId}}">{{label}}</label><br>
+          <a-repeat prop="control">
+            <template id="tmpl-basic">
+              <a-bind prop="{{prop}}" class="input">
+                <input id="{{inputId}}" type="{{inputType}}">
+              </a-bind>
+            </template>
 
-			<select id="{{inputId}}"></select>
+            <template id="tmpl-select">
+              <a-bind prop="{{prop}}" class="input">
+                <select id="{{inputId}}"></select>
+              </a-bind>
 
-      <a-repeat scope="app" prop="selectOptions" target="#{{inputId}}">
+              <a-repeat
+              	target="#{{inputId}}"
+              	prop="{{options}}"
+              	scope="testObject">
+                <template>
+                  <option value="{{value}}">{{label}}</option>
+                </template>
+              </a-repeat>
+            </template>
 
-        <template>
-          <option value="{{value}}">{{label}}</option>
-        </template>
-      </a-repeat>
-		</section>
-	</template>
+          </a-repeat>
+
+        </div><!-- card -->
+      </div><!-- row -->
+
+      <details>
+        <summary id="{{inputId}}-details" class="nofrills">code</summary>
+        <a-bind target="#{{inputId}}-details" event="click" func="grabCode"></a-bind>
+        <div class="flex stretch">
+          <div class="flex1 card">
+            <a-code highlight>
+              <textarea class="output-code"></textarea>
+            </a-code>
+          </div><!-- card -->
+
+          <div class="flex1 card">
+            <a-code highlight>
+              <textarea class="input-code"></textarea>
+            </a-code>
+          </div><!-- card -->
+        </div><!-- row -->
+      </details>
+    </section>
+    <hr>
+  </template>
 </a-repeat>
+</a-bindgroup>
 
 </body>
 </html>

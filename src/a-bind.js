@@ -10,7 +10,7 @@
 
 import { schedule } from './Schedule.js';
 import Bus, { crosstownBus } from './Bus.js';
-import loader from './loader.js';
+import Loader, { loader } from './loader.js';
 import PathResolver from './PathResolver.js';
 
 export {
@@ -44,7 +44,8 @@ export default class ABind extends HTMLElement {
   #property;
   #pull = false;
   #push = false;
-  #throttle = 50;
+  #target;
+  #throttle = 0;
 
   #abortController;
   #bound;
@@ -73,6 +74,7 @@ export default class ABind extends HTMLElement {
     'prop',
     'pull',
     'push',
+    'target',
     'throttle'
   ];
 
@@ -119,6 +121,9 @@ export default class ABind extends HTMLElement {
       case 'push':
         this.#push = this.hasAttribute('push');
         break;
+      case 'target':
+        this.#target = newval;
+        break;
       case 'throttle':
         this.#throttle = parseInt(newval) || 0;
         break;
@@ -150,7 +155,7 @@ export default class ABind extends HTMLElement {
     // check if there's a bound element already
     const bound = this.#getBoundElement();
 
-    if (!bound) {
+    if (!bound && !this.target) {
       console.debug('a-bind: Waiting for valid child.');
       this.#observer.observe(this, { childList: true });
     } else {
@@ -268,6 +273,10 @@ export default class ABind extends HTMLElement {
 
     // Element -> Model (Event)
     if (!this.#pull) {
+      /*this.#bound.addEventListener('focus', () => {
+        this.#bound.select();
+      }, { signal: this.#abortController.signal });*/
+
       this.#bound.addEventListener(this.#event, event => {
         const value = this.#bound[this.#elemProp];
         this.#updateModel(value, event);
@@ -515,7 +524,13 @@ export default class ABind extends HTMLElement {
     if (this.#shouldBail(gen)) return;
 
     this.#abortController = new AbortController();
-    this.bound = this.#getBoundElement();
+
+    if (!this.bound && this.#target) {
+      this.bound = await this.#resolveTarget(this.#target);
+    } else {
+      this.bound = this.#getBoundElement();
+    }
+
     const prop = this.#property || this.#modelAttr;
     this.#busKey = Bus.getKey(this.#model, prop);
     this.#updateSubscribers = this.#updateBound.bind(this);
@@ -577,6 +592,16 @@ export default class ABind extends HTMLElement {
         console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error);
       }
       return false;
+    }
+  }
+
+  async #resolveTarget(selector) {
+    this.log?.('#resolveTarget()', {target: selector});
+    try {
+      return await loader.load(selector, this);
+    } catch (error) {
+      console.error(`a-bind: Failed to load target element. ${this.target}`, this, error);
+      return;
     }
   }
 
@@ -750,6 +775,9 @@ export default class ABind extends HTMLElement {
 
   get throttle() { return this.#throttle }
   set throttle(value) { this.setAttribute('throttle', parseInt(value)) }
+
+  get target() { return this.#target }
+  set target(value) { this.setAttribute('target', value) }
 }
 
 if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);

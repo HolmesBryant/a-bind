@@ -1,360 +1,543 @@
-import ABind from '../src/index.js';
+import ABind, { loader } from '../src/index.js';
+import sheet from '../extra/styles.css' with {type:'css'};
 
 const DEFAULTS = {
-  text: 'initial text',
-  date: '1990-12-25',
-  progress: 42,
-  color: '#11df44',
+  text: "Initial Text",
+  search: "Search Term",
+  password: "password",
+  tel: "123-456-7890",
+  url: "https://url.com",
+  email: "name@email.com",
+  number: 12345,
+  textarea: "Initial content.",
+  date: "1914-12-25",
+  time: "00:00",
+  dateTime: "1914-12-24T10:00",
+  week: "1970-W01",
+  month: "1970-01",
+  selected: "bar",
+  selectMulti: 'foo, baz',
   checkbox: 'foo',
-  radio: 'foo',
-  range: 50,
-  button: 'button value',
-  selected: 'two',
-  selectedMulti: ['one', 'three'],
+  checkboxBool: undefined,
+  radioGroup: 'foo',
+  button: "Click Me!",
+  color: "#cd5c5c",
+  range: '50',
+  progress: '50',
+  meter: '50',
   file: null,
-  optionsA: "Foo, Bar, Baz",
-
-  optionsB: [
-    {label: 'Option One', value: 'one'},
-    {label: 'Option Two', value: 'two'},
-    {label: 'Option Three', value: 'three'}
-  ]
+  name: 'My Name',
+  editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>"
 };
 
 class TestComponent extends HTMLElement {
-  #text;
-  #date;
-  #progress;
-  #color;
-  #checkbox;
-  #radio;
-  #range;
-  #button;
-  #selected;
-  #selectedMulti;
-  #file;
-  #optionsA;
-  #optionsB;
+  // -- Attributes --
+  #text = "Initial Text";
+  #search = "Search Term";
+  #password = "password";
+  #tel = "123-456-7890";
+  #url = "https://url.com";
+  #email = "name@email.com";
+  #number = 12345;
+  #textarea = "Initial content.";
+  #date = "1914-12-25";
+  #time = "00:00";
+  #dateTime = "1914-12-24T10:00";
+  #week = "1970-W01";
+  #month = "1970-01";
+  #selected = "bar";
+  #selectMulti = 'foo, baz';
+  #checkbox = 'foo';
+  #checkboxBool = undefined;
+  #radioGroup = 'foo';
+  #button = "Click Me!";
+  #color = "#cd5c5c";
+  #range = 50;
+  #progress = 50;
+  #meter = 50;
+  #file = null;
+  #name = "My Name";
+  #editable = "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>";
+
+  // -- Properties --
+  #abortController;
+  #editableFormatted = "";
+  #editableRegex = /(<[^>]+>)(?=[^\r\n])/g;
+
+  optionsA = [
+    {value: 'foo', label: 'Foo!'},
+    {value: 'bar', label: 'Bar!'},
+    {value: 'baz', label: 'Baz!'}
+  ];
+
+  optionsB = 'foo, bar, baz';
 
   sections = [
     {
-      title: 'Text Input with Dynamic Datalist',
-      label: 'input type="text" list="datalist"',
-      inputId: 'input-text',
       inputType: 'text',
-      inputProp: 'text',
-      template: '#tmpl-input',
+      inputId: 'o-inputtext',
+      label: 'input type="text"',
+      model: 'testObject',
+      prop: 'text',
+      template: 'tmpl-section',
+      control: [{
+        template: 'tmpl-basic',
+        inputType: 'text',
+        inputId: 'o-inputtext',
+        prop: 'text'
+      }]
     },
     {
-      title: 'The Datalist',
-      label: 'datalist',
-      inputId: 'datalist',
-      inputProp: 'options-b',
-      template: '#tmpl-datalist',
+      inputType: 'date',
+      inputId: 'o-inputdate',
+      label: 'input type="date"',
+      model: 'testObject',
+      prop: 'date',
+      template: 'tmpl-section',
+      control: [{
+        template: 'tmpl-basic',
+        inputType: 'date',
+        inputId: 'o-inputdate',
+        prop: 'date'
+      }]
     },
     {
-      title: 'Section Two',
-      label: 'Progress Input',
-      inputId: 'elem-progress',
-      inputProp: 'progress',
-      template: '#tmpl-progress',
-    },
-    {
-      title: 'Section Three',
-      label: 'Select Input',
-      inputId: 'input-select',
-      inputProp: 'selected',
-      template: '#tmpl-select',
+      inputId: 'o-select',
+      label: 'select with dynamic option list',
+      model: 'testObject',
+      prop: 'selected',
+      template: 'tmpl-section',
+      control: [{
+        template: 'tmpl-select',
+        inputId: 'o-select',
+        prop: 'selected',
+        options: 'optionsA'
+      }]
     }
   ];
 
   static observedAttributes = [
-    'text',
-    'date',
-    'progress',
-    'color',
-    'checkbox',
-    'radio',
-    'range',
-    'button',
-    'selected',
-    'selected-multi',
-    'file',
-    'options-a',
-    'options-b',
+    "text",
+    "search",
+    "password",
+    "tel",
+    "url",
+    "email",
+    "number",
+    "textarea",
+    "date",
+    "time",
+    "date-time",
+    "week",
+    "month",
+    "selected",
+    "select-multi",
+    "checkbox",
+    "checkbox-bool",
+    "radio-group",
+    "button",
+    "color",
+    "range",
+    "progress",
+    "meter",
+    "file",
+    "name",
+    "editable",
   ];
 
   static template = document.createElement('template');
   static {
     this.template.innerHTML = `
-      <style>
-        :host {
-          display: block;
-        }
 
-        hr {
-          background: var(--accent-color);
-          border-radius: 2px;
-          height: 2px;
-        }
-
-        output {
-          border: 1px dotted var(--border-color);
-          display: flex;
-          padding: 2px;
-        }
-
-        section {
-          background: var(--bg2-color);
-          padding: var(--pad);
-        }
-
-        summary {
-          border: 1px solid var(--border-color);
-          cursor: pointer;
-        }
-
-        details:hover > summary,
-        details[open] > summary {
-          background: var(--accent-color);
-        }
-
-        .flex {
-          display: flex;
-          gap: var(--gap);
-        }
-
-        .column {
-          align-items: center;
-          flex-direction: column;
-        }
-
-        .flex1 {
-          flex: 1;
-        }
-
-        .card {
-          background: var(--bg3-color);
-          border: 1px solid var(--border-color);
-          padding: 1rem 5px;
-        }
-      </style>
-
-      <a-bindgroup model="this">
-        <div id="container"></div>
-
-        <a-repeat prop="sections">
-          <template id="tmpl-input">
-            <section>
-              <h3>{{title}}</h3>
-              <div class="flex">
-
-                <div class="card flex column flex1">
-                  <label for="out-{{inputId}}">Attribute: <i>{{inputProp}}</i></label>
-                  <a-bind pull attr="text">
-                    <output id="out-{{inputId}}" for="{{inputId}}"></output>
-                  </a-bind>
-                </div>
-
-                <div class="card flex1">
-                  <form method="dialog" class="flex column">
-                  <label for="{{inputId}}">{{label}}</label>
-                  <a-bind attr="text">
-                    <input type="{{inputType}}" id="{{inputId}}">
-                  </a-bind>
-
-                  <input type="reset" value="clear">
-                  </form>
-                </div>
-
-              </div><!--/card-->
-
-              <details>
-                <summary>code</summary>
-                <div class="flex">
-                  <div class="card flex1">
-                      foo
-                  </div>
-
-                  <div class="card flex1">
-                    bar
-                  </div>
-                </div>
-            </section>
-            <hr>
-          </template>
-
-          <template id="tmpl-datalist">
-            <section>
-              <h3>{{title}}</h3>
-              <div class="card flex column">
-                <div class="flex column flex1">
-                  <label for="out-{{inputId}}">
-                    Attribute: <em>{{inputProp}}</em>
-                  </label>
-
-                  <a-bind attr="{{inputProp}}">
-                    <output id="out-{{inputId}}" for="{{inputId}}">...</output>
-                  </a-bind>
-                </div>
-
-                <datalist id="{{inputId}}"></datalist>
-
-                <a-repeat scope="this" prop="optionsB" target="#{{inputId}}">
-                  <template>
-                    <option value="{{value}}">{{label}}</option>
-                  </template>
-                </a-repeat
-                </div>
-              </div><!--/card-->
-            </section>
-          </template>
-
-          <template id="tmpl-progress">
-            <section>
-              <h3>{{title}}</h3>
-              <label for="{{inputId}}">{{label}}</label><br>
-              <progress id="{{inputId}}" max="100"></progress>
-            </section>
-          </template>
-
-          <template id="tmpl-select">
-            <section>
-              <h3>{{title}}</h3>
-              <label for="{{inputId}}">{{label}}</label><br>
-
-              <select id="{{inputId}}"></select>
-
-              <a-repeat scope="app" prop="selectOptions" target="#{{inputId}}">
-
-                <template>
-                  <option value="{{value}}">{{label}}</option>
-                </template>
-              </a-repeat>
-            </section>
-          </template>
-        </a-repeat>
-      </a-bindgroup>
     `;
   }
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
+    this.attachShadow( {mode:'open'} );
+    this.shadowRoot.adoptedStyleSheets = [sheet];
   }
-
-  get text() { return this.#text }
-  set text(value) { this.setAttribute('text', value) }
-
-  get date() {return this.#date }
-  set date(value) { this.setAttribute('date', value) }
-
-  get progress() { return this.#progress }
-  set progress(value) { this.setAttribute('progress', value) }
-
-  get color() { return this.#color }
-  set color(value) { this.setAttribute('color', value) }
-
-  get checkbox() { return this.#checkbox }
-  set checkbox(value) { this.setAttribute('checkbox', value) }
-
-  get radio() { return this.#radio }
-  set radio(value) { this.setAttribute('radio', value) }
-
-  get range() { return this.#range }
-  set range(value) { this.setAttribute('range', value) }
-
-  get button() { return this.#button }
-  set button(value) { this.setAttribute('button', value) }
-
-  get selected() { return this.#selected }
-  set selected(value) { this.setAttribute('selected', value) }
-  get selectedMulti() { return this.#selectedMulti }
-  set selectedMulti(value) { this.setAttribute('selected-multi', JSON.stringify(value)) }
-
-  get file() { return this.#file }
-  set file(value) { this.setAttribute('file', value) }
-
-  get optionsA() { return this.#optionsA }
-  set optionsA(value) { this.setAttribute('options-a', value) }
-
-  get optionsB() { return this.#optionsB }
-  set optionsB(value) { this.setAttribute('options-b', JSON.stringify(value)) }
 
   attributeChangedCallback(attr, oldval, newval) {
     if (newval === oldval) return;
-    let update = true;
+    let doUpdate = true;
 
     switch (attr) {
-    case 'text':
-      this.#text = newval;
-      break;
-    case 'date':
-      this.#date = newval;
-      break;
-    case 'progress':
-      this.#progress = newval;
-      break;
-    case 'color':
-      this.#color = newval;
-      break;
-    case 'checkbox':
-      this.#checkbox = newval;
-      break;
-    case 'radio':
-      this.#radio = newval;
-      break;
-    case 'range':
-      this.#range = newval;
-      break;
-    case 'button':
-      this.#button = newval;
-      break;
-    case 'selected':
-      this.#selected = newval;
-      break;
-    case 'selected-multi':
-      const selected = JSON.parse(newval);
-      this.#selectedMulti = selected;
-      update = false;
-      ABind.update(this, attr, selected);
-      break;
-    case 'file':
-      this.#file = newval;
-      break;
-    case 'options-a':
-      this.#optionsA = newval;
-      break;
-    case 'options-b':
-      const options = JSON.parse(newval);
-      this.#optionsB = options;
-      update = false;
-      ABind.update(this, attr, options);
-      break;
+      case "text":
+        this.#text = newval;
+        break;
+      case "search":
+        this.#search = newval;
+        break;
+      case "password":
+        this.#password = newval;
+        break;
+      case "tel":
+        this.#tel = newval;
+        break;
+      case "url":
+        this.#url = newval;
+        break;
+      case "email":
+        this.#email = newval;
+        break;
+      case "number":
+        this.#number = newval;
+        break;
+      case "textarea":
+        this.#textarea = newval;
+        break;
+      case "date":
+        this.#date = newval;
+        break;
+      case "time":
+        this.#time = newval;
+        break;
+      case "date-time":
+        this.#dateTime = newval;
+        doUpdate = false;
+        ABind.update(this, 'dateTime', newval);
+        break;
+      case "week":
+        this.#week = newval;
+        break;
+      case "month":
+        this.#month = newval;
+        break;
+      case "selected":
+        this.#selected = newval;
+        break;
+      case "select-multi":
+        this.#selectMulti = newval;
+        doUpdate = false;
+        ABind.update(this, 'dateTime', newval);
+        break;
+      case "checkbox":
+        this.#checkbox = newval;
+        break;
+      case "checkbox-bool":
+        this.#checkboxBool = newval;
+        doUpdate = false;
+        ABind.update(this, 'dateTime', newval);
+        break;
+      case "radio-group":
+        this.#radioGroup = newval;
+        doUpdate = false;
+        ABind.update(this, 'dateTime', newval);
+        break;
+      case "button":
+        this.#button = newval;
+        break;
+      case "color":
+        this.#color = newval;
+        break;
+      case "range":
+        this.#range = newval;
+        break;
+      case "progress":
+        this.#progress = newval;
+        break;
+      case "meter":
+        this.#meter = newval;
+        break;
+      case "file":
+        this.#file = newval;
+        break;
+      case "name":
+        this.#name = newval;
+        break;
+      case "editable":
+        this.#editable = newval;
+        break;
     }
 
-    if (update) ABind.update(this, attr, newval);
+    if (doUpdate) {
+      ABind.update(this, attr, newval);
+    }
   }
 
   connectedCallback() {
-    this.reset();
+    this.#abortController = new AbortController();
     this.shadowRoot.append(TestComponent.template.content.cloneNode(true));
-    customElements.whenDefined('a-repeat').then(() => {
-        this.shadowRoot.querySelector('#input-text').setAttribute('list','datalist');
-    });
+
   }
 
-  openDialog(event) {
-    const dialog = this.shadowRoot.querySelector('dialog');
+  disconnectedCallback() {
+    if (this.#abortController) {
+      this.#abortController.abort();
+      this.#abortController = null;
+    }
+  }
+
+  getFiles(event) {
+    const fileList = event.target.files;
+    this.file = fileList;
+    const list = [];
+    const elem = document.createElement('output');
+
+    for (const item of fileList) {
+      const obj = {
+        name: item.name,
+        modified: item.lastModifiedDate,
+        size: item.size,
+        type: item.type
+      };
+
+      list.push(obj);
+    }
+
+    const str = JSON.stringify(list, null, 2);
+    elem.value = str;
+
+    const fakeEvent = {
+      type: 'change',
+      target: elem
+    };
+
+    this.notify(fakeEvent);
+  }
+
+  grabCode(event) {
+    const elem = event.target.closest('details');
+    const outputCodeContainer = elem.querySelector('.output-code');
+    const inputCodeContainer = elem.querySelector('.input-code');
+    if (outputCodeContainer.textContent.length > 1) return;
+
+    const output = elem.parentElement.querySelector('.output');
+    const input = elem.parentElement.querySelector('.input');
+
+    if (output) {
+      const outputElem = output.querySelector('output');
+      outputElem.removeAttribute('class');
+      outputElem.removeAttribute('id');
+      outputElem.removeAttribute('for');
+      output.setAttribute('model', 'testObject');
+      outputElem.textContent = '';
+      outputCodeContainer.textContent = this.formatCode(output);
+    }
+
+    if (input) {
+      input.removeAttribute('class');
+      for ( const child of input.children) child.removeAttribute('value');
+      if (input.localName === 'a-bind') {
+        input.setAttribute('model', 'testObject');
+      } else {
+        const repeater = input.querySelector('a-repeat');
+        if (repeater) {
+          repeater.removeAttribute('scope');
+          repeater.setAttribute('model', this.localName);
+        }
+      }
+      const datalist = input.querySelector('datalist');
+      if (datalist) datalist.textContent = '';
+      inputCodeContainer.textContent = this.formatCode(input);
+    }
+  }
+
+  formatCode(node, level = 0) {
+    const indent = "  ".repeat(level);
+    const attrIndent = "  ".repeat(level + 1);
+    const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent.trim();
+      return text ? `${indent}${text}\n` : "";
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tagName = node.tagName.toLowerCase();
+      const attrs = Array.from(node.attributes);
+      const isVoid = voidElements.includes(tagName);
+
+      let result = `${indent}<${tagName}`;
+
+      // Handle Attributes
+      if (attrs.length > 0) {
+        result += "\n"; // Start attributes on new line
+        attrs.forEach((attr, index) => {
+          const isLast = index === attrs.length - 1;
+          result += `${attrIndent}${attr.name}="${attr.value}"`;
+
+          if (isLast) {
+            result += isVoid ? " />\n" : ">\n";
+          } else {
+            result += "\n";
+          }
+        });
+      } else {
+        // No attributes: Close the tag on the same line
+        result += isVoid ? " />\n" : ">\n";
+      }
+
+      // Handle Children/Content
+      if (!isVoid) {
+        const children = (tagName === 'template')
+          ? node.content.childNodes
+          : node.childNodes;
+
+        for (const child of children) {
+          result += this.formatCode(child, level + 1);
+        }
+
+        result += `${indent}</${tagName}>\n`;
+      }
+
+      return result;
+    }
+
+    if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+      let result = "";
+      for (const child of node.childNodes) {
+        result += this.formatCode(child, level);
+      }
+      return result;
+    }
+
+    return "";
+  }
+
+  notify(event) {
+    const html = `
+      <form method="dialog">
+        <button>X</button>
+      </form>
+      <p><b>Argument passed:</b> Event</p>
+      <p><b>Event type:</b> ${event.type}</p>
+      <p><b>Event target:</b> ${event.target.localName}</p>
+      <p><b>Event target value:</b> <pre>${event.target.value}</pre></p>
+    `;
+    const dialog = document.createElement('dialog');
+    const cleanup = function(evt) {
+      dialog.removeEventListener('close', cleanup);
+      dialog.remove();
+    }
+
+    dialog.id = 'btn-dialog';
+    dialog.innerHTML = html;
+    dialog.addEventListener('close', cleanup);
+    document.body.append(dialog);
     dialog.showModal();
   }
 
-  reset() {
-    Object.keys(DEFAULTS).forEach(key => {
-      this[key] = DEFAULTS[key];
-      ABind.update(this, key, this[key]);
-    });
+  reset(event) {
+    const props = DEFAULTS;
+
+    for (const prop in props) {
+      this[prop] = DEFAULTS[prop];
+    }
   }
+
+  resetForm(event) {
+    ABind?.update?.(this, 'name', DEFAULTS['name']);
+    ABind?.update?.(this, 'email', DEFAULTS['email']);
+  }
+
+  sendForm(event) {
+    const form = event.target.localName === 'form' ? event.target : event.target.form;
+    const formdata = new FormData(form);
+    const data = [];
+    const elem = document.createElement('form');
+
+    for (const input of formdata) {
+      data.push({ [input.shift()]: input.shift() });
+    }
+
+    const str = JSON.stringify(data, null, 2);
+    elem.value = str;
+
+    const fakeEvent = {
+      type: 'submit',
+      target: elem
+    };
+
+    this.notify(fakeEvent);
+  }
+
+  get text() { return this.#text }
+  set text(value) { this.setAttribute("text", value) }
+
+  get search() { return this.#search }
+  set search(value) { this.setAttribute("search", value) }
+
+  get password() { return this.#password}
+  set password(value) { this.setAttribute("password", value) }
+
+  get tel() { return this.#tel }
+  set tel(value) { this.setAttribute("tel", value) }
+
+  get url() { return this.#url }
+  set url(value) { this.setAttribute("url", value) }
+
+  get email() { return this.#email }
+  set email(value) { this.setAttribute("email", value) }
+
+  get number() { return this.#number }
+  set number(value) { this.setAttribute("number", value) }
+
+  get textarea() { return this.#textarea }
+  set textarea(value) { this.setAttribute("textarea", value) }
+
+  get date() { return this.#date }
+  set date(value) { this.setAttribute("date", value) }
+
+  get time() { return this.#time }
+  set time(value) { this.setAttribute("time", value) }
+
+  get dateTime() { return this.#dateTime }
+  set dateTime(value) { this.setAttribute("date-time", value) }
+
+  get week() { return this.#week }
+  set week(value) { this.setAttribute("week", value) }
+
+  get month() { return this.#month }
+  set month(value) { this.setAttribute("month", value) }
+
+  get selected() { return this.#selected }
+  set selected(value) { this.setAttribute("selected", value) }
+
+  get selectMulti() { return this.#selectMulti }
+  set selectMulti(value) { this.setAttribute("select-multi", value) }
+
+  get checkbox() { return this.#checkbox }
+  set checkbox(value) { this.setAttribute("checkbox", value) }
+
+  get checkboxBool() { return this.#checkboxBool }
+  set checkboxBool(value) { this.setAttribute("checkbox-bool", value) }
+
+  get radioGroup() { return this.#radioGroup }
+  set radioGroup(value) { this.setAttribute("radio-group", value) }
+
+  get button() { return this.#button }
+  set button(value) { this.setAttribute("button", value) }
+
+  get color() { return this.#color }
+  set color(value) { this.setAttribute("color", value) }
+
+  get range() { return this.#range }
+  set range(value) { this.setAttribute("range", value) }
+
+  get progress() { return this.#progress }
+  set progress(value) { this.setAttribute("progress", value) }
+
+  get meter() { return this.#meter }
+  set meter(value) { this.setAttribute("meter", value) }
+
+  get file() { return this.#file; }
+  set file(value) { this.setAttribute("file", value) }
+
+  get name() { return this.#name }
+  set name(value) { this.setAttribute("name", value) }
+
+  get editable() {
+    if (!this.#editable) return "";
+    if (this.#editableFormatted) {
+      return this.#editableFormatted;
+    } else {
+      this.#editableFormatted = this.#editable.replace(this.#editableRegex, "\n$1\n").trim();
+      return this.#editableFormatted;
+    }
+  }
+  set editable(value) { this.setAttribute("", value) }
 }
 
 customElements.define('test-component', TestComponent);

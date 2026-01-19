@@ -1,4 +1,36 @@
-export default {
+import ABind, { loader } from '../src/index.js';
+
+const DEFAULTS = {
+	text: "Initial Text",
+	datalist: 'One, Two, Three',
+	search: "Search Term",
+	password: "password",
+	tel: "123-456-7890",
+	url: "https://url.com",
+	email: "name@email.com",
+	number: 12345,
+	textarea: "Initial content.",
+	date: "1914-12-25",
+	time: "00:00",
+	dateTime: "1914-12-24T10:00",
+	week: "1970-W01",
+	month: "1970-01",
+	select: "",
+	selectMulti: 'foo, baz',
+	checkboxFoo: 'foo',
+	checkboxBool: undefined,
+	radioGroup: 'foo',
+	button: "Click Me!",
+	color: "#cd5c5c",
+	range: '50',
+	progress: '50',
+	meter: '50',
+	file: null,
+	name: 'My Name',
+	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>"
+};
+
+const testObject = {
 	_text: "Initial Text",
 	_datalist: 'One, Two, Three',
 	_datalistHtml: '<option>One</option><option>Two</option><option>Three</option>',
@@ -9,12 +41,12 @@ export default {
 	_email: "name@email.com",
 	_number: 12345,
 	_textarea: "Initial content.",
-	_date: "1970-01-01",
+	_date: "1914-12-25",
 	_time: "00:00",
-	_dateTime: "1970-01-01T12:00",
+	_dateTime: "1914-12-24T10:00",
 	_week: "1970-W01",
 	_month: "1970-01",
-	_select: "",
+	_selected: "bar",
 	_selectMulti: 'foo, baz',
 	_checkboxFoo: 'foo',
 	_checkboxBool: undefined,
@@ -30,44 +62,57 @@ export default {
 	_editableFormatted: "",
 	_editableRegex: /(<[^>]+>)(?=[^\r\n])/g,
 
-	defaults: {
-		text: "Initial Text",
-		datalist: 'One, Two, Three',
-		search: "Search Term",
-		password: "password",
-		tel: "123-456-7890",
-		url: "https://url.com",
-		email: "name@email.com",
-		number: 12345,
-		textarea: "Initial content.",
-		date: "1970-01-01",
-		time: "00:00",
-		dateTime: "1970-01-01T12:00",
-		week: "1970-W01",
-		month: "1970-01",
-		select: "",
-		selectMulti: 'foo, baz',
-		checkboxFoo: 'foo',
-		checkboxBool: undefined,
-		radioGroup: 'foo',
-		button: "Click Me!",
-		color: "#cd5c5c",
-		range: '50',
-		progress: '50',
-		meter: '50',
-		file: null,
-		name: 'My Name',
-		editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>"
-	},
+	optionsA: [
+		{value: 'foo', label: 'Foo!'},
+		{value: 'bar', label: 'Bar!'},
+		{value: 'baz', label: 'Baz!'}
+	],
 
-	*optionGenerator(str) {
-	  if (!str) return;
-	  str = str.trim();
+	optionsB: 'foo, bar, baz',
 
-	  for (const option of str.split(/[,\s]+/)) {
-	    if (option) yield `<option value="${option}"></option>`;
-	  }
-	},
+	sections: [
+		{
+			inputType: 'text',
+			inputId: 'o-inputtext',
+			label: 'input type="text"',
+			model: 'testObject',
+			prop: 'text',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-basic',
+				inputType: 'text',
+				inputId: 'o-inputtext',
+				prop: 'text'
+			}]
+		},
+		{
+			inputType: 'date',
+			inputId: 'o-inputdate',
+			label: 'input type="date"',
+			model: 'testObject',
+			prop: 'date',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-basic',
+				inputType: 'date',
+				inputId: 'o-inputdate',
+				prop: 'date'
+			}]
+		},
+		{
+			inputId: 'o-select',
+			label: 'select with dynamic option list',
+			model: 'testObject',
+			prop: 'selected',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-select',
+				inputId: 'o-select',
+				prop: 'selected',
+				options: 'optionsA'
+			}]
+		}
+	],
 
 	getFiles(event) {
     const fileList = event.target.files;
@@ -97,6 +142,105 @@ export default {
     this.notify(fakeEvent);
 	},
 
+	grabCode(event) {
+		const elem = event.target.closest('details');
+    const outputCodeContainer = elem.querySelector('.output-code');
+    const inputCodeContainer = elem.querySelector('.input-code');
+    if (outputCodeContainer.textContent.length > 1) return;
+
+    const output = elem.parentElement.querySelector('.output');
+    const input = elem.parentElement.querySelector('.input');
+
+    if (output) {
+      const outputElem = output.querySelector('output');
+      outputElem.removeAttribute('class');
+      outputElem.removeAttribute('id');
+      outputElem.removeAttribute('for');
+      output.setAttribute('model', 'testObject');
+      outputElem.textContent = '';
+      outputCodeContainer.textContent = this.formatCode(output);
+    }
+
+    if (input) {
+      input.removeAttribute('class');
+      for ( const child of input.children) child.removeAttribute('value');
+      if (input.localName === 'a-bind') {
+        input.setAttribute('model', 'testObject');
+      } else {
+        const repeater = input.querySelector('a-repeat');
+        if (repeater) {
+          repeater.removeAttribute('scope');
+          repeater.setAttribute('model', this.localName);
+        }
+      }
+      const datalist = input.querySelector('datalist');
+      if (datalist) datalist.textContent = '';
+      inputCodeContainer.textContent = this.formatCode(input);
+    }
+  },
+
+  formatCode(node, level = 0) {
+    const indent = "  ".repeat(level);
+    const attrIndent = "  ".repeat(level + 1);
+    const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent.trim();
+      return text ? `${indent}${text}\n` : "";
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tagName = node.tagName.toLowerCase();
+      const attrs = Array.from(node.attributes);
+      const isVoid = voidElements.includes(tagName);
+
+      let result = `${indent}<${tagName}`;
+
+      // Handle Attributes
+      if (attrs.length > 0) {
+        result += "\n"; // Start attributes on new line
+        attrs.forEach((attr, index) => {
+          const isLast = index === attrs.length - 1;
+          result += `${attrIndent}${attr.name}="${attr.value}"`;
+
+          if (isLast) {
+            result += isVoid ? " />\n" : ">\n";
+          } else {
+            result += "\n";
+          }
+        });
+      } else {
+        // No attributes: Close the tag on the same line
+        result += isVoid ? " />\n" : ">\n";
+      }
+
+      // Handle Children/Content
+      if (!isVoid) {
+        const children = (tagName === 'template')
+          ? node.content.childNodes
+          : node.childNodes;
+
+        for (const child of children) {
+          result += this.formatCode(child, level + 1);
+        }
+
+        result += `${indent}</${tagName}>\n`;
+      }
+
+      return result;
+    }
+
+    if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+      let result = "";
+      for (const child of node.childNodes) {
+        result += this.formatCode(child, level);
+      }
+      return result;
+    }
+
+    return "";
+  },
+
 	notify(event) {
 		const html = `
 			<form method="dialog">
@@ -121,16 +265,16 @@ export default {
 	},
 
 	reset(event) {
-		const props = testObject.defaults;
+		const props = DEFAULTS;
 
 		for (const prop in props) {
-			this[prop] = this.defaults[prop];
+			this[prop] = DEFAULTS[prop];
 		}
 	},
 
 	resetForm(event) {
-		window.abind?.update?.(this, 'name', this.defaults['name']);
-		window.abind?.update?.(this, 'email', this.defaults['email']);
+		ABind?.update?.(this, 'name', DEFAULTS['name']);
+		ABind?.update?.(this, 'email', DEFAULTS['email']);
 	},
 
 	sendForm(event) {
@@ -157,172 +301,151 @@ export default {
 	get text() { return this._text },
 	set text(value) {
 		this._text = value;
-		window.abind?.update?.(this, 'text', value);
-	},
-
-	get datalist() { return this._datalist },
-	set datalist(value) {
-		let options = "";
-		for (const option of this.optionGenerator(value)) options += option;
-		this.datalistHtml = options;
-		this._datalist = value;
-		window.abind?.update?.(this, 'datalist', options);
-	},
-
-	get datalistHtml() { return this._datalistHtml },
-	set datalistHtml(value) {
-		this.__datalistHtml = value;
-		window.abind?.update?.(this, 'datalistHtml', value);
-	},
-
-	get datalistInput() { return this._datalistInput },
-	set datalistInput(value) {
-		this._datalistInput = value;
-		window.abind?.update?.(this, 'datalistInput', value);
+		ABind?.update?.(this, 'text', value);
 	},
 
 	get search() { return this._search },
 	set search(value) {
 		this._search = value;
-		window.abind?.update?.(this, 'search', value);
+		ABind?.update?.(this, 'search', value);
 	},
 
 	get password() { return this._password},
 	set password(value) {
 		this._password = value;
-		window.abind?.update?.(this, 'password', value);
+		ABind?.update?.(this, 'password', value);
 	},
 
 	get tel() { return this._tel },
 	set tel(value) {
 		this._tel = value;
-		window.abind?.update?.(this, 'tel', value);
+		ABind?.update?.(this, 'tel', value);
 	},
 
 	get url() { return this._url },
 	set url(value) {
 		this._url = value;
-		window.abind?.update?.(this, 'url', value);
+		ABind?.update?.(this, 'url', value);
 	},
 
 	get email() { return this._email },
 	set email(value) {
 		this._email = value;
-		window.abind?.update?.(this, 'email', value);
+		ABind?.update?.(this, 'email', value);
 	},
 
 	get number() { return this._number },
 	set number(value) {
 		this._number = value;
-		window.abind?.update?.(this, 'number', value);
+		ABind?.update?.(this, 'number', value);
 	},
 
 	get textarea() { return this._textarea },
 	set textarea(value) {
 		this._textarea = value;
-		window.abind?.update?.(this, 'textarea', value);
+		ABind?.update?.(this, 'textarea', value);
 	},
 
 	get date() { return this._date },
 	set date(value) {
 		this._date = value;
-		window.abind?.update?.(this, 'date', value);
+		ABind?.update?.(this, 'date', value);
 	},
 
 	get time() { return this._time },
 	set time(value) {
 		this._time = value;
-		window.abind?.update?.(this, 'time', value);
+		ABind?.update?.(this, 'time', value);
 	},
 
 	get dateTime() { return this._dateTime },
 	set dateTime(value) {
 		this._dateTime = value;
-		window.abind?.update?.(this, 'dateTime', value);
+		ABind?.update?.(this, 'dateTime', value);
 	},
 
 	get week() { return this._week },
 	set week(value) {
 		this._week = value;
-		window.abind?.update?.(this, 'week', value);
+		ABind?.update?.(this, 'week', value);
 	},
 
 	get month() { return this._month },
 	set month(value) {
 		this._month = value;
-		window.abind?.update?.(this, 'month', value);
+		ABind?.update?.(this, 'month', value);
 	},
 
-	get select() { return this._select },
-	set select(value) {
-		this._select = value;
-		window.abind?.update?.(this, 'select', value);
+	get selected() { return this._selected },
+	set selected(value) {
+		this._selected = value;
+		ABind?.update?.(this, 'selected', value);
 	},
 
 	get selectMulti() { return this._selectMulti },
 	set selectMulti(value) {
 		this._selectMulti = value;
-		window.abind?.update?.(this, 'selectMulti', value);
+		ABind?.update?.(this, 'selectMulti', value);
 	},
 
 	get checkboxFoo() { return this._checkboxFoo },
 	set checkboxFoo(value) {
 		this._checkboxFoo = value;
-		window.abind?.update?.(this, 'checkboxFoo', value);
+		ABind?.update?.(this, 'checkboxFoo', value);
 	},
 
 	get checkboxBool() { return this._checkboxBool },
 	set checkboxBool(value) {
 		this._checkboxBool = value !== false;
-		window.abind?.update?.(this, 'checkboxBool', value);
+		ABind?.update?.(this, 'checkboxBool', value);
 	},
 
 	get radioGroup() { return this._radioGroup },
 	set radioGroup(value) {
 		this._radioGroup = value;
-		window.abind?.update?.(this, 'radioGroup', value);
+		ABind?.update?.(this, 'radioGroup', value);
 	},
 
 	get button() { return this._button },
 	set button(value) {
 		this._button = value;
-		window.abind?.update?.(this, 'button', value);
+		ABind?.update?.(this, 'button', value);
 	},
 
 	get color() { return this._color },
 	set color(value) {
-		window.abind?.update?.(this, 'color', value);
+		ABind?.update?.(this, 'color', value);
 		this._color = value;
 	},
 
 	get range() { return this._range },
 	set range(value) {
 		this._range = value;
-		window.abind?.update?.(this, 'range', value);
+		ABind?.update?.(this, 'range', value);
 	},
 
 	get progress() { return this._progress },
 	set progress(value) {
 		this._progress = value;
-		window.abind?.update?.(this, 'progress', value);
+		ABind?.update?.(this, 'progress', value);
 	},
 
 	get meter() { return this._meter },
 	set meter(value) {
 		this._meter = value;
-		window.abind?.update?.(this, 'meter', value);
+		ABind?.update?.(this, 'meter', value);
 	},
 
 	get file() { return this._file; },
 	set file(value) {
 		this._file = value;
-		if (window.abind) abind.update(this, 'file', value);
+		if (ABind) abind.update(this, 'file', value);
 	},
 
 	get name() { return this._name },
 	set name(value) {
 		this._name = value;
-		window.abind?.update?.(this, 'name', value);
+		ABind?.update?.(this, 'name', value);
 	},
 
 	get editable() {
@@ -338,3 +461,6 @@ export default {
 		this._editable = value;
 	}
 } // object
+
+loader.define('testObject', testObject);
+export default testObject;

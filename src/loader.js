@@ -1,18 +1,22 @@
 /**
- * Handles loading and caching of modules, data models, and DOM elements.
+ * Handles loading and caching of modules and data models.
  * Features strict protocol handling, shadow DOM piercing, namespace isolation,
  * and race-condition handling via pending resolution.
  * @file loader.js
  * @author Holmes Bryant
  * @license GPL-3.0
  */
-class Loader {
+
+import PathResolver from './PathResolver.js';
+
+export default class Loader {
   #domReadyPromise = null;
   #namespace = null;
   #registry = new Map();
   #pending = new Map();
   #deferred = new Map();
   #validator = null;
+  timeout = 1000;
 
   /**
    * Universal registration method.
@@ -48,6 +52,10 @@ class Loader {
     }
   }
 
+  has(key) {
+    return this.#registry.has(key);
+  }
+
   async load(key, context = document, ...args) {
     if (!key || typeof key === 'object') return key;
 
@@ -70,7 +78,10 @@ class Loader {
     try {
       const result = await promise;
       if (result !== undefined && result !== null) {
-        this.#registry.set(key, result);
+        // don't cache DOM nodes (to prevent return detached elements)
+        if (!(result instanceof Node)) {
+          this.#registry.set(key, result);
+        }
       }
       return result;
     } finally {
@@ -89,10 +100,14 @@ class Loader {
 
     // Namespace Lookup
     if (this.#namespace) {
+      // Check immediate sync availability first to avoid unnecessary 'await'
+      const immediate = PathResolver.getValue(this.#namespace, key);
+      if (immediate !== undefined) return immediate;
+
       try {
         return await this.when(
-          () => Object.hasOwn(this.#namespace, key) ? this.#namespace[key] : undefined,
-          1000,
+          () => PathResolver.getValue(this.#namespace, key),
+          this.timeout,
           50
         );
       } catch (e) { /* Fallthrough */ }
@@ -195,4 +210,4 @@ class Loader {
 
 const loader = new Loader();
 Object.freeze(loader);
-export default loader;
+export { loader };

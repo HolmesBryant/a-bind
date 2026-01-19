@@ -29,6 +29,7 @@
 		--gap: 2px;
 	}
 
+	.button,
 	button
 	{ padding: 1px; }
 
@@ -68,10 +69,12 @@ body {
   { background: var(--bg2-color) }
 
 	button,
+	.button,
 	.card
 	{ background: var(--bg3-color) }
 
 	hr,
+	.button.primary,
 	button.primary
 	{ background: var(--accent-color); }
 
@@ -80,17 +83,20 @@ body {
 	textarea
 	{ background: var(--bg4-color); }
 
+  .button:hover,
   button:hover,
   summary:hover,
   details[open] > summary,
   option:checked
   { background: var(--accent-color) }
 
+  .button:active,
   button:active {
   	background: initial;
   }
 
 /**** Borders ****/
+	.button,
 	button,
 	details,
 	input,
@@ -105,6 +111,7 @@ body {
 
   article,
   button,
+  .button,
   details,
   input,
   section,
@@ -135,10 +142,12 @@ body {
 	a
 	{ color: var(--accent-color) }
 
-	button
+	button,
+	.button
 	{ color: var(--text-color) }
 
 	button.primary,
+	.button.promary,
 	input,
 	select,
 	textarea
@@ -151,6 +160,7 @@ body {
 	{ font-size: 1rem; }
 
 	button,
+	.button,
 	label,
 	select,
 	option
@@ -170,9 +180,11 @@ body {
 	}
 
 /**** Cursor ****/
+	.button,
 	button,
 	label,
 	input[type="submit"],
+	input[type="reset"],
 	input[type="button"],
 	input[type="color"],
 	input[type="radio"],
@@ -201,6 +213,7 @@ body {
 	body *
 	{ box-sizing: border-box; }
 
+	.button,
 	button
 	{ padding: .5rem; }
 
@@ -230,13 +243,15 @@ body {
 	}
 
 	hr
-	{ padding: 1px; }
+	{ height: 2px; }
 
+	.button,
 	button,
 	input,
 	select
 	{ min-height: var(--min); }
 
+	.button,
 	button,
 	input[type="radio"],
 	input[type="checkbox"],
@@ -260,10 +275,13 @@ body {
 
 	output
 	{
-		display: inline-block;
+		align-items: center;
+		display: inline-flex;
 		font-family: "Courier New" ui-monospace;
+		justify-content: center;
 		min-width: var(--min);
 		min-height: 1ch;
+		padding: 5px;
 		white-space: pre-wrap;
 	}
 

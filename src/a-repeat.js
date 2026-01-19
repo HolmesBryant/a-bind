@@ -1,30 +1,33 @@
 /**
  * @file a-repeat.js
- * @description List rendering.
- * Subscribes to crosstownBus data updates and projects templates into target elements.
+ * @description A highly performant, data-driven, reactive, DOM-based template engine and list renderer that can handle complex, nested, and polymorphic layouts.
+ *  Works in both Light DOM and Shadow DOM.
  * @author Holmes Bryant
  * @license GPL-3.0
  */
 
 import Bus, { crosstownBus } from './Bus.js';
-import loader from './loader.js';
+import { loader } from './loader.js';
 import PathResolver from './PathResolver.js';
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
 
 export default class ARepeat extends HTMLElement {
-  #data = [];
-  #isConnected = false;
+  // -- Attributes --
   #model;
   #prop;
   #scope;
-  #targetSelector;
-  #targetElem;
-  #templateSelector;
-  #templatesList;
+  #target;
+  #template;
+  #templates;
 
-  #templateMap = new Map();
+  // -- Properties --
+  #children = new Set();
+  #data = [];
   #defaultTemplate;
+  #isConnected = false;
+  #targetElem;
+  #templateMap = new Map();
   #unsubscribe;
 
   static observedAttributes = [
@@ -74,15 +77,15 @@ export default class ARepeat extends HTMLElement {
         });
         break;
       case 'target':
-        this.#targetSelector = newval;
+        this.#target = newval;
         break;
       case 'template':
-        this.#templateSelector = newval;
+        this.#template = newval;
         break;
       case 'templates':
         try {
           const list = JSON.parse(newval);
-          this.#templatesList = list;
+          this.#templates = list;
         } catch (error) {
           console.error('a-repeat: Invalid JSON in "templates" attribute', this, error);
         }
@@ -93,14 +96,16 @@ export default class ARepeat extends HTMLElement {
 
   async connectedCallback() {
     this.#isConnected = true;
+    this.#upgrade('model');
+    this.#upgrade('scope');
     this.#initTemplates();
 
     // Resolve Target Element
-    if (this.#targetSelector) {
+    if (this.#target) {
       try {
-        this.#targetElem = await loader.load(this.#targetSelector, this);
+        this.#targetElem = await loader.load(this.#target, this);
       } catch (error) {
-        console.error(`a-repeat: Failed to load target element. ${this.targetSelector}`, this, error);
+        console.error(`a-repeat: Failed to load target element. ${this.target}`, this, error);
         return;
       }
     } else {
@@ -139,8 +144,8 @@ export default class ARepeat extends HTMLElement {
     internalTemplates.forEach(tmpl => this.#registerTemplate(tmpl));
 
     // External Single Template
-    if (this.#templateSelector) {
-      const tmpl = await loader.load(this.#templateSelector, this);
+    if (this.#template) {
+      const tmpl = await loader.load(this.#template, this);
       if (tmpl) this.#registerTemplate(tmpl);
     }
 
@@ -210,6 +215,15 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  #registerChildren() {
+    const children = this.querySelectorAll('a-bind, a-repeat');
+    for (const child of children) {
+      if (child.closest('a-repeat') === this) {
+        this.registerChild(child);
+      }
+    }
+  }
+
   #registerTemplate(tmpl) {
     if (!(tmpl instanceof HTMLTemplateElement)) return;
     const template = tmpl.id;
@@ -231,27 +245,69 @@ export default class ARepeat extends HTMLElement {
       }
     }
 
+    if (!this.#targetElem) {
+      this.#data = data;
+      return;
+    }
+
+    const parent = this.#targetElem;
+    const oldData = this.#data;
     this.#data = data;
-    if (!this.#targetElem) return;
 
-    const fragment = document.createDocumentFragment();
-
-    data.forEach((item, index) => {
+    // Generate DOM content for a single item
+    const createNode = (item, index) => {
       let templateId = item.template;
       if (typeof templateId === 'string' && templateId.startsWith('#')) {
         templateId = templateId.slice(1);
       }
-
       const selectedTemplate = this.#templateMap.get(templateId) || this.#defaultTemplate;
 
       if (selectedTemplate) {
         const clone = selectedTemplate.cloneNode(true);
         this.#interpolate(clone, item, index);
-        fragment.append(clone);
+        return clone;
       }
-    });
+      return null;
+    };
 
-    this.#targetElem.replaceChildren(fragment);
+    // only optimize if the current child count matches the previous data length.
+    const canOptimize = parent.children.length === oldData.length;
+
+    if (canOptimize) {
+      const children = Array.from(parent.children);
+
+      // Remove excess DOM nodes if the new list is shorter
+      while (children.length > data.length) {
+        children.pop().remove();
+      }
+
+      // Update existing items or Append new ones
+      data.forEach((item, index) => {
+        // If data reference is identical, skip
+        if (index < oldData.length && item === oldData[index]) {
+          return;
+        }
+
+        const newNode = createNode(item, index);
+        if (newNode) {
+          if (index < children.length) {
+            // Replace changed item in place
+            children[index].replaceWith(newNode);
+          } else {
+            // Append new item
+            parent.append(newNode);
+          }
+        }
+      });
+    } else {
+      // Full Re-render for templates with multiple root nodes
+      const fragment = document.createDocumentFragment();
+      data.forEach((item, index) => {
+        const node = createNode(item, index);
+        if (node) fragment.append(node);
+      });
+      parent.replaceChildren(fragment);
+    }
   }
 
   #replaceTokens(str, item, index) {
@@ -307,7 +363,28 @@ export default class ARepeat extends HTMLElement {
     this.#unsubscribe = crosstownBus.hopOn(busKey, (val) => { this.#render(val) });
   }
 
+  /**
+   * Captures properties set on the instance before the class was upgraded.
+   * Deletes the own property and resets it to trigger the class setter.
+   */
+  #upgrade(prop) {
+    if (Object.prototype.hasOwnProperty.call(this, prop)) {
+      const value = this[prop];
+      delete this[prop];
+      this[prop] = value;
+    }
+  }
+
    // --- Public ---
+
+  async registerChild(child) {
+    this.#children.add(child);
+    if (!child.model) child.model = this.#model;
+  }
+
+  unregister(child) {
+    this.#children.delete(child);
+  }
 
   get model() { return this.#model; }
   set model(value) {
@@ -337,19 +414,19 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
-  get target() { return this.#targetSelector }
+  get target() { return this.#target }
   set target(value) {
-    if (this.#targetSelector === value) return;
+    if (this.#target === value) return;
     this.setAttribute('target', value);
   }
 
-  get template() { return this.#templateSelector }
+  get template() { return this.#template }
   set template(value) {
-    if (this.#templateSelector === value) return;
+    if (this.#template === value) return;
     this.setAttribute('template', value);
   }
 
-  get templates() { return this.#templatesList }
+  get templates() { return this.#templates }
   set templates(value) {
     if (!value) return this.removeAttribute('templates');
     const str = typeof value === 'string' ? value : JSON.stringify(value);
