@@ -1,4 +1,4 @@
-import ABind, { loader } from '../src/index.js';
+// import ABind, { loader } from '../src/index.js';
 import sheet from '../extra/styles.css' with {type:'css'};
 
 const DEFAULTS = {
@@ -75,41 +75,44 @@ class TestComponent extends HTMLElement {
   sections = [
     {
       inputType: 'text',
-      inputId: 'o-inputtext',
+      inputId: 'inputtext',
       label: 'input type="text"',
       model: 'testObject',
       prop: 'text',
+      newval: 'New Text',
       template: 'tmpl-section',
       control: [{
         template: 'tmpl-basic',
         inputType: 'text',
-        inputId: 'o-inputtext',
+        inputId: 'inputtext',
         prop: 'text'
       }]
     },
     {
       inputType: 'date',
-      inputId: 'o-inputdate',
+      inputId: 'inputdate',
       label: 'input type="date"',
       model: 'testObject',
       prop: 'date',
+      newval: '1215-06-15',
       template: 'tmpl-section',
       control: [{
         template: 'tmpl-basic',
         inputType: 'date',
-        inputId: 'o-inputdate',
+        inputId: 'inputdate',
         prop: 'date'
       }]
     },
     {
-      inputId: 'o-select',
+      inputId: 'select',
       label: 'select with dynamic option list',
       model: 'testObject',
       prop: 'selected',
+      newval: 'baz',
       template: 'tmpl-section',
       control: [{
         template: 'tmpl-select',
-        inputId: 'o-select',
+        inputId: 'select',
         prop: 'selected',
         options: 'optionsA'
       }]
@@ -148,7 +151,84 @@ class TestComponent extends HTMLElement {
   static template = document.createElement('template');
   static {
     this.template.innerHTML = `
+      <a-bindgroup model="this">
 
+        <a-repeat prop="sections">
+
+          <template id="tmpl-section">
+            <section class="flex column stretch">
+              <div class="flex stretch">
+
+                <div class="flex column flex1 card">
+                  <label for="{{inputId}}-output">
+                    Property: <i>{{prop}}</i>
+                  </label>
+
+                  <a-bind prop="{{prop}}" class="output">
+                    <output id="{{inputId}}-output" for="{{inputId}}"></output>
+                  </a-bind>
+
+                  <a-bind debug push prop="{{prop}}">
+                    <button value="{{newval}}">Set to "{{newval}}"</button>
+                  </a-bind>
+                </div><!-- card -->
+
+                <div class="flex column flex1 card">
+                  <label for="{{inputId}}">
+                    {{label}}
+                  </label>
+
+                  <a-repeat prop="control">
+
+                    <template id="tmpl-basic">
+                      <a-bind prop="{{prop}}" class="input">
+                        <input id="{{inputId}}" type="{{inputType}}">
+                      </a-bind>
+                    </template>
+
+                    <template id="tmpl-select">
+                      <a-bind prop="{{prop}}" class="input">
+                        <select id="{{inputId}}"></select>
+                      </a-bind>
+
+                      <a-repeat
+                        target="#{{inputId}}"
+                        prop="{{options}}"
+                        scope="testObject">
+
+                        <template>
+                          <option value="{{value}}">{{label}}</option>
+                        </template>
+                      </a-repeat>
+                    </template><!-- tmpl-select -->
+
+                  </a-repeat>
+
+                </div><!-- card -->
+              </div><!-- row -->
+
+              <details>
+                <summary id="{{inputId}}-details" class="nofrills">code</summary>
+                <a-bind target="#{{inputId}}-details" event="click" func="grabCode"></a-bind>
+                <div class="flex stretch">
+                  <div class="flex1 card">
+                    <a-code highlight>
+                      <textarea class="output-code"></textarea>
+                    </a-code>
+                  </div><!-- card -->
+
+                  <div class="flex1 card">
+                    <a-code highlight>
+                      <textarea class="input-code"></textarea>
+                    </a-code>
+                  </div><!-- card -->
+                </div><!-- row -->
+              </details>
+            </section>
+            <hr>
+          </template>
+        </a-repeat>
+      </a-bindgroup>
     `;
   }
 
@@ -160,7 +240,6 @@ class TestComponent extends HTMLElement {
 
   attributeChangedCallback(attr, oldval, newval) {
     if (newval === oldval) return;
-    let doUpdate = true;
 
     switch (attr) {
       case "text":
@@ -195,8 +274,6 @@ class TestComponent extends HTMLElement {
         break;
       case "date-time":
         this.#dateTime = newval;
-        doUpdate = false;
-        ABind.update(this, 'dateTime', newval);
         break;
       case "week":
         this.#week = newval;
@@ -209,21 +286,15 @@ class TestComponent extends HTMLElement {
         break;
       case "select-multi":
         this.#selectMulti = newval;
-        doUpdate = false;
-        ABind.update(this, 'dateTime', newval);
         break;
       case "checkbox":
         this.#checkbox = newval;
         break;
       case "checkbox-bool":
         this.#checkboxBool = newval;
-        doUpdate = false;
-        ABind.update(this, 'dateTime', newval);
         break;
       case "radio-group":
         this.#radioGroup = newval;
-        doUpdate = false;
-        ABind.update(this, 'dateTime', newval);
         break;
       case "button":
         this.#button = newval;
@@ -249,10 +320,6 @@ class TestComponent extends HTMLElement {
       case "editable":
         this.#editable = newval;
         break;
-    }
-
-    if (doUpdate) {
-      ABind.update(this, attr, newval);
     }
   }
 
@@ -428,8 +495,8 @@ class TestComponent extends HTMLElement {
   }
 
   resetForm(event) {
-    ABind?.update?.(this, 'name', DEFAULTS['name']);
-    ABind?.update?.(this, 'email', DEFAULTS['email']);
+    // ABind?.update?.(this, 'name', DEFAULTS['name']);
+    // ABind?.update?.(this, 'email', DEFAULTS['email']);
   }
 
   sendForm(event) {

@@ -5,84 +5,109 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>FOO</title>
 	<script type="module" src="src/index.js"></script>
-	<script type="module" src="extra/testObject.js"></script>
-	<script type="module" src="extra/a-code.min.js"></script>
+  <script type="module">
+    import {loader} from './src/loader.js';
 
-	<link rel="stylesheet" href="extra/styles.css">
+    const obj = {
+      text: 'fubar',
+      number: 42,
+      sections: [
+        {
+          prop: 'text',
+          type: 'text'
+        },
+        {
+          prop: 'number',
+          type: 'number'
+        },
+      ]
+    }
+
+    loader.define('obj', obj);
+  </script>
+
+  <script type="module">
+    class MyElem extends HTMLElement {
+      #text = 'fubar';
+      #number = 42;
+      sections = [
+        {
+          prop: 'text',
+          type: 'text'
+        },
+        {
+          prop: 'number',
+          type: 'number'
+        }
+      ];
+
+      static observedAttributes = [
+        'text',
+        'number'
+      ];
+
+      static template = document.createElement('template');
+      static {
+        this.template.innerHTML = `
+          <a-bindgroup model="this">
+            <a-repeat prop="sections">
+              <template>
+                <a-bind prop="{{prop}}">
+                  <input type="{{type}}">
+                </a-bind>
+                <hr>
+              </template>
+            </a-repeat>
+            </a-bindgroup>
+        `;
+      }
+
+      constructor() {
+        super();
+        this.attachShadow({mode:'open'});
+      }
+
+      get text() { return this.#text }
+      set text(value) { this.setAttribute('text', value) }
+      get number() { return this.#number }
+      set number(value) { this.setAttribute('number', value) }
+
+      attributeChangedCallback(attr, oldval, newval) {
+        if (newval === oldval) return;
+        switch (attr) {
+        case 'text':
+          this.#text = newval;
+          break;
+        case 'number':
+          this.#number = newval;
+          break;
+        }
+      }
+
+      connectedCallback() {
+        this.shadowRoot.append(MyElem.template.content.cloneNode(true));
+      }
+    }
+
+    customElements.define('my-elem', MyElem);
+  </script>
 </head>
 <body>
 
 <h1>Foo</h1>
 
-<a-bindgroup model="testObject">
-	<a-repeat prop="sections">
-  <template id="tmpl-section">
-    <section class="flex column stretch">
-      <div class="flex stretch">
-        <div class="flex column flex1 card">
-          <label for="{{inputId}}-output">
-            Property: <i>{{prop}}</i>
-          </label>
-
-          <a-bind prop="{{prop}}" class="output">
-            <output id="{{inputId}}-output" for="{{inputId}}"></output>
-          </a-bind>
-        </div><!-- card -->
-
-        <div class="flex column flex1 card">
-          <label for="{{inputId}}">
-            {{label}}
-          </label>
-
-          <a-repeat prop="control">
-            <template id="tmpl-basic">
-              <a-bind prop="{{prop}}" class="input">
-                <input id="{{inputId}}" type="{{inputType}}">
-              </a-bind>
-            </template>
-
-            <template id="tmpl-select">
-              <a-bind prop="{{prop}}" class="input">
-                <select id="{{inputId}}"></select>
-              </a-bind>
-
-              <a-repeat
-              	target="#{{inputId}}"
-              	prop="{{options}}"
-              	scope="testObject">
-                <template>
-                  <option value="{{value}}">{{label}}</option>
-                </template>
-              </a-repeat>
-            </template>
-
-          </a-repeat>
-
-        </div><!-- card -->
-      </div><!-- row -->
-
-      <details>
-        <summary id="{{inputId}}-details" class="nofrills">code</summary>
-        <a-bind target="#{{inputId}}-details" event="click" func="grabCode"></a-bind>
-        <div class="flex stretch">
-          <div class="flex1 card">
-            <a-code highlight>
-              <textarea class="output-code"></textarea>
-            </a-code>
-          </div><!-- card -->
-
-          <div class="flex1 card">
-            <a-code highlight>
-              <textarea class="input-code"></textarea>
-            </a-code>
-          </div><!-- card -->
-        </div><!-- row -->
-      </details>
-    </section>
+<a-bindgroup model="obj">
+<a-repeat prop="sections">
+  <template>
+    <a-bind prop="{{prop}}">
+      <input type="{{type}}">
+    </a-bind>
     <hr>
   </template>
 </a-repeat>
 </a-bindgroup>
+
+<my-elem></my-elem>
 
 </body>
 </html>

@@ -10,9 +10,17 @@
               Property: <i>{{prop}}</i>
             </label>
 
-            <a-bind prop="{{prop}}" class="output">
+            <div class="output">
+            <a-bind prop="{{prop}}">
               <output id="{{inputId}}-output" for="{{inputId}}"></output>
             </a-bind>
+
+            <a-bind push prop={{prop}} event="click">
+              <button value="{{newval}}">
+                Set to "{{newval}}"
+              </button>
+            </a-bind>
+          </div><!-- output -->
           </div><!-- card -->
 
           <div class="flex column flex1 card">
@@ -44,6 +52,24 @@
                 </a-repeat>
               </template><!-- tmpl-select -->
 
+              <template id="tmpl-select-multi">
+                <a-bind
+                  prop="{{prop}}"
+                  class="input">
+                  <select multiple id="{{inputId}}"></select>
+                </a-bind>
+
+                <a-repeat
+                  target="#{{inputId}}"
+                  prop="{{options}}"
+                  scope="testObject">
+
+                  <template>
+                    <option value="{{value}}">{{label}}</option>
+                  </template>
+                </a-repeat>
+              </template><!-- tmpl-select -->
+
             </a-repeat>
 
           </div><!-- card -->
@@ -54,7 +80,7 @@
           <a-bind target="#{{inputId}}-details" event="click" func="grabCode"></a-bind>
           <div class="flex stretch">
             <div class="flex1 card">
-              <a-code highlight>
+              <a-code highlight indent="1">
                 <textarea class="output-code"></textarea>
               </a-code>
             </div><!-- card -->

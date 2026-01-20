@@ -14,6 +14,7 @@ const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
 
 export default class ARepeat extends HTMLElement {
   // -- Attributes --
+  #key;
   #model;
   #prop;
   #scope;
@@ -22,7 +23,6 @@ export default class ARepeat extends HTMLElement {
   #templates;
 
   // -- Properties --
-  #children = new Set();
   #data = [];
   #defaultTemplate;
   #isConnected = false;
@@ -31,6 +31,7 @@ export default class ARepeat extends HTMLElement {
   #unsubscribe;
 
   static observedAttributes = [
+    'key',
     'model',
     'prop',
     'scope',
@@ -48,6 +49,9 @@ export default class ARepeat extends HTMLElement {
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
     switch (attr) {
+      case 'key':
+        this.#key = newval;
+        break;
       case 'model':
         loader.load(newval)
         .then( model => {
@@ -149,13 +153,45 @@ export default class ARepeat extends HTMLElement {
       if (tmpl) this.#registerTemplate(tmpl);
     }
 
-    // If no templates found, treat own content as template
+    // Self-Templating (Implicit Default)
     if (this.#templateMap.size === 0 && !this.#defaultTemplate && this.childNodes.length > 0) {
       const range = document.createRange();
       range.selectNodeContents(this);
       this.#defaultTemplate = range.cloneContents();
-      // Clear self to prepare for rendering
       this.replaceChildren();
+    }
+
+    // Validate Compatibility with Keyed Rendering
+    if (this.#key) {
+      let valid = true;
+      let invalidName = '';
+
+      // Check Default Template
+      if (this.#defaultTemplate && this.#defaultTemplate.children.length !== 1) {
+        valid = false;
+        invalidName = 'Default Template';
+      }
+
+      // Check Named Templates
+      if (valid) {
+        for (const [id, fragment] of this.#templateMap) {
+          if (fragment.children.length !== 1) {
+            valid = false;
+            invalidName = `Template "#${id}"`;
+            break;
+          }
+        }
+      }
+
+      // Fallback if invalid
+      if (!valid) {
+        console.warn(
+          `a-repeat: Keyed rendering disabled. ${invalidName} has ${this.#defaultTemplate?.children.length || 'multiple'} root elements (must be exactly 1 Element). Falling back to index-based rendering.`,
+          this
+        );
+        this.#key = null;
+        this.removeAttribute('key');
+      }
     }
   }
 
@@ -215,15 +251,6 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
-  #registerChildren() {
-    const children = this.querySelectorAll('a-bind, a-repeat');
-    for (const child of children) {
-      if (child.closest('a-repeat') === this) {
-        this.registerChild(child);
-      }
-    }
-  }
-
   #registerTemplate(tmpl) {
     if (!(tmpl instanceof HTMLTemplateElement)) return;
     const template = tmpl.id;
@@ -270,6 +297,76 @@ export default class ARepeat extends HTMLElement {
       return null;
     };
 
+    // If the template is compatable with key-based rendering
+    if (this.#key) {
+      const keyMap = new Map();
+      const children = Array.from(parent.children);
+
+      // Snapshot existing DOM nodes by Key
+      children.forEach(child => {
+        if (child.__arepeat_key !== undefined) {
+          keyMap.set(child.__arepeat_key, child);
+        }
+      });
+
+      // Iterate new data: Move, Update, or Create
+      data.forEach((item, index) => {
+        const itemVal = PathResolver.getValue(item, this.#key);
+        const itemKey = (itemVal !== undefined && itemVal !== null) ? String(itemVal) : null;
+
+        if (itemKey === null) {
+          // Fallback if key missing in data
+          const frag = createNode(item, index);
+          if (frag) parent.insertBefore(frag, parent.children[index] || null);
+          return;
+        }
+
+        let node = keyMap.get(itemKey);
+
+        if (node) {
+          // reuse if element exists
+          keyMap.delete(itemKey); // Mark as used
+
+          // Move if position is different
+          if (parent.children[index] !== node) {
+            parent.insertBefore(node, parent.children[index] || null);
+          }
+
+          // Update Context: If the object reference changed, update
+          // child bindings (a-bind/a-repeat) within this node.
+          if (node.model !== item) {
+            node.model = item;
+            const boundChildren = node.querySelectorAll('a-bind, a-repeat');
+            for (const child of boundChildren) {
+              // avoid crossing into nested repeat scopes
+              if (!child.closest('a-repeat') || child.closest('a-repeat') === this) {
+                child.model = item;
+              }
+            }
+          }
+        } else {
+          // create New Element
+          const frag = createNode(item, index);
+          if (frag) {
+            // tag the root element with the key to find it later.
+            // Note: This assumes the template produces a single root Element.
+            const element = frag.firstElementChild;
+            if (element) {
+              element.__arepeat_key = itemKey;
+              element.model = item; // Store model ref on DOM
+            }
+            parent.insertBefore(frag, parent.children[index] || null);
+          }
+        }
+      });
+
+      // Remove nodes whose keys are no longer in the data
+      keyMap.forEach(node => node.remove());
+      return;
+    }
+
+    // Fallback, index-based rendering
+
     // only optimize if the current child count matches the previous data length.
     const canOptimize = parent.children.length === oldData.length;
 
@@ -300,7 +397,7 @@ export default class ARepeat extends HTMLElement {
         }
       });
     } else {
-      // Full Re-render for templates with multiple root nodes
+      // Full Re-render for templates with multiple root nodes or length mismatch
       const fragment = document.createDocumentFragment();
       data.forEach((item, index) => {
         const node = createNode(item, index);
@@ -377,13 +474,10 @@ export default class ARepeat extends HTMLElement {
 
    // --- Public ---
 
-  async registerChild(child) {
-    this.#children.add(child);
-    if (!child.model) child.model = this.#model;
-  }
-
-  unregister(child) {
-    this.#children.delete(child);
+  get key() { return this.#key }
+  set key(value) {
+    if (this.#key === value) return;
+    this.setAttribute('key', value);
   }
 
   get model() { return this.#model; }

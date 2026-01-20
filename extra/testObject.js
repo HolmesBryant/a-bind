@@ -78,6 +78,7 @@ const testObject = {
 			model: 'testObject',
 			prop: 'text',
 			template: 'tmpl-section',
+			newval: 'New Value',
 			control: [{
 				template: 'tmpl-basic',
 				inputType: 'text',
@@ -92,6 +93,7 @@ const testObject = {
 			model: 'testObject',
 			prop: 'date',
 			template: 'tmpl-section',
+			newval: '1215-06-15',
 			control: [{
 				template: 'tmpl-basic',
 				inputType: 'date',
@@ -101,14 +103,29 @@ const testObject = {
 		},
 		{
 			inputId: 'o-select',
-			label: 'select with dynamic option list',
+			label: 'select',
 			model: 'testObject',
 			prop: 'selected',
+			newval: 'baz',
 			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-select',
 				inputId: 'o-select',
 				prop: 'selected',
+				options: 'optionsA'
+			}]
+		},
+		{
+			inputId: 'o-select-multi',
+			label: 'select multiple',
+			model: 'testObject',
+			prop: 'selectMulti',
+			template: 'tmpl-section',
+			newval: 'bar, baz',
+			control: [{
+				template: 'tmpl-select-multi',
+				inputId: 'o-select-multi',
+				prop: 'selectMulti',
 				options: 'optionsA'
 			}]
 		}
@@ -301,151 +318,151 @@ const testObject = {
 	get text() { return this._text },
 	set text(value) {
 		this._text = value;
-		ABind?.update?.(this, 'text', value);
+		// ABind.update(this, 'text', value);
 	},
 
 	get search() { return this._search },
 	set search(value) {
 		this._search = value;
-		ABind?.update?.(this, 'search', value);
+		// ABind?.update?.(this, 'search', value);
 	},
 
 	get password() { return this._password},
 	set password(value) {
 		this._password = value;
-		ABind?.update?.(this, 'password', value);
+		// ABind?.update?.(this, 'password', value);
 	},
 
 	get tel() { return this._tel },
 	set tel(value) {
 		this._tel = value;
-		ABind?.update?.(this, 'tel', value);
+		// ABind?.update?.(this, 'tel', value);
 	},
 
 	get url() { return this._url },
 	set url(value) {
 		this._url = value;
-		ABind?.update?.(this, 'url', value);
+		// ABind?.update?.(this, 'url', value);
 	},
 
 	get email() { return this._email },
 	set email(value) {
 		this._email = value;
-		ABind?.update?.(this, 'email', value);
+		// ABind?.update?.(this, 'email', value);
 	},
 
 	get number() { return this._number },
 	set number(value) {
 		this._number = value;
-		ABind?.update?.(this, 'number', value);
+		// ABind?.update?.(this, 'number', value);
 	},
 
 	get textarea() { return this._textarea },
 	set textarea(value) {
 		this._textarea = value;
-		ABind?.update?.(this, 'textarea', value);
+		// ABind?.update?.(this, 'textarea', value);
 	},
 
 	get date() { return this._date },
 	set date(value) {
 		this._date = value;
-		ABind?.update?.(this, 'date', value);
+		// ABind?.update?.(this, 'date', value);
 	},
 
 	get time() { return this._time },
 	set time(value) {
 		this._time = value;
-		ABind?.update?.(this, 'time', value);
+		// ABind?.update?.(this, 'time', value);
 	},
 
 	get dateTime() { return this._dateTime },
 	set dateTime(value) {
 		this._dateTime = value;
-		ABind?.update?.(this, 'dateTime', value);
+		// ABind?.update?.(this, 'dateTime', value);
 	},
 
 	get week() { return this._week },
 	set week(value) {
 		this._week = value;
-		ABind?.update?.(this, 'week', value);
+		// ABind?.update?.(this, 'week', value);
 	},
 
 	get month() { return this._month },
 	set month(value) {
 		this._month = value;
-		ABind?.update?.(this, 'month', value);
+		// ABind?.update?.(this, 'month', value);
 	},
 
 	get selected() { return this._selected },
 	set selected(value) {
 		this._selected = value;
-		ABind?.update?.(this, 'selected', value);
+		// ABind?.update?.(this, 'selected', value);
 	},
 
 	get selectMulti() { return this._selectMulti },
 	set selectMulti(value) {
 		this._selectMulti = value;
-		ABind?.update?.(this, 'selectMulti', value);
+		// ABind?.update?.(this, 'selectMulti', value);
 	},
 
 	get checkboxFoo() { return this._checkboxFoo },
 	set checkboxFoo(value) {
 		this._checkboxFoo = value;
-		ABind?.update?.(this, 'checkboxFoo', value);
+		// ABind?.update?.(this, 'checkboxFoo', value);
 	},
 
 	get checkboxBool() { return this._checkboxBool },
 	set checkboxBool(value) {
 		this._checkboxBool = value !== false;
-		ABind?.update?.(this, 'checkboxBool', value);
+		// ABind?.update?.(this, 'checkboxBool', value);
 	},
 
 	get radioGroup() { return this._radioGroup },
 	set radioGroup(value) {
 		this._radioGroup = value;
-		ABind?.update?.(this, 'radioGroup', value);
+		// ABind?.update?.(this, 'radioGroup', value);
 	},
 
 	get button() { return this._button },
 	set button(value) {
 		this._button = value;
-		ABind?.update?.(this, 'button', value);
+		// ABind?.update?.(this, 'button', value);
 	},
 
 	get color() { return this._color },
 	set color(value) {
-		ABind?.update?.(this, 'color', value);
 		this._color = value;
+		// ABind?.update?.(this, 'color', value);
 	},
 
 	get range() { return this._range },
 	set range(value) {
 		this._range = value;
-		ABind?.update?.(this, 'range', value);
+		// ABind?.update?.(this, 'range', value);
 	},
 
 	get progress() { return this._progress },
 	set progress(value) {
 		this._progress = value;
-		ABind?.update?.(this, 'progress', value);
+		// ABind?.update?.(this, 'progress', value);
 	},
 
 	get meter() { return this._meter },
 	set meter(value) {
 		this._meter = value;
-		ABind?.update?.(this, 'meter', value);
+		// ABind?.update?.(this, 'meter', value);
 	},
 
 	get file() { return this._file; },
 	set file(value) {
 		this._file = value;
-		if (ABind) abind.update(this, 'file', value);
+		// if (ABind) abind.update(this, 'file', value);
 	},
 
 	get name() { return this._name },
 	set name(value) {
 		this._name = value;
-		ABind?.update?.(this, 'name', value);
+		// ABind?.update?.(this, 'name', value);
 	},
 
 	get editable() {

@@ -292,6 +292,9 @@ export default class ABind extends HTMLElement {
       // If model is an html element
       if (this.#model.addEventListener) {
         this.#model.addEventListener('input', event => {
+          if (event.target === this.#bound || event.composedPath().includes(this.#bound)) {
+            return;
+          }
           const prop = this.#property || this.#modelAttr;
           const value = this.#getPropertyValue(this.#model, prop);
           this.applyUpdate(this.#bound, this.#elemProp, value);
@@ -577,12 +580,19 @@ export default class ABind extends HTMLElement {
 
   async #resolveModel(gen, suppressError = false) {
     this.log?.('resolveModel()', {gen});
-    if (this.#model) {
+    if (this.#model && !this.#modelKey) {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
       return true;
     }
 
-    if (!this.#modelKey) return true; // Deferred to ABindgroup
+    if (!this.#modelKey) return true; // Deferred to ABindgroup or ARepeat
+
+    // If bindings are in a custom element's shadow dom
+    if (this.#modelKey === "this") {
+      this.#model = await loader.load(this.getRootNode().host, this);
+      this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
+      return true;
+    }
 
     try {
       this.#model = await loader.load(this.#modelKey, this);
