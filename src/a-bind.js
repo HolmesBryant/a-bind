@@ -8,13 +8,13 @@
  * @license GPL-3.0
  */
 
-import { schedule } from './Schedule.js';
+import { scheduler } from './Schedule.js';
 import Bus, { crosstownBus } from './Bus.js';
-import Loader, { loader } from './loader.js';
+import Loader, { loader } from './Loader.js';
 import PathResolver from './PathResolver.js';
 
 export {
-  schedule,
+  scheduler,
   crosstownBus,
   loader,
   PathResolver
@@ -57,7 +57,7 @@ export default class ABind extends HTMLElement {
   #initIdx = 0;
   #isConnected = false;
   #model;
-  #updateManager = schedule;
+  #updateManager = scheduler;
 
   /**
    * List o
@@ -232,6 +232,12 @@ export default class ABind extends HTMLElement {
       return this.#handleNestedUpdate(target, name, value);
     }
 
+    // Prevent "selectedOptions" from triggering list replacement.
+    // Redirect it to "value" to handle multi-selection updates correctly.
+    if (target instanceof HTMLSelectElement && name === 'selectedOptions') {
+      name = 'value';
+    }
+
     if (target instanceof HTMLSelectElement && target.multiple && name === 'value') {
       if (value === null || value === undefined) value = [];
       const values = Array.isArray(value) ? value : String(value).split(',').map(member => member.trim());
@@ -273,12 +279,11 @@ export default class ABind extends HTMLElement {
 
     // Element -> Model (Event)
     if (!this.#pull) {
-      /*this.#bound.addEventListener('focus', () => {
-        this.#bound.select();
-      }, { signal: this.#abortController.signal });*/
-
       this.#bound.addEventListener(this.#event, event => {
-        const value = this.#bound[this.#elemProp];
+        let value = this.#bound[this.#elemProp];
+        if (this.#bound instanceof HTMLSelectElement && this.#bound.multiple) {
+          value = Array.from(this.#bound.selectedOptions).map(option => option.value || option.text);
+        }
         this.#updateModel(value, event);
       }, { signal: this.#abortController.signal });
     }
@@ -341,9 +346,9 @@ export default class ABind extends HTMLElement {
       if (parts.length > 0) {
         const contextPath = parts.join('.');
         context = this.#getPropertyValue(this.#model, contextPath);
-        if (!context || typeof context[fnName] !== 'function') {
-          context = this.#getPropertyValue(window, contextPath);
-        }
+        // if (!context || typeof context[fnName] !== 'function') {
+          // context = this.#getPropertyValue(window, contextPath);
+        // }
       } else {
         context = this.#model;
         if (typeof context[fnName] !== 'function') {

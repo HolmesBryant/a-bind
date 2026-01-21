@@ -43,4 +43,6 @@ export default class Schedule {
   }
 }
 
-export const schedule = new Schedule();
+const scheduler = new Schedule();
+Object.freeze(scheduler);
+export { scheduler };

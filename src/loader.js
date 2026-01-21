@@ -2,7 +2,7 @@
  * Handles loading and caching of modules and data models.
  * Features strict protocol handling, shadow DOM piercing, namespace isolation,
  * and race-condition handling via pending resolution.
- * @file loader.js
+ * @file Loader.js
  * @author Holmes Bryant
  * @license GPL-3.0
  */
@@ -90,7 +90,7 @@ export default class Loader {
   }
 
   async #resolve(key, context, ...args) {
-    // Protocols
+    // Check protocol
     if (key.startsWith('mod:')) {
       return this.#importModule(key.substring(key.indexOf(':') + 1), ...args);
     }
@@ -98,13 +98,14 @@ export default class Loader {
       return this.#getDomElement(key.substring(key.indexOf(':') + 1), context);
     }
 
-    // Namespace Lookup
+    // Check if the key exists in the object passed to loader.define()
     if (this.#namespace) {
-      // Check immediate sync availability first to avoid unnecessary 'await'
-      const immediate = PathResolver.getValue(this.#namespace, key);
-      if (immediate !== undefined) return immediate;
-
       try {
+        // Check if availabile now
+        const immediate = PathResolver.getValue(this.#namespace, key);
+        if (immediate !== undefined) return immediate;
+
+        // Wait for it to appear
         return await this.when(
           () => PathResolver.getValue(this.#namespace, key),
           this.timeout,
@@ -113,15 +114,12 @@ export default class Loader {
       } catch (e) { /* Fallthrough */ }
     }
 
-    // Import Path
-    if (this.#isImportable(key)) return this.#importModule(key, ...args);
-
-    // Pending Definition (Wait for define)
+    // If it's a simple key (no dots or slashes), assume it might be defined later.
     if (!key.includes('/') && !key.includes('#') && !key.includes('.')) {
        return this.#waitForDefinition(key);
     }
 
-    // DOM Selector
+    // Fallback: DOM Selector
     return this.#getDomElement(key, context);
   }
 

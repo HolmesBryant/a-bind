@@ -7,10 +7,12 @@
  */
 
 import Bus, { crosstownBus } from './Bus.js';
-import { loader } from './loader.js';
+import { loader } from './Loader.js';
 import PathResolver from './PathResolver.js';
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
+const PROTOCOL_REGEX = /^[a-zA-Z][a-zA-Z0-9+.-]*:/; // RFC 3986 Scheme validation
+const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'ftp:']);
 
 export default class ARepeat extends HTMLElement {
   // -- Attributes --
@@ -410,7 +412,6 @@ export default class ARepeat extends HTMLElement {
   #replaceTokens(str, item, index) {
     return str.replace(TOKEN_REGEX, (match, path) => {
       if (path === 'index') return index;
-      // Edge case: array of primitives
       if (path === 'this' || path === 'item') {
         return (typeof item === 'object') ? '' : item;
       }
@@ -421,9 +422,21 @@ export default class ARepeat extends HTMLElement {
         val = PathResolver.getValue(this.#scope, path);
       }
 
-      if (typeof val === 'string' && val.toLowerCase().trim().startsWith('javascript:')) {
-        console.warn('a-repeat: blocked unsafe javascript URI', this);
-        return '';
+      // Security Whitelist
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+
+        if (PROTOCOL_REGEX.test(trimmed)) {
+          try {
+            const url = new URL(trimmed);
+            if (!ALLOWED_PROTOCOLS.has(url.protocol)) {
+              console.warn(`a-repeat: blocked unsafe URI protocol "${url.protocol}"`, this);
+              return '';
+            }
+          } catch (e) {
+            // Not absolute URL, pass through
+          }
+        }
       }
 
       if (val === undefined  || val === null || typeof val === 'object') {

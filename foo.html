@@ -6,25 +6,14 @@
 	<title>FOO</title>
 	<script type="module" src="src/index.js"></script>
   <script type="module">
-    import {loader} from './src/loader.js';
+  import {loader} from './src/loader.js';
 
-    const obj = {
-      text: 'fubar',
-      number: 42,
-      sections: [
-        {
-          prop: 'text',
-          type: 'text'
-        },
-        {
-          prop: 'number',
-          type: 'number'
-        },
-      ]
-    }
+  const Obj = {
+    selected: ['foo', 'bar'],
+  }
 
-    loader.define('obj', obj);
-  </script>
+  loader.define('obj', Obj);
+</script>
 
   <script type="module">
     class MyElem extends HTMLElement {
@@ -96,18 +85,20 @@
 
 <h1>Foo</h1>
 
-<a-bindgroup model="obj">
-<a-repeat prop="sections">
-  <template>
-    <a-bind prop="{{prop}}">
-      <input type="{{type}}">
-    </a-bind>
-    <hr>
-  </template>
-</a-repeat>
-</a-bindgroup>
+<a-bind model="obj" prop="selected">
+  <select multiple>
+    <option>foo</option>
+    <option>bar</option>
+    <option>baz</option>
+  </select>
+</a-bind>
 
-<my-elem></my-elem>
+<a-bind pull model="obj" prop="selected">
+  <output></output>
+</a-bind>
+
+
+<!-- <my-elem></my-elem> -->
 
 </body>
 </html>
