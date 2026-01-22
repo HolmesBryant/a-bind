@@ -6,10 +6,16 @@
 	<title>FOO</title>
 	<script type="module" src="src/index.js"></script>
   <script type="module">
-  import {loader} from './src/loader.js';
+  import ABind, {loader} from './src/index.js';
 
   const Obj = {
+    _checkbox: true,
     selected: ['foo', 'bar'],
+    get checkbox() { return this._checkbox },
+    set checkbox(value) {
+      console.log(value);
+      this._checkbox = value;
+    }
   }
 
   loader.define('obj', Obj);
@@ -85,16 +91,12 @@
 
 <h1>Foo</h1>
 
-<a-bind model="obj" prop="selected">
-  <select multiple>
-    <option>foo</option>
-    <option>bar</option>
-    <option>baz</option>
-  </select>
+<a-bind model="obj" prop="checkbox">
+  <input name="mailingList" type="checkbox">
 </a-bind>
 
-<a-bind pull model="obj" prop="selected">
-  <output></output>
+<a-bind pull model="obj" prop="checkbox">
+  <output>...</output>
 </a-bind>
 
 

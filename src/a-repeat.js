@@ -1,7 +1,6 @@
 /**
  * @file a-repeat.js
- * @description A highly performant, data-driven, reactive, DOM-based template engine and list renderer that can handle complex, nested, and polymorphic layouts.
- *  Works in both Light DOM and Shadow DOM.
+ * @description A DOM-based template engine and list renderer.
  * @author Holmes Bryant
  * @license GPL-3.0
  */
@@ -95,7 +94,6 @@ export default class ARepeat extends HTMLElement {
         } catch (error) {
           console.error('a-repeat: Invalid JSON in "templates" attribute', this, error);
         }
-
         break;
     }
   }
@@ -159,7 +157,9 @@ export default class ARepeat extends HTMLElement {
     if (this.#templateMap.size === 0 && !this.#defaultTemplate && this.childNodes.length > 0) {
       const range = document.createRange();
       range.selectNodeContents(this);
-      this.#defaultTemplate = range.cloneContents();
+      const content = range.cloneContents();
+      const bindings = this.#compile(content);
+      this.#defaultTemplate = { content, bindings };
       this.replaceChildren();
     }
 
@@ -169,15 +169,15 @@ export default class ARepeat extends HTMLElement {
       let invalidName = '';
 
       // Check Default Template
-      if (this.#defaultTemplate && this.#defaultTemplate.children.length !== 1) {
+      if (this.#defaultTemplate && this.#defaultTemplate.content.children.length !== 1) {
         valid = false;
         invalidName = 'Default Template';
       }
 
       // Check Named Templates
       if (valid) {
-        for (const [id, fragment] of this.#templateMap) {
-          if (fragment.children.length !== 1) {
+        for (const [id, def] of this.#templateMap) {
+          if (def.content.children.length !== 1) {
             valid = false;
             invalidName = `Template "#${id}"`;
             break;
@@ -188,7 +188,7 @@ export default class ARepeat extends HTMLElement {
       // Fallback if invalid
       if (!valid) {
         console.warn(
-          `a-repeat: Keyed rendering disabled. ${invalidName} has ${this.#defaultTemplate?.children.length || 'multiple'} root elements (must be exactly 1 Element). Falling back to index-based rendering.`,
+          `a-repeat: Keyed rendering disabled. ${invalidName} has ${this.#defaultTemplate?.content.children.length || 'multiple'} root elements (must be exactly 1 Element). Falling back to index-based rendering.`,
           this
         );
         this.#key = null;
@@ -198,68 +198,196 @@ export default class ARepeat extends HTMLElement {
   }
 
   /**
-   * Traverses the cloned DOM tree to:
-   * 1. Interpolate text tokens {{key}}
-   * 2. Interpolate attribute tokens prop="{{key}}"
-   * 3. Pass context to nested ARepeats
+   * Scans a DocumentFragment for bindings and returns a list of instructions.
+   * Walk the DOM once at startup rather than every render.
    */
-  #interpolate(node, item, index) {
-    const isNestedRepeat = node.localName === 'a-repeat';
+  #compile(fragment) {
+    const bindings = [];
 
-    // --- Context Injection for Nested Repeats ---
-    if (isNestedRepeat) {
-      if (!node.hasAttribute('model')) {
-        node.model = item;
+    const crawl = (node, path) => {
+      // Text Nodes
+      if (node.nodeType === Node.TEXT_NODE) {
+        const parts = this.#parseTemplateString(node.nodeValue);
+        if (parts) {
+          bindings.push({ type: 'text', path: [...path], parts });
+        }
+        return;
       }
 
-      if (!node.hasAttribute('scope') && this.scope) {
-        node.scope = this.#scope;
+      // Elements
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        // Attributes
+        if (node.hasAttributes()) {
+          for (const attr of node.attributes) {
+            const parts = this.#parseTemplateString(attr.value);
+            if (parts) {
+              bindings.push({ type: 'attr', path: [...path], name: attr.name, parts });
+            }
+          }
+        }
+
+        // Nested Repeats: Stop recursion here.
+        // The nested repeat will handle its own templates when it upgrades.
+        if (node.localName === 'a-repeat') {
+          bindings.push({ type: 'nest-repeat', path: [...path] });
+          return;
+        }
+
+        // Nested Templates
+        if (node.localName === 'template') {
+          const contentBindings = this.#compile(node.content);
+          if (contentBindings.length > 0) {
+            bindings.push({
+              type: 'template-content',
+              path: [...path],
+              bindings: contentBindings
+            });
+          }
+          return;
+        }
+
+        // Recursion
+        const children = node.childNodes;
+        for (let i = 0; i < children.length; i++) {
+          crawl(children[i], [...path, i]);
+        }
       }
+    };
+
+    const children = fragment.childNodes;
+    for (let i = 0; i < children.length; i++) {
+      crawl(children[i], [i]);
     }
 
-    // --- Attribute Interpolation ---
-    if (node.attributes) {
-      for (const attr of node.attributes) {
-        if (attr.value.includes('{{')) {
-          attr.value = this.#replaceTokens(attr.value, item, index);
+    return bindings;
+  }
+
+  #parseTemplateString(str) {
+    if (!str.includes('{{')) return null;
+
+    const parts = [];
+    let lastIndex = 0;
+    // Use local RegExp to avoid global state issues
+    const regex = new RegExp(TOKEN_REGEX);
+    let match;
+
+    while ((match = regex.exec(str)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(str.slice(lastIndex, match.index));
+      }
+      parts.push({ token: match[1] });
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < str.length) {
+      parts.push(str.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : null;
+  }
+
+  /**
+   * Applies data to a cloned template instance using pre-compiled bindings.
+   */
+  #applyBindings(root, bindings, item, index) {
+    for (const binding of bindings) {
+      const node = this.#getNode(root, binding.path);
+      if (!node) continue;
+
+      switch (binding.type) {
+        case 'text':
+          node.nodeValue = this.#resolveBinding(binding.parts, item, index);
+          break;
+        case 'attr':
+          const val = this.#resolveBinding(binding.parts, item, index);
+          // Block event handlers
+          if (binding.name.startsWith('on')) {
+            console.warn(`a-repeat: Blocked interpolation into event handler "${binding.name}"`, this);
+            node.removeAttribute(binding.name);
+          } else {
+            node.setAttribute(binding.name, val);
+          }
+          break;
+        case 'nest-repeat':
+          // Pass context to nested repeats
+          if (!node.hasAttribute('model')) node.model = item;
+          if (!node.hasAttribute('scope') && this.scope) node.scope = this.#scope;
+          break;
+        case 'template-content':
+          // Recurse for <template> tags inside the template
+          this.#applyBindings(node.content, binding.bindings, item, index);
+          break;
+      }
+    }
+  }
+
+  #getNode(root, path) {
+    let node = root;
+    for (const i of path) {
+      if (!node.childNodes || !node.childNodes[i]) return null;
+      node = node.childNodes[i];
+    }
+    return node;
+  }
+
+  #resolveBinding(parts, item, index) {
+    let result = '';
+    for (const part of parts) {
+      if (typeof part === 'string') {
+        result += part;
+      } else {
+        result += this.#evaluateToken(part.token, item, index);
+      }
+    }
+    return result;
+  }
+
+  #evaluateToken(path, item, index) {
+    if (path === 'index') return index;
+    if (path === 'this' || path === 'item') {
+      return (typeof item === 'object') ? '' : item;
+    }
+
+    let val = PathResolver.getValue(item, path);
+
+    if (val === undefined && this.#scope) {
+      val = PathResolver.getValue(this.#scope, path);
+    }
+
+    // Security Whitelist for URLs
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (PROTOCOL_REGEX.test(trimmed)) {
+        try {
+          const url = new URL(trimmed);
+          if (!ALLOWED_PROTOCOLS.has(url.protocol)) {
+            console.warn(`a-repeat: blocked unsafe URI protocol "${url.protocol}"`, this);
+            return '';
+          }
+        } catch (e) {
+          // Not absolute URL, pass through
         }
       }
     }
 
-    if (isNestedRepeat) return;
-
-    // --- Text Node Interpolation ---
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.nodeValue;
-      if (text.includes('{{')) {
-        node.nodeValue = this.#replaceTokens(text, item, index);
-      }
-    }
-
-    // --- Recursion ---
-    // If it's a template element (nested template), we recurse into its content
-    // to ensure tokens are replaced before the template is potentially used.
-    if (node.localName === 'template') {
-       this.#interpolate(node.content, item, index);
-       return;
-    }
-
-    // Standard child recursion
-    if (node.hasChildNodes()) {
-      // Convert to array to avoid issues if DOM changes during iteration
-      Array.from(node.childNodes).forEach(child =>
-        this.#interpolate(child, item, index)
-      );
+    if (val === undefined || val === null || typeof val === 'object') {
+      return '';
+    } else {
+      return val;
     }
   }
 
   #registerTemplate(tmpl) {
     if (!(tmpl instanceof HTMLTemplateElement)) return;
+    const content = tmpl.content;
+    const bindings = this.#compile(content);
+    const def = { content, bindings };
+
     const template = tmpl.id;
     if (template) {
-      this.#templateMap.set(template, tmpl.content);
+      this.#templateMap.set(template, def);
     } else if (!this.#defaultTemplate) {
-      this.#defaultTemplate = tmpl.content;
+      this.#defaultTemplate = def;
     }
   }
 
@@ -283,7 +411,7 @@ export default class ARepeat extends HTMLElement {
     const oldData = this.#data;
     this.#data = data;
 
-    // Generate DOM content for a single item
+    // Helper: Create DOM content for a single item
     const createNode = (item, index) => {
       let templateId = item.template;
       if (typeof templateId === 'string' && templateId.startsWith('#')) {
@@ -292,8 +420,8 @@ export default class ARepeat extends HTMLElement {
       const selectedTemplate = this.#templateMap.get(templateId) || this.#defaultTemplate;
 
       if (selectedTemplate) {
-        const clone = selectedTemplate.cloneNode(true);
-        this.#interpolate(clone, item, index);
+        const clone = selectedTemplate.content.cloneNode(true);
+        this.#applyBindings(clone, selectedTemplate.bindings, item, index);
         return clone;
       }
       return null;
@@ -407,44 +535,6 @@ export default class ARepeat extends HTMLElement {
       });
       parent.replaceChildren(fragment);
     }
-  }
-
-  #replaceTokens(str, item, index) {
-    return str.replace(TOKEN_REGEX, (match, path) => {
-      if (path === 'index') return index;
-      if (path === 'this' || path === 'item') {
-        return (typeof item === 'object') ? '' : item;
-      }
-
-      let val = PathResolver.getValue(item, path);
-
-      if (val === undefined && this.#scope) {
-        val = PathResolver.getValue(this.#scope, path);
-      }
-
-      // Security Whitelist
-      if (typeof val === 'string') {
-        const trimmed = val.trim();
-
-        if (PROTOCOL_REGEX.test(trimmed)) {
-          try {
-            const url = new URL(trimmed);
-            if (!ALLOWED_PROTOCOLS.has(url.protocol)) {
-              console.warn(`a-repeat: blocked unsafe URI protocol "${url.protocol}"`, this);
-              return '';
-            }
-          } catch (e) {
-            // Not absolute URL, pass through
-          }
-        }
-      }
-
-      if (val === undefined  || val === null || typeof val === 'object') {
-        return '';
-      } else {
-        return val;
-      }
-    });
   }
 
   /**

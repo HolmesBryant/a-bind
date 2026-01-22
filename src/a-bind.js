@@ -210,9 +210,14 @@ export default class ABind extends HTMLElement {
     }
 
     // Boolean update logic
-    if (name === 'checked' && target instanceof HTMLElement && (target.type === 'checkbox' || target.type === 'radio')) {
-      return this.#handleBooleanUpdate(target, value);
+    if (target instanceof HTMLElement && (target.type === 'checkbox' || target.type === 'radio')) {
+      if (name === 'checked' || name === this.#elemProp) {
+        return this.#handleBooleanUpdate(target, value);
+      }
     }
+    /*if (name === 'checked' && target instanceof HTMLElement && (target.type === 'checkbox' || target.type === 'radio')) {
+      return this.#handleBooleanUpdate(target, value);
+    }*/
 
     // Select/Datalist logic
     if (
@@ -250,7 +255,7 @@ export default class ABind extends HTMLElement {
 
     // Standard property/attribute
     const isElement = typeof target.setAttribute === 'function';
-    const parsedValue = this.#parsedValue(value);
+    const parsedValue = this.#parsedValue(value, target);
 
     if (name in target) {
       try {
@@ -281,6 +286,25 @@ export default class ABind extends HTMLElement {
     if (!this.#pull) {
       this.#bound.addEventListener(this.#event, event => {
         let value = this.#bound[this.#elemProp];
+        const isCheckbox = this.#bound instanceof HTMLInputElement && this.#bound.type === 'checkbox';
+
+        // Multi-Select Box Logic (Array Mutation) OR Boolean Toggle
+        if (isCheckbox && this.#model) {
+          const currentModelVal = this.#getPropertyValue(this.#model, prop);
+
+          if (Array.isArray(currentModelVal)) {
+            const boxValue = this.#bound.value;
+            const isChecked = this.#bound.checked;
+            // Clone array to trigger immutability detection/reactivity
+            value = isChecked
+              ? [...currentModelVal, boxValue]
+              : currentModelVal.filter(item => item !== boxValue);
+          } else if (typeof currentModelVal === 'boolean') {
+            // If model is boolean, ignore 'value' attribute and toggle state
+            value = this.#bound.checked;
+          }
+        }
+
         if (this.#bound instanceof HTMLSelectElement && this.#bound.multiple) {
           value = Array.from(this.#bound.selectedOptions).map(option => option.value || option.text);
         }
@@ -414,15 +438,31 @@ export default class ABind extends HTMLElement {
    */
 
   #handleBooleanUpdate(target, value) {
-    const modelValue = this.#parsedValue(value);
+    const modelValue = this.#parsedValue(value, target);
+    let comparisonValue;
 
-    // Compare against the 'value' attribute if it exists
-    // otherwise, compare against boolean true
-    const comparisonValue = target.hasAttribute('value')
-      ? this.#parsedValue(target.getAttribute('value'))
-      : true;
+    if (this.#elemProp === 'checked') {
+      comparisonValue = target.hasAttribute('value')
+        ? this.#parsedValue(target.getAttribute('value'), target)
+        : true;
+    } else {
+      comparisonValue = (this.#elemProp in target)
+        ? target[this.#elemProp]
+        : target.getAttribute(this.#elemProp);
+      comparisonValue = this.#parsedValue(comparisonValue, target);
+    }
 
-    target.checked = (modelValue === comparisonValue);
+    // Support Array.includes for Multi-Select Checkboxes
+    if (Array.isArray(modelValue) && target.type === 'checkbox') {
+      target.checked = modelValue.includes(comparisonValue);
+    }
+    // Support strict Boolean binding (ignoring value attribute)
+    else if (typeof modelValue === 'boolean' && target.type === 'checkbox') {
+      target.checked = modelValue;
+    }
+    else {
+      target.checked = (modelValue === comparisonValue);
+    }
 
     this.log?.('handleBooleanUpdate()', {target, value, targetChecked: target.checked});
   }
@@ -497,7 +537,7 @@ export default class ABind extends HTMLElement {
           current[lastProp] = value;
         }
       } else {
-        current[lastProp] = this.#parsedValue(value);
+        current[lastProp] = this.#parsedValue(value, target);
       }
     } catch (error) {
       console.warn(`a-bind: Failed to set nested property "${name}"`, error);
@@ -510,21 +550,12 @@ export default class ABind extends HTMLElement {
     if (this.debug && !this.log) this.log = await this.#attachLogger();
     this.log?.('init()');
 
-    // first attempt. suppress errors
-    let modelReady = await this.#resolveModel(gen, true);
-
-    if (!modelReady) {
-      this.log?.('init(): Model not found, waiting...');
-
-      // wait for network/DOM/whitelist
-      await new Promise( resolve => setTimeout( resolve, 50));
-      if (this.#shouldBail(gen)) return;
-
-      // second attempt
-      modelReady = await this.#resolveModel(gen);
-    }
+    // Attempt to resolve model. This will wait (via Loader) if the model is pending.
+    const modelReady = await this.#resolveModel(gen);
 
     if (!modelReady) return;
+    if (this.#shouldBail(gen)) return;
+
     if (!this.#resolveGroup()) return;
 
     // resolveGroup() might trigger a model setter which triggers reinit().
@@ -547,9 +578,12 @@ export default class ABind extends HTMLElement {
     this.#addListeners();
   }
 
-  #parsedValue(value) {
-    if (value === 'true') value = true;
-    if (value === 'false') value = false;
+  #parsedValue(value, target) {
+    // Only coerce strings to boolean if the target is a Checkbox or Radio
+    if (target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio')) {
+      if (value === 'true') value = true;
+      if (value === 'false') value = false;
+    }
     if (value === null || value === undefined) value = '';
     this.log?.('parsedValue()', value);
     return value;
@@ -583,7 +617,7 @@ export default class ABind extends HTMLElement {
     return true;
   }
 
-  async #resolveModel(gen, suppressError = false) {
+  async #resolveModel(gen) {
     this.log?.('resolveModel()', {gen});
     if (this.#model && !this.#modelKey) {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
@@ -603,9 +637,7 @@ export default class ABind extends HTMLElement {
       this.#model = await loader.load(this.#modelKey, this);
       return true;
     } catch (error) {
-      if (!suppressError) {
-        console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error);
-      }
+      console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error);
       return false;
     }
   }
@@ -706,11 +738,11 @@ export default class ABind extends HTMLElement {
       value = this.#bound.value;
     }
 
-    // Use key for UpdateManager to ensure batching works
+    // Use key for Scheduler to ensure batching works
     const taskKey = `abind-update::${this.#busKey}`;
     const doUpdate = (newValue) => {
       const currentValue = this.#getPropertyValue(this.#model, prop);
-      const hasChanged = this.#parsedValue(newValue) !== this.#parsedValue(currentValue);
+      const hasChanged = this.#parsedValue(newValue, this.#bound) !== this.#parsedValue(currentValue, this.#bound);
       if (hasChanged && newValue !== undefined) {
         this.applyUpdate(this.#model, prop, newValue);
         crosstownBus.announce(this.#busKey, newValue);

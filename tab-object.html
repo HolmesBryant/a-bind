@@ -32,8 +32,10 @@
             <a-repeat prop="control">
 
               <template id="tmpl-basic">
-                <a-bind prop="{{prop}}" class="input">
-                  <input id="{{inputId}}" type="{{inputType}}">
+                <a-bind
+                  prop="{{prop}}"
+                  class="input">
+                  <input id="{{inputId}}" type="{{inputType}}" value="{{inputValue}}">
                 </a-bind>
               </template>
 

@@ -3,63 +3,45 @@
  */
 const DEFAULTS = {
 	text: "Initial Text",
-	datalist: 'One, Two, Three',
-	search: "Search Term",
-	password: "password",
-	tel: "123-456-7890",
-	url: "https://url.com",
 	email: "name@email.com",
 	number: 12345,
 	textarea: "Initial content.",
 	date: "1914-12-25",
-	time: "00:00",
-	dateTime: "1914-12-24T10:00",
-	week: "1970-W01",
-	month: "1970-01",
-	select: "",
+	selected: "bar",
 	selectMulti: 'foo, baz',
-	checkboxFoo: 'foo',
+	checkbox: 'foo',
 	checkboxBool: undefined,
 	radioGroup: 'foo',
 	button: "Click Me!",
 	color: "#cd5c5c",
-	range: '50',
-	progress: '50',
-	meter: '50',
+	range: 50,
+	progress: 50,
+	// meter: 50,
 	file: null,
-	name: 'My Name',
-	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>"
+	name: "My Name",
+	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
 };
 
 const testObject = {
 	_text: "Initial Text",
-	_datalist: 'One, Two, Three',
-	_datalistHtml: '<option>One</option><option>Two</option><option>Three</option>',
-	_search: "Search Term",
-	_password: "password",
-	_tel: "123-456-7890",
-	_url: "https://url.com",
 	_email: "name@email.com",
 	_number: 12345,
 	_textarea: "Initial content.",
 	_date: "1914-12-25",
-	_time: "00:00",
-	_dateTime: "1914-12-24T10:00",
-	_week: "1970-W01",
-	_month: "1970-01",
 	_selected: "bar",
 	_selectMulti: 'foo, baz',
-	_checkboxFoo: 'foo',
+	_checkbox: 'foo',
 	_checkboxBool: undefined,
 	_radioGroup: 'foo',
 	_button: "Click Me!",
 	_color: "#cd5c5c",
 	_range: 50,
 	_progress: 50,
-	_meter: 50,
+	// _meter: 50,
 	_file: null,
 	_name: "My Name",
 	_editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
+
 	_editableFormatted: "",
 	_editableRegex: /(<[^>]+>)(?=[^\r\n])/g,
 
@@ -76,7 +58,7 @@ const testObject = {
 			inputType: 'text',
 			inputId: 'o-inputtext',
 			label: 'input type="text"',
-			model: 'testObject',
+			model: 'mod:testObject',
 			prop: 'text',
 			template: 'tmpl-section',
 			newval: 'New Value',
@@ -84,14 +66,15 @@ const testObject = {
 				template: 'tmpl-basic',
 				inputType: 'text',
 				inputId: 'o-inputtext',
-				prop: 'text'
+				prop: 'text',
+				elemProp: 'value'
 			}]
 		},
 		{
 			inputType: 'date',
 			inputId: 'o-inputdate',
 			label: 'input type="date"',
-			model: 'testObject',
+			model: 'mod:testObject',
 			prop: 'date',
 			template: 'tmpl-section',
 			newval: '1215-06-15',
@@ -99,13 +82,14 @@ const testObject = {
 				template: 'tmpl-basic',
 				inputType: 'date',
 				inputId: 'o-inputdate',
-				prop: 'date'
+				prop: 'date',
+				elemProp: 'value'
 			}]
 		},
 		{
 			inputId: 'o-select',
 			label: 'select',
-			model: 'testObject',
+			model: 'mod:testObject',
 			prop: 'selected',
 			newval: 'baz',
 			template: 'tmpl-section',
@@ -119,7 +103,7 @@ const testObject = {
 		{
 			inputId: 'o-select-multi',
 			label: 'select multiple',
-			model: 'testObject',
+			model: 'mod:testObject',
 			prop: 'selectMulti',
 			template: 'tmpl-section',
 			newval: 'bar, baz',
@@ -128,6 +112,36 @@ const testObject = {
 				inputId: 'o-select-multi',
 				prop: 'selectMulti',
 				options: 'optionsA'
+			}]
+		},
+		{
+			inputId: 'o-checkbox',
+			label: 'checkbox value = "foo"',
+			model: 'mod:testObject',
+			prop: 'checkbox',
+			newval: 'bar',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-basic',
+				inputType: 'checkbox',
+				inputId: 'o-checkbox',
+				inputValue: 'foo',
+				prop: 'checkbox',
+			}]
+		},
+		{
+			inputId: 'o-checkbox-bool',
+			label: 'checkbox (boolean)',
+			model: 'mod:testObject',
+			prop: 'checkboxBool',
+			newval: true,
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-basic',
+				inputType: 'checkbox',
+				inputId: 'o-checkbox-bool',
+				inputValue: null,
+				prop: 'checkboxBool',
 			}]
 		}
 	],
@@ -290,11 +304,6 @@ const testObject = {
 		}
 	},
 
-	resetForm(event) {
-		ABind?.update?.(this, 'name', DEFAULTS['name']);
-		ABind?.update?.(this, 'email', DEFAULTS['email']);
-	},
-
 	sendForm(event) {
 		const form = event.target.localName === 'form' ? event.target : event.target.form;
 		const formdata = new FormData(form);
@@ -321,26 +330,6 @@ const testObject = {
 		this._text = value;
 	},
 
-	get search() { return this._search },
-	set search(value) {
-		this._search = value;
-	},
-
-	get password() { return this._password},
-	set password(value) {
-		this._password = value;
-	},
-
-	get tel() { return this._tel },
-	set tel(value) {
-		this._tel = value;
-	},
-
-	get url() { return this._url },
-	set url(value) {
-		this._url = value;
-	},
-
 	get email() { return this._email },
 	set email(value) {
 		this._email = value;
@@ -361,26 +350,6 @@ const testObject = {
 		this._date = value;
 	},
 
-	get time() { return this._time },
-	set time(value) {
-		this._time = value;
-	},
-
-	get dateTime() { return this._dateTime },
-	set dateTime(value) {
-		this._dateTime = value;
-	},
-
-	get week() { return this._week },
-	set week(value) {
-		this._week = value;
-	},
-
-	get month() { return this._month },
-	set month(value) {
-		this._month = value;
-	},
-
 	get selected() { return this._selected },
 	set selected(value) {
 		this._selected = value;
@@ -391,9 +360,9 @@ const testObject = {
 		this._selectMulti = value;
 	},
 
-	get checkboxFoo() { return this._checkboxFoo },
-	set checkboxFoo(value) {
-		this._checkboxFoo = value;
+	get checkbox() { return this._checkbox },
+	set checkbox(value) {
+		this._checkbox = value;
 	},
 
 	get checkboxBool() { return this._checkboxBool },
@@ -424,11 +393,6 @@ const testObject = {
 	get progress() { return this._progress },
 	set progress(value) {
 		this._progress = value;
-	},
-
-	get meter() { return this._meter },
-	set meter(value) {
-		this._meter = value;
 	},
 
 	get file() { return this._file; },

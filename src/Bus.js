@@ -26,11 +26,13 @@ class Bus {
       typeof model === 'function') {
       modelId = Bus.#modelIds.get(model);
       if (!modelId) {
-        modelId = `m${++Bus.#idCounter}`;
+        // Add "ref:" prefix for Objects
+        modelId = `ref:m${++Bus.#idCounter}`;
         Bus.#modelIds.set(model, modelId);
       }
     } else {
-      modelId = String(model);
+      // Add "val:" prefix for Primitives
+      modelId = `val:${String(model)}`;
     }
 
     return `abus::${modelId}:${property}`;

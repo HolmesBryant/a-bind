@@ -66,8 +66,9 @@ export default class ABindgroup extends HTMLElement {
     // if a-bindgroup was inserted into DOM programatically without first appending children
     if (!this.firstElementChild) {
       if (this.#debug) console.warn('a-bindgroup: waiting for children');
+
       this.#childObserver = new MutationObserver(() => {
-        if (this.#isConnected && this.firstElementChild) {
+        if (this.#isConnected && this.querySelector('a-bind, a-repeat')) {
           this.#childObserver.disconnect();
           this.#childObserver = null;
           if (this.#debug) console.warn('a-bindgroup: children have arrived');

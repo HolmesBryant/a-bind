@@ -16,7 +16,7 @@ export default class Loader {
   #pending = new Map();
   #deferred = new Map();
   #validator = null;
-  timeout = 1000;
+  timeout = 2000;
 
   /**
    * Universal registration method.
@@ -30,10 +30,12 @@ export default class Loader {
     if (typeof keyOrRoot === 'object' && keyOrRoot !== null) {
       this.#namespace = keyOrRoot;
       // Resolve pending waiters immediately
-      for (const [key, { resolve }] of this.#deferred) {
-        if (Object.hasOwn(this.#namespace, key)) {
+      for (const [key, { resolve, timer }] of this.#deferred) {
+        const val = PathResolver.getValue(this.#namespace, key);
+        if (val !== undefined) {
+          clearTimeout(timer);
           this.#deferred.delete(key);
-          resolve(this.#namespace[key]);
+          resolve(val);
         }
       }
       return;
@@ -45,7 +47,8 @@ export default class Loader {
       this.#registry.set(key, value);
       // Resolve pending waiters
       if (this.#deferred.has(key)) {
-        const { resolve } = this.#deferred.get(key);
+        const { resolve, timer } = this.#deferred.get(key);
+        clearTimeout(timer);
         this.#deferred.delete(key);
         resolve(value);
       }
@@ -98,25 +101,15 @@ export default class Loader {
       return this.#getDomElement(key.substring(key.indexOf(':') + 1), context);
     }
 
-    // Check if the key exists in the object passed to loader.define()
+     // Check if the key exists in the object passed to loader.define()
     if (this.#namespace) {
-      try {
-        // Check if availabile now
-        const immediate = PathResolver.getValue(this.#namespace, key);
-        if (immediate !== undefined) return immediate;
-
-        // Wait for it to appear
-        return await this.when(
-          () => PathResolver.getValue(this.#namespace, key),
-          this.timeout,
-          50
-        );
-      } catch (e) { /* Fallthrough */ }
+      const immediate = PathResolver.getValue(this.#namespace, key);
+      if (immediate !== undefined) return immediate;
     }
 
     // If it's a simple key (no dots or slashes), assume it might be defined later.
     if (!key.includes('/') && !key.includes('#') && !key.includes('.')) {
-       return this.#waitForDefinition(key);
+      return this.#waitForDefinition(key);
     }
 
     // Fallback: DOM Selector
@@ -124,33 +117,20 @@ export default class Loader {
   }
 
   #waitForDefinition(key) {
-    return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        if (this.#deferred.has(key)) {
-            this.#deferred.delete(key);
-            resolve(undefined);
-        }
-      }, 2000);
+    if (this.#deferred.has(key)) return this.#deferred.get(key).promise;
 
-      this.#deferred.set(key, {
-        resolve: (val) => { clearTimeout(timer); resolve(val); }
-      });
-    });
+    let resolve, reject;
+    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    const timer = setTimeout(() => {
+      if (this.#deferred.has(key)) {
+          this.#deferred.delete(key);
+          reject(new Error(`Loader: Timeout waiting for definition of "${key}"`));
+      }
+    }, this.timeout);
+
+    this.#deferred.set(key, { promise, resolve, timer });
+    return promise;
   }
-
-  async when(predicate, timeout = 1000, interval = 50) {
-    const startTime = performance.now();
-    while (true) {
-      try {
-        const result = await predicate();
-        if (result !== undefined && result !== null && result !== false) return result;
-      } catch (e) {}
-      if (performance.now() - startTime >= timeout) throw new Error('Timeout');
-      await this.wait(interval);
-    }
-  }
-
-  wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   async #importModule(path, ...args) {
     try {
