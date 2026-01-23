@@ -23,24 +23,24 @@ const DEFAULTS = {
 };
 
 const testObject = {
-	_text: "Initial Text",
-	_email: "name@email.com",
-	_number: 12345,
-	_textarea: "Initial content.",
-	_date: "1914-12-25",
-	_selected: "bar",
-	_selectMulti: 'foo, baz',
-	_checkbox: 'foo',
-	_checkboxBool: undefined,
-	_radioGroup: 'foo',
-	_button: "Click Me!",
-	_color: "#cd5c5c",
-	_range: 50,
-	_progress: 50,
-	// _meter: 50,
-	_file: null,
-	_name: "My Name",
-	_editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
+	text: "Initial Text",
+	email: "name@email.com",
+	number: 12345,
+	textarea: "Initial content.",
+	date: "1914-12-25",
+	selected: "bar",
+	selectMulti: 'foo, baz',
+	checkbox: 'foo',
+	checkboxBool: undefined,
+	_checkboxArr: ['foo', 'baz'],
+	radioGroup: 'foo',
+	button: "Click Me!",
+	color: "#cd5c5c",
+	range: 50,
+	progress: 50,
+	file: null,
+	name: "My Name",
+	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
 
 	_editableFormatted: "",
 	_editableRegex: /(<[^>]+>)(?=[^\r\n])/g,
@@ -126,22 +126,37 @@ const testObject = {
 				inputType: 'checkbox',
 				inputId: 'o-checkbox',
 				inputValue: 'foo',
+				elemProp: 'value',
 				prop: 'checkbox',
 			}]
 		},
 		{
 			inputId: 'o-checkbox-bool',
-			label: 'checkbox (boolean)',
+			label: 'checkbox (no value)',
 			model: 'mod:testObject',
 			prop: 'checkboxBool',
 			newval: true,
 			template: 'tmpl-section',
 			control: [{
-				template: 'tmpl-basic',
+				template: 'tmpl-checkbox',
 				inputType: 'checkbox',
 				inputId: 'o-checkbox-bool',
-				inputValue: null,
+				inputValue: 'false',
 				prop: 'checkboxBool',
+				elemProp: 'checked'
+			}]
+		},
+		{
+			inputId: 'o-checkbox-arr',
+			label: 'checkboxes bound to array',
+			model: 'mod:testObject',
+			prop: 'checkboxArr',
+			newval: 'bar',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-checkbox-arr',
+				inputType: 'checkbox',
+				prop: 'checkboxArr',
 			}]
 		}
 	],
@@ -325,84 +340,14 @@ const testObject = {
     this.notify(fakeEvent);
 	},
 
-	get text() { return this._text },
-	set text(value) {
-		this._text = value;
-	},
+	get checkboxArr() { return this._checkboxArr },
 
-	get email() { return this._email },
-	set email(value) {
-		this._email = value;
-	},
-
-	get number() { return this._number },
-	set number(value) {
-		this._number = value;
-	},
-
-	get textarea() { return this._textarea },
-	set textarea(value) {
-		this._textarea = value;
-	},
-
-	get date() { return this._date },
-	set date(value) {
-		this._date = value;
-	},
-
-	get selected() { return this._selected },
-	set selected(value) {
-		this._selected = value;
-	},
-
-	get selectMulti() { return this._selectMulti },
-	set selectMulti(value) {
-		this._selectMulti = value;
-	},
-
-	get checkbox() { return this._checkbox },
-	set checkbox(value) {
-		this._checkbox = value;
-	},
-
-	get checkboxBool() { return this._checkboxBool },
-	set checkboxBool(value) {
-		this._checkboxBool = value !== false;
-	},
-
-	get radioGroup() { return this._radioGroup },
-	set radioGroup(value) {
-		this._radioGroup = value;
-	},
-
-	get button() { return this._button },
-	set button(value) {
-		this._button = value;
-	},
-
-	get color() { return this._color },
-	set color(value) {
-		this._color = value;
-	},
-
-	get range() { return this._range },
-	set range(value) {
-		this._range = value;
-	},
-
-	get progress() { return this._progress },
-	set progress(value) {
-		this._progress = value;
-	},
-
-	get file() { return this._file; },
-	set file(value) {
-		this._file = value;
-	},
-
-	get name() { return this._name },
-	set name(value) {
-		this._name = value;
+	set checkboxArr(value) {
+		if (Array.isArray(value)) {
+			this._checkboxArr = value;
+		} else {
+			this._checkboxArr = value.split(',')
+		}
 	},
 
 	get editable() {

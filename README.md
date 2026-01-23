@@ -1,3 +1,30 @@
+when binding output elements to properties that contain boolean values, use elem-prop="textContent"
+
+for checkbox/radio inputs which depend on boolean values, use elem-prop="checked"
+
+when using a-repeat to populate a select or datalist element with options and the bound property on the model is a simple array ie. ['foo', 'bar'], use {{this}} as the variable in the template.
+// myModel.js
+const myModel = {
+  selected: 'foo',
+  options: ['foo', 'bar']
+}
+
+export myModel;
+
+<!-- page.html -->
+a-bind model="mod:./myModel.js" prop="selected">
+  select id="my-select"></select>
+/a-bind>
+
+a-repeat
+  target="#my-select"
+  prop="options">
+
+  template>
+    option value="{{this}}">{{this}}</option>
+  /template>
+/a-repeat>
+
 # a-bind.js
 
 Data-binding for Custom Elements and ESM Modules.

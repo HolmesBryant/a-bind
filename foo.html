@@ -6,20 +6,22 @@
 	<title>FOO</title>
 	<script type="module" src="src/index.js"></script>
   <script type="module">
-  import ABind, {loader} from './src/index.js';
+    import {loader} from './src/index.js';
 
-  const Obj = {
-    _checkbox: true,
-    selected: ['foo', 'bar'],
-    get checkbox() { return this._checkbox },
-    set checkbox(value) {
-      console.log(value);
-      this._checkbox = value;
+    const Obj = {
+      checkbox: 'foo',
+      selected: ['foo', 'baz'],
+      options: ['foo', 'bar', 'baz'],
+      sections: [
+        {
+          prop: 'selected',
+          inputId: 'select'
+        }
+      ]
     }
-  }
 
-  loader.define('obj', Obj);
-</script>
+    loader.define('obj', Obj);
+  </script>
 
   <script type="module">
     class MyElem extends HTMLElement {
@@ -91,16 +93,20 @@
 
 <h1>Foo</h1>
 
-<a-bind model="obj" prop="checkbox">
-  <input name="mailingList" type="checkbox">
-</a-bind>
+<a-bindgroup model="obj">
+  <a-bind prop="selected">
+    <select id="my-select" multiple></select>
+  </a-bind>
 
-<a-bind pull model="obj" prop="checkbox">
-  <output>...</output>
-</a-bind>
-
-
-<!-- <my-elem></my-elem> -->
+  <a-repeat
+    target="#my-select"
+    prop="options"
+    scope="obj">
+    <template>
+      <option value="{{this}}">{{this}}</option>
+    </template>
+  </a-repeat>
+</a-bindgroup>
 
 </body>
 </html>

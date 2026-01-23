@@ -215,17 +215,6 @@ export default class ABind extends HTMLElement {
         return this.#handleBooleanUpdate(target, value);
       }
     }
-    /*if (name === 'checked' && target instanceof HTMLElement && (target.type === 'checkbox' || target.type === 'radio')) {
-      return this.#handleBooleanUpdate(target, value);
-    }*/
-
-    // Select/Datalist logic
-    if (
-      (target instanceof HTMLSelectElement || target instanceof HTMLDataListElement)
-      && name !== 'value'
-    ) {
-      return this.#handleListUpdate(target, value);
-    }
 
     // CSS variables
     if (name.startsWith('--') && target.style) {
@@ -467,23 +456,6 @@ export default class ABind extends HTMLElement {
     this.log?.('handleBooleanUpdate()', {target, value, targetChecked: target.checked});
   }
 
-  /**
-   * logic for Select and Datalist options.
-   */
-  #handleListUpdate(target, value) {
-    let items = null;
-    if (Array.isArray(value)) {
-      items = value;
-    } else if (typeof value === 'string') {
-      items = value.split(',').map( item => item.trim()).filter(Boolean);
-    } else if (typeof value === 'string') {
-      items = [value.trim()];
-    }
-
-    if (items) this.#setOptions(target, items);
-    this.log?.('handleListUpdate()', {target, value, items});
-  }
-
   #handleMutation() {
     if (!this.isConnected) return;
 
@@ -494,11 +466,22 @@ export default class ABind extends HTMLElement {
       return;
     }
 
-    // update model if bound element changes
+    // DOM change. re-sync model -> view
     if (this.#bound && this.#model) {
-      const prop = this.#property || this.#modelAttr;
-      const val = this.#getPropertyValue(this.#model, prop);
-      this.applyUpdate(this.#bound, this.#elemProp, val);
+      // stop watching temporarily to prevent infinite loops
+      this.#observer.disconnect();
+      try {
+        const prop = this.#property || this.#modelAttr;
+        const val = this.#getPropertyValue(this.#model, prop);
+
+        // re-apply model value to DOM
+        this.applyUpdate(this.#bound, this.#elemProp, val);
+      } finally {
+        // start watching again
+        if (this.#canHaveChildren(this.#bound)) {
+          this.#observer.observe(this.#bound, { childList: true });
+        }
+      }
     }
   }
 
@@ -650,28 +633,6 @@ export default class ABind extends HTMLElement {
       console.error(`a-bind: Failed to load target element. ${this.target}`, this, error);
       return;
     }
-  }
-
-  /**
-   * Builds option elements using the Option constructor.
-   */
-  #setOptions(target, items) {
-    const optionElements = items.map( item => {
-      if (item === null || item === undefined) return null;
-
-      const text = typeof item === 'object' ?
-        (item.text || item.label || item.name || JSON.stringify(item)) :
-        String(item);
-
-      const val = typeof item === 'object' ?
-        (item.value !== undefined ? item.value : (item.id || text)) :
-        String(item);
-
-      return new Option(text, val);
-    }).filter(Boolean); // remove nulls if an item is invalid
-
-    target.replaceChildren(...optionElements);
-    this.log?.('setOptions()', {target, items});
   }
 
   /**

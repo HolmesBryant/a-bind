@@ -34,9 +34,55 @@
               <template id="tmpl-basic">
                 <a-bind
                   prop="{{prop}}"
+                  elem-prop="{{elemProp}}"
                   class="input">
                   <input id="{{inputId}}" type="{{inputType}}" value="{{inputValue}}">
                 </a-bind>
+              </template>
+
+              <template id="tmpl-checkbox">
+                <a-bind
+                  prop="{{prop}}"
+                  elem-prop="{{elem-prop}}"
+                  class="input">
+                  <input
+                    id="{{inputId}}"
+                    type="{{inputType}}">
+                </a-bind>
+              </template>
+
+              <template id="tmpl-checkbox-arr">
+                <div class="flex column">
+                  <div class="flex row-reverse">
+                    <label for="checkbox-foo">
+                      value="foo"
+                    </label>
+
+                    <a-bind prop="{{prop}}">
+                      <input id="checkbox-foo" type="checkbox" value="foo">
+                    </a-bind>
+                  </div>
+
+                  <div class="flex row-reverse">
+                    <label for="checkbox-bar">
+                      value="bar"
+                    </label>
+
+                    <a-bind prop="{{prop}}">
+                      <input id="checkbox-bar" type="checkbox" value="bar">
+                    </a-bind>
+                  </div>
+
+                  <div class="flex row-reverse">
+                    <label for="checkbox=baz">
+                      value="baz"
+                    </label>
+
+                    <a-bind prop="{{prop}}">
+                      <input id="checkbox-baz" type="checkbox" value="baz">
+                    </a-bind>
+                  </div>
+                </div>
               </template>
 
               <template id="tmpl-select">
@@ -71,7 +117,7 @@
                     <option value="{{value}}">{{label}}</option>
                   </template>
                 </a-repeat>
-              </template><!-- tmpl-select -->
+              </template><!-- tmpl-select-multi -->
 
             </a-repeat>
 
