@@ -31,14 +31,14 @@ const testObject = {
 	selected: "bar",
 	selectMulti: 'foo, baz',
 	checkbox: 'foo',
-	checkboxBool: undefined,
+	checkboxBool: false,
 	_checkboxArr: ['foo', 'baz'],
 	radioGroup: 'foo',
-	button: "Click Me!",
+	button: "initial property value",
 	color: "#cd5c5c",
 	range: 50,
 	progress: 50,
-	file: null,
+	file: undefined,
 	name: "My Name",
 	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
 
@@ -55,117 +55,518 @@ const testObject = {
 
 	sections: [
 		{
-			inputType: 'text',
-			inputId: 'o-inputtext',
-			label: 'input type="text"',
-			model: 'mod:testObject',
 			prop: 'text',
-			template: 'tmpl-section',
+			inputId: 'o-inputtext',
+			model: 'mod:testObject',
 			newval: 'New Value',
+			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-basic',
+				label: 'input type="text"',
 				inputType: 'text',
 				inputId: 'o-inputtext',
 				prop: 'text',
 				elemProp: 'value'
-			}]
+			}],
+			outputCode: `
+				<a-bind
+					pull
+					model="testObject"
+					prop="text">
+
+					<output></output>
+				</a-bind>`,
+			inputCode: `
+				<a-bind
+					model="testObject"
+					prop="text">
+
+					<input type="text">
+				</a-bind>`,
 		},
 		{
-			inputType: 'date',
-			inputId: 'o-inputdate',
-			label: 'input type="date"',
-			model: 'mod:testObject',
 			prop: 'date',
-			template: 'tmpl-section',
+			inputId: 'o-inputdate',
+			model: 'mod:testObject',
 			newval: '1215-06-15',
+			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-basic',
+				label: 'input type="date"',
 				inputType: 'date',
 				inputId: 'o-inputdate',
 				prop: 'date',
 				elemProp: 'value'
-			}]
+			}],
+			outputCode: `
+				<a-bind
+					pull
+					model="testObject"
+					prop="date">
+
+					<output></output>
+				</a-bind>`,
+			inputCode: `
+				<a-bind
+					model="testObject"
+					prop="date">
+
+					<input type="date">
+				</a-bind>`,
 		},
 		{
-			inputId: 'o-select',
-			label: 'select',
+			prop: 'color',
+			inputId: 'o-inputcolor',
 			model: 'mod:testObject',
+			newval: '#049f9d',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-color',
+				label: 'input type="color"',
+				inputType: 'color',
+				inputId: 'o-inputcolor',
+				prop: 'color',
+				elemProp: 'value'
+			}],
+			outputCode: `
+				<a-bind
+					pull
+					model="testObject"
+					prop="color">
+
+					<output></output>
+				</a-bind>`,
+			inputCode: `
+				<a-bind
+					model="testObject"
+					prop="color">
+
+					<input type="color">
+				</a-bind>`,
+		},
+		{
 			prop: 'selected',
+			inputId: 'o-select',
+			model: 'mod:testObject',
 			newval: 'baz',
 			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-select',
+				label: 'select',
 				inputId: 'o-select',
 				prop: 'selected',
 				options: 'optionsA'
-			}]
+			}],
+			outputCode: `
+				<a-bind
+					pull
+					model="testObject"
+					prop="selected">
+
+					<output></output>
+				</a-bind>`,
+			inputCode: `
+				<a-bind
+					model="testObject"
+					prop="text">
+
+					<select>
+						<option
+							value="foo">
+								Foo!
+							</option>
+						<option
+							value="bar">
+							Bar!
+						</option>
+						<option
+							value="baz">
+							Baz
+						</option>
+					</select>
+				</a-bind>`,
 		},
 		{
-			inputId: 'o-select-multi',
-			label: 'select multiple',
-			model: 'mod:testObject',
 			prop: 'selectMulti',
+			inputId: 'o-select-multi',
+			model: 'mod:testObject',
 			template: 'tmpl-section',
 			newval: 'bar, baz',
 			control: [{
 				template: 'tmpl-select-multi',
+				label: 'select multiple',
 				inputId: 'o-select-multi',
 				prop: 'selectMulti',
 				options: 'optionsA'
-			}]
+			}],
+			outputCode: `
+				<a-bind
+					pull
+					model="testObject"
+					prop="selectMulti">
+
+					<output></output>
+				</a-bind>`,
+			inputCode: `
+				<a-bind
+					model="testObject"
+					prop="selectMulti">
+
+					<select multiple>
+						<option
+							value="foo">
+							Foo!
+						</option>
+						<option
+							value="bar">
+							Bar!
+						</option>
+						<option
+							value="baz">
+							Baz
+						</option>
+					</select>
+				</a-bind>`,
 		},
 		{
-			inputId: 'o-checkbox',
-			label: 'checkbox value = "foo"',
-			model: 'mod:testObject',
 			prop: 'checkbox',
+			inputId: 'o-checkbox',
+			model: 'mod:testObject',
 			newval: 'bar',
 			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-basic',
+				label: 'checkbox value = "foo"',
 				inputType: 'checkbox',
 				inputId: 'o-checkbox',
 				inputValue: 'foo',
 				elemProp: 'value',
 				prop: 'checkbox',
-			}]
+			}],
+			outputCode: `
+				<a-bind
+					pull
+					model="testObject"
+					prop="checkbox">
+
+					<output></output>
+				</a-bind>`,
+			inputCode: `
+				<a-bind
+					model="testObject"
+					prop="checkbox">
+
+					<input
+						type="checkbox"
+						value="foo">
+				</a-bind>`,
 		},
 		{
-			inputId: 'o-checkbox-bool',
-			label: 'checkbox (no value)',
 			model: 'mod:testObject',
 			prop: 'checkboxBool',
 			newval: true,
 			template: 'tmpl-section',
+			inputId: 'o-checkbox-bool',
 			control: [{
 				template: 'tmpl-checkbox',
+				label: 'checkbox (no value)',
 				inputType: 'checkbox',
 				inputId: 'o-checkbox-bool',
 				inputValue: 'false',
 				prop: 'checkboxBool',
 				elemProp: 'checked'
-			}]
+			}],
+			outputCode: `
+			<a-bind
+				pull
+				model="testObject"
+				prop="checkboxBool">
+
+				<output></output>
+			</a-bind>`,
+			inputCode: `
+			<a-bind
+				prop="checkboxBool"
+				elem-prop="checked">
+
+				<input
+					type="checkbox">
+			</a-bind>`,
 		},
 		{
-			inputId: 'o-checkbox-arr',
-			label: 'checkboxes bound to array',
-			model: 'mod:testObject',
 			prop: 'checkboxArr',
+			idx: '1',
+			inputId: 'input-arr',
+			model: 'mod:testObject',
 			newval: 'bar',
 			template: 'tmpl-section',
 			control: [{
-				template: 'tmpl-checkbox-arr',
+				template: 'tmpl-input-arr',
+				label: 'checkboxes bound to array',
 				inputType: 'checkbox',
 				prop: 'checkboxArr',
-			}]
-		}
+			}],
+			outputCode: `
+			<a-bind
+				pull
+				prop="checkboxArr">
+
+				<output></output>
+			</a-bind>
+				`,
+			inputCode: `
+      <a-bind
+      	prop="checkboxArr">
+
+        <input
+        	type="checkbox"
+        	name="check-foo"
+        	value="foo">
+      </a-bind>
+
+      <a-bind
+      	prop="checkboxArr">
+
+        <input
+        	type="checkbox"
+        	name="check-bar"
+        	value="bar">
+      </a-bind>
+
+      <a-bind
+      	prop="checkboxArr">
+
+        <input
+        	type="checkbox"
+        	name="check-baz"
+        	value="baz">
+      </a-bind>
+			`,
+		},
+		{
+			prop: 'radioGroup',
+			idx: '2',
+			inputId: 'input-radiogroup',
+			model: 'mod:testObject',
+			newval: 'bar',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-input-arr',
+				label: 'radio group',
+				inputType: 'radio',
+				prop: 'radioGroup',
+			}],
+			outputCode: `
+			<a-bind
+				pull
+				prop="radioGroup">
+
+				<output></output>
+			</a-bind>
+				`,
+			inputCode: `
+			<a-bind
+				prop="radioGroup">
+
+				<input
+					type="radio"
+					name="radio-group"
+					value="foo">
+			</a-bind>
+
+			<a-bind
+				prop="radioGroup">
+
+				<input
+					name="radio-group"
+					type="radio"
+					value="bar">
+			</a-bind>
+
+			<a-bind prop="radioGroup">
+				<input
+					name="radio-group"
+					type="radio"
+					value="baz">
+			</a-bind>
+				`,
+		},
+		{
+			prop: 'button',
+			inputId: 'input-button-1',
+			model: 'mod:testObject',
+			newval: 'New Property Value',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-button',
+				label: 'button text mirrors property value',
+				inputId: 'input-button-1',
+				prop: 'button',
+				inputValue: 'button value',
+				elemProp: 'textContent'
+			}],
+			outputCode: `
+			<a-bind
+				pull
+				prop="button">
+
+				<output></output>
+			</a-bind>
+
+			<a-bind
+				push
+				prop="button"
+				event="click">
+
+				<button value="Another New Property Value">
+					Set to "Another New Property Value"
+				</button>
+			</a-bind>
+			`,
+			inputCode: `
+			<a-bind
+				prop="button"
+				elem-prop="textContent"
+				event="click"
+				func="notify">
+
+				<button
+					value="button value"></button>
+			</a-bind>
+			`,
+		},
+		{
+			prop: 'button',
+			inputId: 'input-button-2',
+			model: 'mod:testObject',
+			newval: 'Another New Property Value',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-button',
+				label: "button text doesn't mirror property value",
+				inputId: 'input-button-2',
+				prop: 'button',
+				inputValue: 'button value',
+				elemProp: 'value'
+			}],
+			outputCode: `
+			<a-bind
+				pull
+				prop="button">
+
+				<output></output>
+			</a-bind>
+
+			<a-bind
+				push
+				prop="button"
+				event="click">
+
+				<button
+					value="Another New Property Value">
+					Set to "Another New Property Value"
+				</button>
+			</a-bind>
+			`,
+			inputCode: `
+			<a-bind
+				prop="button"
+				elem-prop="textContent"
+				event="click"
+				func="notify">
+
+				<button
+					value="button value">
+				</button>
+			</a-bind>
+			`,
+		},
+		{
+			prop: 'range',
+			model: 'mod:testObject',
+			newval: '80',
+			inputId: 'o-inputrange',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-basic',
+				label: 'input type="range"',
+				inputType: 'range',
+				inputId: 'o-inputrange',
+				prop: 'range',
+				elemProp: 'value'
+			}],
+			outputCode: `
+			<a-bind
+				pull
+				prop="range">
+
+				<output></output>
+			</a-bind>
+
+			<a-bind
+				push
+				prop="range"
+				event="click">
+
+				<button
+					value="80">
+					Set to "80"
+				</button>
+			</a-bind>
+			`,
+			inputCode: ``,
+		},
+		{
+			prop: 'progress',
+			inputId: 'o-inputprogress',
+			model: 'mod:testObject',
+			newval: '80',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-progress',
+				label: 'progress',
+				inputId: 'o-inputprogress',
+				prop: 'progress',
+			}],
+			outputCode: ``,
+			inputCode: ``,
+		},
+		{
+			prop: 'none',
+			inputId: 'o-inputfile',
+			model: 'mod:testObject',
+			newval: '',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-file',
+				label: 'input type="file"',
+				inputType: 'file',
+				inputId: 'o-inputfile',
+				elemProp: 'files'
+			}],
+			outputCode: `
+			N/A
+			`,
+			inputCode: `
+			<a-bind
+				push
+				event="change"
+				func="fileInfo">
+
+				<input
+					type="file"
+					multiple>
+			</a-bind>
+			`,
+		},
 	],
 
-	getFiles(event) {
+	fileInfo(event) {
     const fileList = event.target.files;
     this.file = fileList;
     const list = [];
-    const elem = document.createElement('output');
+    const elem = document.createElement('input');
+    elem.type="hidden";
 
     for (const item of fileList) {
       const obj = {
@@ -189,7 +590,7 @@ const testObject = {
     this.notify(fakeEvent);
 	},
 
-	grabCode(event) {
+	/*grabCode(event) {
 		const elem = event.target.closest('details');
     const outputCodeContainer = elem.querySelector('.output-code');
     const inputCodeContainer = elem.querySelector('.input-code');
@@ -199,34 +600,39 @@ const testObject = {
     const input = elem.parentElement.querySelector('.input');
 
     if (output) {
-      const outputElem = output.querySelector('output');
-      outputElem.removeAttribute('class');
-      outputElem.removeAttribute('id');
+    	const outputClone = output.cloneNode(true);
+    	const bind = outputClone.querySelector('a-bind');
+      const outputElem = outputClone.querySelector('output');
+    	outputClone.removeAttribute('class');
       outputElem.removeAttribute('for');
-      output.setAttribute('model', 'testObject');
+      bind.setAttribute('model', 'testObject');
       outputElem.textContent = '';
-      outputCodeContainer.textContent = this.formatCode(output);
+      outputCodeContainer.textContent = this.formatCode(outputClone);
     }
 
     if (input) {
-      input.removeAttribute('class');
-      for ( const child of input.children) child.removeAttribute('value');
-      if (input.localName === 'a-bind') {
-        input.setAttribute('model', 'testObject');
+    	const inputClone = input.cloneNode(true);
+      inputClone.removeAttribute('class');
+      for ( const child of inputClone.children) {
+      	if (child.value !== 'foo') child.removeAttribute('value');
+      	child.removeAttribute('class');
+      }
+      if (inputClone.localName === 'a-bind') {
+        inputClone.setAttribute('model', 'testObject');
       } else {
-        const repeater = input.querySelector('a-repeat');
+        const repeater = inputClone.querySelector('a-repeat');
         if (repeater) {
           repeater.removeAttribute('scope');
           repeater.setAttribute('model', this.localName);
         }
       }
-      const datalist = input.querySelector('datalist');
+      const datalist = inputClone.querySelector('datalist');
       if (datalist) datalist.textContent = '';
-      inputCodeContainer.textContent = this.formatCode(input);
+      inputCodeContainer.textContent = this.formatCode(inputClone);
     }
-  },
+  },*/
 
-  formatCode(node, level = 0) {
+  /*formatCode(node, level = 0) {
     const indent = "  ".repeat(level);
     const attrIndent = "  ".repeat(level + 1);
     const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
@@ -286,7 +692,7 @@ const testObject = {
     }
 
     return "";
-  },
+  },*/
 
 	notify(event) {
 		const html = `

@@ -5,6 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>FOO</title>
 	<script type="module" src="src/index.js"></script>
+  <script type="module" src="extra/a-code.min.js"></script>
   <script type="module">
     import {loader} from './src/index.js';
 
@@ -93,20 +94,20 @@
 
 <h1>Foo</h1>
 
-<a-bindgroup model="obj">
-  <a-bind prop="selected">
-    <select id="my-select" multiple></select>
-  </a-bind>
+<a-code>
+  <textarea></textarea>
+</a-code>
 
-  <a-repeat
-    target="#my-select"
-    prop="options"
-    scope="obj">
-    <template>
-      <option value="{{this}}">{{this}}</option>
-    </template>
-  </a-repeat>
-</a-bindgroup>
+<script>
+  const elem = document.querySelector('a-code textarea');
+  elem.textContent = `
+    <a-bind
+      model="obj"
+      prop="checkbox">
 
+      <output></output>
+    </a-bind>
+  `;
+</script>
 </body>
 </html>

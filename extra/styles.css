@@ -62,10 +62,10 @@ body {
 
 	aside,
 	details,
+	output,
 	section,
   summary,
-  .bg2,
-	.card > div
+  .bg2
   { background: var(--bg2-color) }
 
 	button,
@@ -202,6 +202,16 @@ body {
 	{ cursor: not-allowed; }
 
 /**** Shadows ****/
+	button:hover,
+	.button:hover,
+	button:focus,
+	.button:focus
+	{ box-shadow: 2px 2px 5px black; }
+
+	button:active,
+	.button:active
+	{ box-shadow: inset 2px 2px 5px black; }
+
 	aside
 	{ box-shadow: 0 2px 5px black; }
 

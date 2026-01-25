@@ -43,6 +43,8 @@ export default class ARepeat extends HTMLElement {
 
   constructor() {
     super();
+    this.attachShadow({mode:'open'});
+    this.shadowRoot.innerHTML = '<style>:host{ display:contents }</style><slot></slot>';
   }
 
   // --- Lifecycle ---
@@ -282,7 +284,6 @@ export default class ARepeat extends HTMLElement {
     if (lastIndex < str.length) {
       parts.push(str.slice(lastIndex));
     }
-
     return parts.length > 0 ? parts : null;
   }
 

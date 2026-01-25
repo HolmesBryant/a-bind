@@ -289,7 +289,7 @@ export default class ABind extends HTMLElement {
               ? [...currentModelVal, boxValue]
               : currentModelVal.filter(item => item !== boxValue);
           } else if (typeof currentModelVal === 'boolean') {
-            // If model is boolean, ignore 'value' attribute and toggle state
+            // If boolean, ignore 'value' attribute and toggle state
             value = this.#bound.checked;
           }
         }
@@ -419,13 +419,13 @@ export default class ABind extends HTMLElement {
    */
   #getPropertyValue(obj, path) {
     this.log?.('getPropertyValue()', {obj, path});
-    return PathResolver.getValue(obj, path) || obj?.getAttribute?.(path);
+    const value = PathResolver.getValue(obj, path);
+    return (value !== undefined) ? value : obj?.getAttribute?.(path);
   }
 
-   /**
+  /**
    * logic for Radio and Checkbox 'checked' state.
    */
-
   #handleBooleanUpdate(target, value) {
     const modelValue = this.#parsedValue(value, target);
     let comparisonValue;
@@ -528,6 +528,9 @@ export default class ABind extends HTMLElement {
   }
 
   async #init() {
+    if (this.hasAttribute('debug')) {
+      console.log(this);
+    }
     const gen = this.#initIdx;
     if (this.#shouldBail(gen)) return;
     if (this.debug && !this.log) this.log = await this.#attachLogger();
@@ -620,7 +623,7 @@ export default class ABind extends HTMLElement {
       this.#model = await loader.load(this.#modelKey, this);
       return true;
     } catch (error) {
-      console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error);
+      console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error, this);
       return false;
     }
   }
@@ -649,11 +652,12 @@ export default class ABind extends HTMLElement {
       this.#getPropertyValue(this.#model, this.#property) :
       this.#model.getAttribute?.(this.#modelAttr);
 
+    // if () console.log(this.#bound, this.#elemProp, value)
     if (value !== undefined) {
       try {
         this.applyUpdate(this.#bound, this.#elemProp, value);
       } catch (error) {
-        throw new Error('a-bind.syncView(): Failed', {cause: error});
+        console.error('a-bind.syncView(): Failed', error, this);
       }
     }
 
@@ -709,6 +713,7 @@ export default class ABind extends HTMLElement {
         crosstownBus.announce(this.#busKey, newValue);
       }
     }
+
 
     if (this.#throttle > 0) {
       if (this.#inputTimer) clearTimeout(this.#inputTimer);
