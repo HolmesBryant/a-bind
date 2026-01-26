@@ -1,3 +1,5 @@
+import ABind from '../src/index.js';
+
 /**
  * @file extra/testObject.js
  */
@@ -24,6 +26,7 @@ const DEFAULTS = {
 
 const testObject = {
 	text: "Initial Text",
+	listInput:"",
 	email: "name@email.com",
 	number: 12345,
 	textarea: "Initial content.",
@@ -38,7 +41,7 @@ const testObject = {
 	color: "#cd5c5c",
 	range: 50,
 	progress: 50,
-	file: undefined,
+	files: undefined,
 	name: "My Name",
 	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
 
@@ -51,7 +54,7 @@ const testObject = {
 		{value: 'baz', label: 'Baz!'}
 	],
 
-	optionsB: 'foo, bar, baz',
+	_options: ['foo', 'bar', 'baz'],
 
 	sections: [
 		{
@@ -83,6 +86,63 @@ const testObject = {
 
 					<input type="text">
 				</a-bind>`,
+		},
+		{
+			prop: 'options',
+			inputId: 'o-input-with-list',
+			model: 'mod:testObject',
+			newval: 'bing, bang, boom',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-datalist',
+				label: 'dynamic datalist',
+				inputId: 'o-input-with-list',
+				prop: 'options',
+			}],
+			outputCode: `
+				<a-bind
+					pull
+					model="testObject"
+					prop="options">
+
+					<output></output>
+				</a-bind>
+				`,
+			inputCode: `
+				<a-bind
+          push
+          prop="text"
+          throttle="300">
+          <input list="o-datalist">
+        </a-bind>
+
+        <datalist
+        	id="o-datalist">
+        </datalist>
+
+        <a-repeat
+          target="#o-datalist"
+          prop="options"
+          scope="mod:testObject">
+
+          <template>
+            <option value="{{item}}"></option>
+          </template>
+        </a-repeat>
+			`,
+			modelCode: `
+				import ABind from '...';
+				const testModel = {
+					text: 'Initial Text',
+					_options: ['foo', 'bar', 'baz'],
+					get options() { return this._options },
+					set options(value) {
+						if (typeof value === 'string') value = value.split(',');
+						this._options = value;
+						ABind.update(this, 'options', value);
+					},
+				}
+			`
 		},
 		{
 			prop: 'date',
@@ -206,27 +266,47 @@ const testObject = {
 					prop="selectMulti">
 
 					<output></output>
-				</a-bind>`,
-			inputCode: `
-				<a-bind
-					model="testObject"
-					prop="selectMulti">
+				</a-bind>
 
-					<select multiple>
-						<option
-							value="foo">
-							Foo!
-						</option>
-						<option
-							value="bar">
-							Bar!
-						</option>
-						<option
-							value="baz">
-							Baz
-						</option>
-					</select>
-				</a-bind>`,
+        <a-bind
+        	push
+        	prop="selectMulti"
+        	event="click">
+
+          <button
+          	value="bar, baz">
+            Set to "bar, baz"
+          </button>
+        </a-bind>
+			`,
+			inputCode: `
+        <a-bind prop="selectMulti">
+          <select
+          	multiple
+          	id="o-select-multi">
+          </select>
+        </a-bind>
+
+        <a-repeat
+        	target="#o-select-multi"
+        	prop="optionsA"
+        	scope="mod:testObject">
+
+          <template>
+            <option value="{{value}}">{{label}}</option>
+          </template>
+        </a-repeat>
+			`,
+			modelCode: `
+				const testObject = {
+					selectMulti: 'foo, baz',
+					optionsA: [
+						{value: 'foo', label: 'Foo!'},
+						{value: 'bar', label: 'Bar!'},
+						{value: 'baz', label: 'Baz!'}
+					],
+				}
+			`
 		},
 		{
 			prop: 'checkbox',
@@ -244,13 +324,24 @@ const testObject = {
 				prop: 'checkbox',
 			}],
 			outputCode: `
-				<a-bind
-					pull
-					model="testObject"
-					prop="checkbox">
+        <a-bind
+        	pull
+        	prop="checkbox">
 
-					<output></output>
-				</a-bind>`,
+          <output></output>
+        </a-bind>
+
+        <a-bind
+        	push
+        	prop="checkbox"
+        	event="click">
+
+          <button
+          	value="bar">
+            Set to "bar"
+          </button>
+        </a-bind>
+			`,
 			inputCode: `
 				<a-bind
 					model="testObject"
@@ -260,13 +351,18 @@ const testObject = {
 						type="checkbox"
 						value="foo">
 				</a-bind>`,
+			modelCode: `
+				const testObject = {
+					checkbox: 'foo',
+				}
+			`
 		},
 		{
-			model: 'mod:testObject',
 			prop: 'checkboxBool',
-			newval: true,
-			template: 'tmpl-section',
 			inputId: 'o-checkbox-bool',
+			newval: true,
+			model: 'mod:testObject',
+			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-checkbox',
 				label: 'checkbox (no value)',
@@ -292,6 +388,11 @@ const testObject = {
 				<input
 					type="checkbox">
 			</a-bind>`,
+			modelCode: `
+				const testObject = {
+					checkboxBool: false,
+				}
+			`
 		},
 		{
 			prop: 'checkboxArr',
@@ -307,40 +408,63 @@ const testObject = {
 				prop: 'checkboxArr',
 			}],
 			outputCode: `
-			<a-bind
-				pull
-				prop="checkboxArr">
+        <a-bind
+        	pull
+        	prop="checkboxArr">
 
-				<output></output>
-			</a-bind>
-				`,
+          <output></output>
+        </a-bind>
+
+        <a-bind
+        	push
+        	prop="checkboxArr"
+        	event="click">
+
+          <button
+          	value="bar">
+            Set to "bar"
+          </button>
+        </a-bind>
+			`,
 			inputCode: `
-      <a-bind
-      	prop="checkboxArr">
+	      <a-bind
+	      	prop="checkboxArr">
 
-        <input
-        	type="checkbox"
-        	name="check-foo"
-        	value="foo">
-      </a-bind>
+	        <input
+	        	type="checkbox"
+	        	name="check-foo"
+	        	value="foo">
+	      </a-bind>
 
-      <a-bind
-      	prop="checkboxArr">
+	      <a-bind
+	      	prop="checkboxArr">
 
-        <input
-        	type="checkbox"
-        	name="check-bar"
-        	value="bar">
-      </a-bind>
+	        <input
+	        	type="checkbox"
+	        	name="check-bar"
+	        	value="bar">
+	      </a-bind>
 
-      <a-bind
-      	prop="checkboxArr">
+	      <a-bind
+	      	prop="checkboxArr">
 
-        <input
-        	type="checkbox"
-        	name="check-baz"
-        	value="baz">
-      </a-bind>
+	        <input
+	        	type="checkbox"
+	        	name="check-baz"
+	        	value="baz">
+	      </a-bind>
+			`,
+			modelCode: `
+				const testObject = {
+					_checkboxArr: ['foo', 'baz'],
+					get checkboxArr() {
+						return this._checkboxArr;
+					},
+					set checkboxArr(value) {
+						if (typeof value === 'string') value = value.split(',');
+						this._checkboxArr = value;
+					},
+				}
 			`,
 		},
 		{
@@ -357,49 +481,54 @@ const testObject = {
 				prop: 'radioGroup',
 			}],
 			outputCode: `
-			<a-bind
-				pull
-				prop="radioGroup">
+				<a-bind
+					pull
+					prop="radioGroup">
 
-				<output></output>
-			</a-bind>
-				`,
+					<output></output>
+				</a-bind>
+			`,
 			inputCode: `
-			<a-bind
-				prop="radioGroup">
+				<a-bind
+					prop="radioGroup">
 
-				<input
-					type="radio"
-					name="radio-group"
-					value="foo">
-			</a-bind>
+					<input
+						type="radio"
+						name="radio-group"
+						value="foo">
+				</a-bind>
 
-			<a-bind
-				prop="radioGroup">
+				<a-bind
+					prop="radioGroup">
 
-				<input
-					name="radio-group"
-					type="radio"
-					value="bar">
-			</a-bind>
+					<input
+						name="radio-group"
+						type="radio"
+						value="bar">
+				</a-bind>
 
-			<a-bind prop="radioGroup">
-				<input
-					name="radio-group"
-					type="radio"
-					value="baz">
-			</a-bind>
-				`,
+				<a-bind prop="radioGroup">
+					<input
+						name="radio-group"
+						type="radio"
+						value="baz">
+				</a-bind>
+			`,
+			modelCode: `
+				const testObject = {
+					radioGroup: 'foo',
+				}
+			`,
 		},
 		{
 			prop: 'button',
 			inputId: 'input-button-1',
 			model: 'mod:testObject',
-			newval: 'New Property Value',
+			newval: 'New Value',
 			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-button',
-				label: 'button text mirrors property value',
+				label: "button text mirrors property value, but button value doesn't",
 				inputId: 'input-button-1',
 				prop: 'button',
 				inputValue: 'button value',
@@ -414,14 +543,16 @@ const testObject = {
 			</a-bind>
 
 			<a-bind
-				push
-				prop="button"
-				event="click">
+				<a-bind
+					push
+					prop="button"
+					event="click">
 
-				<button value="Another New Property Value">
-					Set to "Another New Property Value"
-				</button>
-			</a-bind>
+          <button
+          	value="New Value">
+            Set to "New Value"
+          </button>
+        </a-bind>
 			`,
 			inputCode: `
 			<a-bind
@@ -434,6 +565,15 @@ const testObject = {
 					value="button value"></button>
 			</a-bind>
 			`,
+			modelCode: `
+				const testObject = {
+					button: 'Initial Property Value',
+					notify(event) {
+						const newValue = event.target.value;
+						console.log(newValue);
+					}
+				}
+			`
 		},
 		{
 			prop: 'button',
@@ -443,7 +583,7 @@ const testObject = {
 			template: 'tmpl-section',
 			control: [{
 				template: 'tmpl-button',
-				label: "button text doesn't mirror property value",
+				label: "button text doesn't mirror property value, but button value does",
 				inputId: 'input-button-2',
 				prop: 'button',
 				inputValue: 'button value',
@@ -471,15 +611,23 @@ const testObject = {
 			inputCode: `
 			<a-bind
 				prop="button"
-				elem-prop="textContent"
 				event="click"
 				func="notify">
 
-				<button
-					value="button value">
-				</button>
-			</a-bind>
+        <button>
+          Click Me!
+        </button>
+      </a-bind>
 			`,
+			modelCode: `
+				const testObject = {
+					button: 'Initial Property Value',
+					notify(event) {
+						const newValue = event.target.value;
+						console.log(newValue);
+					}
+				}
+			`
 		},
 		{
 			prop: 'range',
@@ -496,25 +644,36 @@ const testObject = {
 				elemProp: 'value'
 			}],
 			outputCode: `
-			<a-bind
-				pull
-				prop="range">
+        <a-bind
+        	pull
+        	prop="range">
 
-				<output></output>
-			</a-bind>
+          <output></output>
+        </a-bind>
 
-			<a-bind
-				push
-				prop="range"
-				event="click">
+        <a-bind
+        	push
+        	prop="range"
+        	event="click">
 
-				<button
-					value="80">
-					Set to "80"
-				</button>
-			</a-bind>
+          <button value="80">
+            Set to "80"
+          </button>
+        </a-bind>
 			`,
-			inputCode: ``,
+			inputCode: `
+				<a-bind
+					prop="range">
+
+          <input
+          	type="range">
+        </a-bind>
+			`,
+			modelCode: `
+				const testObject = {
+					range: 50,
+				}
+			`,
 		},
 		{
 			prop: 'progress',
@@ -528,25 +687,45 @@ const testObject = {
 				inputId: 'o-inputprogress',
 				prop: 'progress',
 			}],
-			outputCode: ``,
-			inputCode: ``,
+			outputCode: `
+        <a-bind
+        	pull
+        	prop="progress">
+
+          <output></output>
+        </a-bind>
+
+        <a-bind
+        	push
+        	prop="progress"
+        	event="click">
+
+          <button
+          	value="80">
+            Set to "80"
+          </button>
+        </a-bind>
+			`,
+			inputCode: `
+        <a-bind
+        	prop="progress">
+
+          <progress
+          	max="100">
+          </progress>
+        </a-bind>
+			`,
+			modelCode: `
+				const testObject = {
+					progress: 50,
+				}
+			`
 		},
 		{
-			prop: 'none',
+			template: 'tmpl-section-file',
 			inputId: 'o-inputfile',
+			label: 'input type="file"',
 			model: 'mod:testObject',
-			newval: '',
-			template: 'tmpl-section',
-			control: [{
-				template: 'tmpl-file',
-				label: 'input type="file"',
-				inputType: 'file',
-				inputId: 'o-inputfile',
-				elemProp: 'files'
-			}],
-			outputCode: `
-			N/A
-			`,
 			inputCode: `
 			<a-bind
 				push
@@ -554,16 +733,24 @@ const testObject = {
 				func="fileInfo">
 
 				<input
-					type="file"
-					multiple>
+					multiple
+					type="file">
 			</a-bind>
 			`,
+			modelCode: `
+			const testObject = {
+
+				fileInfo(event) {
+				 console.log(event.target.files)[]
+				},
+			}
+			`
 		},
 	],
 
 	fileInfo(event) {
     const fileList = event.target.files;
-    this.file = fileList;
+    this.files = fileList;
     const list = [];
     const elem = document.createElement('input');
     elem.type="hidden";
@@ -589,110 +776,6 @@ const testObject = {
 
     this.notify(fakeEvent);
 	},
-
-	/*grabCode(event) {
-		const elem = event.target.closest('details');
-    const outputCodeContainer = elem.querySelector('.output-code');
-    const inputCodeContainer = elem.querySelector('.input-code');
-    if (outputCodeContainer.textContent.length > 1) return;
-
-    const output = elem.parentElement.querySelector('.output');
-    const input = elem.parentElement.querySelector('.input');
-
-    if (output) {
-    	const outputClone = output.cloneNode(true);
-    	const bind = outputClone.querySelector('a-bind');
-      const outputElem = outputClone.querySelector('output');
-    	outputClone.removeAttribute('class');
-      outputElem.removeAttribute('for');
-      bind.setAttribute('model', 'testObject');
-      outputElem.textContent = '';
-      outputCodeContainer.textContent = this.formatCode(outputClone);
-    }
-
-    if (input) {
-    	const inputClone = input.cloneNode(true);
-      inputClone.removeAttribute('class');
-      for ( const child of inputClone.children) {
-      	if (child.value !== 'foo') child.removeAttribute('value');
-      	child.removeAttribute('class');
-      }
-      if (inputClone.localName === 'a-bind') {
-        inputClone.setAttribute('model', 'testObject');
-      } else {
-        const repeater = inputClone.querySelector('a-repeat');
-        if (repeater) {
-          repeater.removeAttribute('scope');
-          repeater.setAttribute('model', this.localName);
-        }
-      }
-      const datalist = inputClone.querySelector('datalist');
-      if (datalist) datalist.textContent = '';
-      inputCodeContainer.textContent = this.formatCode(inputClone);
-    }
-  },*/
-
-  /*formatCode(node, level = 0) {
-    const indent = "  ".repeat(level);
-    const attrIndent = "  ".repeat(level + 1);
-    const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent.trim();
-      return text ? `${indent}${text}\n` : "";
-    }
-
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const tagName = node.tagName.toLowerCase();
-      const attrs = Array.from(node.attributes);
-      const isVoid = voidElements.includes(tagName);
-
-      let result = `${indent}<${tagName}`;
-
-      // Handle Attributes
-      if (attrs.length > 0) {
-        result += "\n"; // Start attributes on new line
-        attrs.forEach((attr, index) => {
-          const isLast = index === attrs.length - 1;
-          result += `${attrIndent}${attr.name}="${attr.value}"`;
-
-          if (isLast) {
-            result += isVoid ? " />\n" : ">\n";
-          } else {
-            result += "\n";
-          }
-        });
-      } else {
-        // No attributes: Close the tag on the same line
-        result += isVoid ? " />\n" : ">\n";
-      }
-
-      // Handle Children/Content
-      if (!isVoid) {
-        const children = (tagName === 'template')
-          ? node.content.childNodes
-          : node.childNodes;
-
-        for (const child of children) {
-          result += this.formatCode(child, level + 1);
-        }
-
-        result += `${indent}</${tagName}>\n`;
-      }
-
-      return result;
-    }
-
-    if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-      let result = "";
-      for (const child of node.childNodes) {
-        result += this.formatCode(child, level);
-      }
-      return result;
-    }
-
-    return "";
-  },*/
 
 	notify(event) {
 		const html = `
@@ -749,11 +832,8 @@ const testObject = {
 	get checkboxArr() { return this._checkboxArr },
 
 	set checkboxArr(value) {
-		if (Array.isArray(value)) {
-			this._checkboxArr = value;
-		} else {
-			this._checkboxArr = value.split(',')
-		}
+		if (typeof value === 'string') value = value.split(',');
+		this._checkboxArr = value;
 	},
 
 	get editable() {
@@ -767,7 +847,16 @@ const testObject = {
 	},
 	set editable(value) {
 		this._editable = value;
-	}
+	},
+
+	get options() { return this._options },
+	set options(value) {
+		if (typeof value === 'string') value = value.split(',');
+		this._options = value;
+		ABind.update(this, 'options', value);
+	},
+
+
 } // object
 
 export default testObject;

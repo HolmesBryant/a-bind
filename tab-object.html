@@ -133,7 +133,7 @@
                   </template>
                 </a-repeat>
               </div><!-- /card -->
-            </template><!-- tmpl-select -->
+            </template>
 
             <template id="tmpl-select-multi">
               <div class="flex column flex1 card center">
@@ -156,7 +156,7 @@
                   </template>
                 </a-repeat>
               </div><!-- /card -->
-            </template><!-- tmpl-select-multi -->
+            </template>
 
             <template id="tmpl-button">
               <div class="flex column flex1 card center">
@@ -189,7 +189,7 @@
               </div><!-- /card -->
             </template>
 
-            <template id="tmpl-file">
+            <template id="tmpl-datalist">
               <div class="flex column flex1 card center">
                 <label for="{{inputId}}">
                   {{label}}
@@ -197,10 +197,22 @@
 
                 <a-bind
                   push
-                  event="change"
-                  func="fileInfo">
-                  <input id="{{inputId}}" type="{{inputType}}" multiple>
+                  prop="text"
+                  throttle="300">
+                  <input id="{{inputId}}" list="o-datalist">
                 </a-bind>
+
+                <datalist id="o-datalist"></datalist>
+
+                <a-repeat
+                  target="#o-datalist"
+                  prop="{{prop}}"
+                  scope="mod:testObject">
+
+                  <template>
+                    <option value="{{item}}"></option>
+                  </template>
+                </a-repeat>
               </div><!-- /card -->
             </template>
           </a-repeat>
@@ -212,12 +224,43 @@
           <div class="flex stretch">
             <div class="flex1 card">
               <a-code highlight>
-                <textarea>
-                  {{outputCode}}
-                </textarea>
+                <textarea>{{outputCode}}</textarea>
               </a-code>
             </div><!-- card -->
 
+            <div class="flex1 card">
+              <a-code highlight>
+                <textarea>{{inputCode}}</textarea>
+              </a-code>
+            </div><!-- card -->
+          </div><!-- row -->
+          <div class="flex column center card">
+              <strong>The Model</strong>
+            <a-code highlight="javascript">{{modelCode}}</a-code>
+          </div>
+        </details>
+      </section>
+      <hr>
+    </template>
+
+    <template id="tmpl-section-file">
+      <section class="flex column stretch">
+
+        <div class="flex column card center">
+          <label for="{{inputId}}">
+            {{label}}
+          </label>
+
+          <a-bind
+            push
+            event="change"
+            func="fileInfo">
+            <input id="{{inputId}}" type="file" multiple>
+          </a-bind>
+        </div><!-- /card -->
+
+        <details>
+          <summary id="{{inputId}}-details" class="nofrills">code</summary>
             <div class="flex1 card">
               <a-code highlight>
                 <textarea>
@@ -225,10 +268,8 @@
                 </textarea>
               </a-code>
             </div><!-- card -->
-          </div><!-- row -->
         </details>
       </section>
-      <hr>
     </template>
   </a-repeat>
 </a-bindgroup>
