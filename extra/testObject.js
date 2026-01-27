@@ -37,11 +37,10 @@ const testObject = {
 	checkboxBool: false,
 	_checkboxArr: ['foo', 'baz'],
 	radioGroup: 'foo',
-	button: "initial property value",
+	button: "Initial Value",
 	color: "#cd5c5c",
 	range: 50,
 	progress: 50,
-	files: undefined,
 	name: "My Name",
 	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
 
@@ -57,6 +56,7 @@ const testObject = {
 	_options: ['foo', 'bar', 'baz'],
 
 	sections: [
+		// text
 		{
 			prop: 'text',
 			inputId: 'o-inputtext',
@@ -72,21 +72,41 @@ const testObject = {
 				elemProp: 'value'
 			}],
 			outputCode: `
-				<a-bind
-					pull
-					model="testObject"
-					prop="text">
+				<a-bindgroup
+					model="mod:testObject">
 
-					<output></output>
-				</a-bind>`,
+					<a-bind
+						pull
+						prop="text">
+
+						<output></output>
+					</a-bind>
+
+					<a-bind
+						push
+						prop="text"
+						event="click">
+
+	          <button
+	          	value="New Value">
+	            Set to "New Value"
+	          </button>
+	        </a-bind>
+        </a-bindgroup>`,
 			inputCode: `
 				<a-bind
-					model="testObject"
+					model="mod:testObject"
 					prop="text">
 
 					<input type="text">
 				</a-bind>`,
+			modelCode: `
+				const testObject = {
+					text: 'Initial Text'
+				}
+				`
 		},
+		// datalist
 		{
 			prop: 'options',
 			inputId: 'o-input-with-list',
@@ -102,10 +122,21 @@ const testObject = {
 			outputCode: `
 				<a-bind
 					pull
-					model="testObject"
+					model="mod:testObject"
 					prop="options">
 
 					<output></output>
+				</a-bind>
+
+				<a-bind
+					push
+					prop="options"
+					event="click">
+
+					<button
+						value="bing, bang, boom">
+						Set to "bing, bang, boom"
+					</button>
 				</a-bind>
 				`,
 			inputCode: `
@@ -126,24 +157,34 @@ const testObject = {
           scope="mod:testObject">
 
           <template>
-            <option value="{{item}}"></option>
+            <option
+            	value="{{item}}">
+            </option>
           </template>
         </a-repeat>
 			`,
 			modelCode: `
-				import ABind from '...';
+				import ABind from './path/to/a-bind.min.js';
+
 				const testModel = {
 					text: 'Initial Text',
+
 					_options: ['foo', 'bar', 'baz'],
+
 					get options() { return this._options },
+
 					set options(value) {
-						if (typeof value === 'string') value = value.split(',');
+						if (typeof value === 'string') {
+							value = value.split(',');
+						}
+						if (value === this._options) return;
 						this._options = value;
 						ABind.update(this, 'options', value);
 					},
 				}
 			`
 		},
+		// date
 		{
 			prop: 'date',
 			inputId: 'o-inputdate',
@@ -159,21 +200,42 @@ const testObject = {
 				elemProp: 'value'
 			}],
 			outputCode: `
-				<a-bind
-					pull
-					model="testObject"
-					prop="date">
+				<a-bindgroup
+					model="mod:testObject">
 
-					<output></output>
-				</a-bind>`,
+					<a-bind
+						pull
+						prop="date">
+
+						<output></output>
+					</a-bind>
+
+					<a-bind
+						push
+						prop="date"
+						event="click">
+
+						<button
+							value="1215-06-15">
+							Set to "1215-06-15"
+						</button>
+					</a-bind>
+				</a-bindgroup>
+				`,
 			inputCode: `
 				<a-bind
-					model="testObject"
+					model="mod:testObject"
 					prop="date">
 
 					<input type="date">
 				</a-bind>`,
+			modelCode: `
+				const testObject = {
+					date: "1914-12-25",
+				}
+				`
 		},
+		// color
 		{
 			prop: 'color',
 			inputId: 'o-inputcolor',
@@ -189,21 +251,42 @@ const testObject = {
 				elemProp: 'value'
 			}],
 			outputCode: `
-				<a-bind
-					pull
-					model="testObject"
-					prop="color">
+				<a-bindgroup
+					model="mod:testObject">
 
-					<output></output>
-				</a-bind>`,
+					<a-bind
+						pull
+						prop="color">
+
+						<output></output>
+					</a-bind>
+
+					<a-bind
+						push
+						prop="color"
+						event="click">
+
+						<button
+							value="#049f9d">
+					  	Set to "#049f9d"
+						</button>
+					</a-bind>
+				</a-bindgroup>
+				`,
 			inputCode: `
 				<a-bind
-					model="testObject"
+					model="mod:testObject"
 					prop="color">
 
 					<input type="color">
 				</a-bind>`,
+			modelCode: `
+				const testObject = {
+					color: "#cd5c5c",
+				}
+				`
 		},
+		// selected
 		{
 			prop: 'selected',
 			inputId: 'o-select',
@@ -218,17 +301,32 @@ const testObject = {
 				options: 'optionsA'
 			}],
 			outputCode: `
-				<a-bind
-					pull
-					model="testObject"
-					prop="selected">
+				<a-bindgroup
+					model="mod:testObject">
 
-					<output></output>
-				</a-bind>`,
+					<a-bind
+						pull
+						prop="selected">
+
+						<output></output>
+					</a-bind>
+
+					<a-bind
+						push
+						prop="selected"
+						event="click">
+
+						<button
+							value="baz">
+							Set to "baz"
+						</button>
+					</a-bind>
+				</a-bindgroup>
+				`,
 			inputCode: `
 				<a-bind
-					model="testObject"
-					prop="text">
+					model="mod:testObject"
+					prop="selected">
 
 					<select>
 						<option
@@ -245,7 +343,13 @@ const testObject = {
 						</option>
 					</select>
 				</a-bind>`,
+			modelCode: `
+				const testObject = {
+					selected: "bar",
+				}
+				`
 		},
+		// selectMulti
 		{
 			prop: 'selectMulti',
 			inputId: 'o-select-multi',
@@ -254,48 +358,57 @@ const testObject = {
 			newval: 'bar, baz',
 			control: [{
 				template: 'tmpl-select-multi',
-				label: 'select multiple',
+				label: 'dynamic select [multiple]',
 				inputId: 'o-select-multi',
 				prop: 'selectMulti',
 				options: 'optionsA'
 			}],
 			outputCode: `
-				<a-bind
-					pull
-					model="testObject"
-					prop="selectMulti">
+				<a-bindgroup
+					model="mod:testObject">
 
-					<output></output>
-				</a-bind>
+					<a-bind
+						pull
+						prop="selectMulti">
 
-        <a-bind
-        	push
-        	prop="selectMulti"
-        	event="click">
+						<output></output>
+					</a-bind>
 
-          <button
-          	value="bar, baz">
-            Set to "bar, baz"
-          </button>
-        </a-bind>
+	        <a-bind
+	        	push
+	        	prop="selectMulti"
+	        	event="click">
+
+	          <button
+	          	value="bar, baz">
+	            Set to "bar, baz"
+	          </button>
+	        </a-bind>
+        </a-bindgroup>
 			`,
 			inputCode: `
-        <a-bind prop="selectMulti">
-          <select
-          	multiple
-          	id="o-select-multi">
-          </select>
-        </a-bind>
+				<a-bind
+					model="mod:testObject"
+					prop="selectMulti">
 
-        <a-repeat
-        	target="#o-select-multi"
-        	prop="optionsA"
-        	scope="mod:testObject">
+					<select
+						multiple
+						id="o-select-multi">
+					</select>
+				</a-bind>
 
-          <template>
-            <option value="{{value}}">{{label}}</option>
-          </template>
-        </a-repeat>
+				<a-repeat
+					target="#o-select-multi"
+					prop="optionsA"
+					scope="mod:testObject">
+
+				<template>
+					<option
+						value="{{value}}">
+						{{label}}
+					</option>
+				</template>
+				</a-repeat>
 			`,
 			modelCode: `
 				const testObject = {
@@ -308,6 +421,7 @@ const testObject = {
 				}
 			`
 		},
+		// checkbox
 		{
 			prop: 'checkbox',
 			inputId: 'o-checkbox',
@@ -324,27 +438,31 @@ const testObject = {
 				prop: 'checkbox',
 			}],
 			outputCode: `
-        <a-bind
-        	pull
-        	prop="checkbox">
+				<a-bindgroup
+					model="mod:testObject">
 
-          <output></output>
-        </a-bind>
+	        <a-bind
+	        	pull
+	        	prop="checkbox">
 
-        <a-bind
-        	push
-        	prop="checkbox"
-        	event="click">
+	          <output></output>
+	        </a-bind>
 
-          <button
-          	value="bar">
-            Set to "bar"
-          </button>
-        </a-bind>
+	        <a-bind
+	        	push
+	        	prop="checkbox"
+	        	event="click">
+
+	          <button
+	          	value="bar">
+	            Set to "bar"
+	          </button>
+	        </a-bind>
+        </a-bindgroup>
 			`,
 			inputCode: `
 				<a-bind
-					model="testObject"
+					model="mod:testObject"
 					prop="checkbox">
 
 					<input
@@ -357,6 +475,7 @@ const testObject = {
 				}
 			`
 		},
+		// checkboxBool
 		{
 			prop: 'checkboxBool',
 			inputId: 'o-checkbox-bool',
@@ -373,15 +492,31 @@ const testObject = {
 				elemProp: 'checked'
 			}],
 			outputCode: `
-			<a-bind
-				pull
-				model="testObject"
-				prop="checkboxBool">
+				<a-bindgroup
+					model="mod:testObject">
 
-				<output></output>
-			</a-bind>`,
+					<a-bind
+						pull
+						prop="checkboxBool">
+
+						<output></output>
+					</a-bind>
+
+					<a-bind
+						push
+						prop="checkboxBool"
+						event="click">
+
+						<button
+							value="true">
+							Set to "true"
+						</button>
+					</a-bind>
+				</a-bindgroup>
+			`,
 			inputCode: `
 			<a-bind
+				model="mod:testObject"
 				prop="checkboxBool"
 				elem-prop="checked">
 
@@ -394,6 +529,7 @@ const testObject = {
 				}
 			`
 		},
+		// checkboxArr
 		{
 			prop: 'checkboxArr',
 			idx: '1',
@@ -408,65 +544,79 @@ const testObject = {
 				prop: 'checkboxArr',
 			}],
 			outputCode: `
-        <a-bind
-        	pull
-        	prop="checkboxArr">
+				<a-bindgroup
+					model="mod:testObject">
 
-          <output></output>
-        </a-bind>
+	        <a-bind
+	        	pull
+	        	prop="checkboxArr">
 
-        <a-bind
-        	push
-        	prop="checkboxArr"
-        	event="click">
+	          <output></output>
+	        </a-bind>
 
-          <button
-          	value="bar">
-            Set to "bar"
-          </button>
-        </a-bind>
+	        <a-bind
+	        	push
+	        	prop="checkboxArr"
+	        	event="click">
+
+	          <button
+	          	value="bar">
+	            Set to "bar"
+	          </button>
+	        </a-bind>
+        </a-bindgroup>
 			`,
 			inputCode: `
-	      <a-bind
-	      	prop="checkboxArr">
+	      <a-bindgroup
+	      	model="mod:testObject">
 
-	        <input
-	        	type="checkbox"
-	        	name="check-foo"
-	        	value="foo">
-	      </a-bind>
+		      <a-bind
+		      	prop="checkboxArr">
 
-	      <a-bind
-	      	prop="checkboxArr">
+		        <input
+		        	type="checkbox"
+		        	name="check-foo"
+		        	value="foo">
+		      </a-bind>
 
-	        <input
-	        	type="checkbox"
-	        	name="check-bar"
-	        	value="bar">
-	      </a-bind>
+		      <a-bind
+		      	prop="checkboxArr">
 
-	      <a-bind
-	      	prop="checkboxArr">
+		        <input
+		        	type="checkbox"
+		        	name="check-bar"
+		        	value="bar">
+		      </a-bind>
 
-	        <input
-	        	type="checkbox"
-	        	name="check-baz"
-	        	value="baz">
-	      </a-bind>
+		      <a-bind
+		      	prop="checkboxArr">
+
+		        <input
+		        	type="checkbox"
+		        	name="check-baz"
+		        	value="baz">
+		      </a-bind>
+	      </a-bindgroup>
 			`,
 			modelCode: `
 				const testObject = {
 					_checkboxArr: ['foo', 'baz'],
+
 					get checkboxArr() {
-						return this._checkboxArr;
+						return this._checkboxArr
 					},
+
 					set checkboxArr(value) {
-						if (typeof value === 'string') value = value.split(',');
+						if (typeof value === 'string') {
+							value = value.split(',');
+						}
+						if (value === this._checkboxArr) return;
 						this._checkboxArr = value;
 					},
 				}
 			`,
 		},
+		// radioGroup
 		{
 			prop: 'radioGroup',
 			idx: '2',
@@ -481,38 +631,57 @@ const testObject = {
 				prop: 'radioGroup',
 			}],
 			outputCode: `
-				<a-bind
-					pull
-					prop="radioGroup">
+				<a-bindgroup
+					model="mod:testObject">
 
-					<output></output>
-				</a-bind>
+					<a-bind
+						pull
+						prop="radioGroup">
+
+						<output></output>
+					</a-bind>
+
+					<a-bind
+						push
+						prop="radioGroup"
+						event="click">
+
+						<button
+							value="bar">
+							Set to "bar"
+						</button>
+	  			</a-bind>
+  			</a-bindgroup>
 			`,
 			inputCode: `
-				<a-bind
-					prop="radioGroup">
+				<a-bindgroup
+					model="mod:testObject">
 
-					<input
-						type="radio"
-						name="radio-group"
-						value="foo">
-				</a-bind>
+					<a-bind
+						prop="radioGroup">
 
-				<a-bind
-					prop="radioGroup">
+						<input
+							type="radio"
+							name="radio-group"
+							value="foo">
+					</a-bind>
 
-					<input
-						name="radio-group"
-						type="radio"
-						value="bar">
-				</a-bind>
+					<a-bind
+						prop="radioGroup">
 
-				<a-bind prop="radioGroup">
-					<input
-						name="radio-group"
-						type="radio"
-						value="baz">
-				</a-bind>
+						<input
+							type="radio"
+							name="radio-group"
+							value="bar">
+					</a-bind>
+
+					<a-bind prop="radioGroup">
+						<input
+							type="radio"
+							name="radio-group"
+							value="baz">
+					</a-bind>
+				</a-bindgroup>
 			`,
 			modelCode: `
 				const testObject = {
@@ -520,6 +689,7 @@ const testObject = {
 				}
 			`,
 		},
+		// button
 		{
 			prop: 'button',
 			inputId: 'input-button-1',
@@ -535,39 +705,45 @@ const testObject = {
 				elemProp: 'textContent'
 			}],
 			outputCode: `
-			<a-bind
-				pull
-				prop="button">
+				<a-bindgroup
+					model="mod:testObject">
 
-				<output></output>
-			</a-bind>
+					<a-bind
+						pull
+						prop="button">
 
-			<a-bind
-				<a-bind
-					push
-					prop="button"
-					event="click">
+						<output></output>
+					</a-bind>
 
-          <button
-          	value="New Value">
-            Set to "New Value"
-          </button>
-        </a-bind>
+					<a-bind
+						push
+						prop="button"
+						event="click">
+
+	          <button
+	          	value="New Value">
+	            Set to "New Value"
+	          </button>
+	        </a-bind>
+        </a-bindgroup>
 			`,
 			inputCode: `
 			<a-bind
+				model="mod:testObject"
 				prop="button"
 				elem-prop="textContent"
 				event="click"
 				func="notify">
 
 				<button
-					value="button value"></button>
+					value="button value">
+				</button>
 			</a-bind>
 			`,
 			modelCode: `
 				const testObject = {
-					button: 'Initial Property Value',
+					button: 'Initial Value',
+
 					notify(event) {
 						const newValue = event.target.value;
 						console.log(newValue);
@@ -575,6 +751,7 @@ const testObject = {
 				}
 			`
 		},
+		// button
 		{
 			prop: 'button',
 			inputId: 'input-button-2',
@@ -590,23 +767,27 @@ const testObject = {
 				elemProp: 'value'
 			}],
 			outputCode: `
-			<a-bind
-				pull
-				prop="button">
+				<a-bindgroup
+					model="mod:testObject">
 
-				<output></output>
-			</a-bind>
+					<a-bind
+						pull
+						prop="button">
 
-			<a-bind
-				push
-				prop="button"
-				event="click">
+						<output></output>
+					</a-bind>
 
-				<button
-					value="Another New Property Value">
-					Set to "Another New Property Value"
-				</button>
-			</a-bind>
+					<a-bind
+						push
+						prop="button"
+						event="click">
+
+						<button
+							value="Another New Property Value">
+							Set to "Another New Property Value"
+						</button>
+					</a-bind>
+				</a-bindgroup>
 			`,
 			inputCode: `
 			<a-bind
@@ -621,7 +802,7 @@ const testObject = {
 			`,
 			modelCode: `
 				const testObject = {
-					button: 'Initial Property Value',
+					button: 'Initial Value',
 					notify(event) {
 						const newValue = event.target.value;
 						console.log(newValue);
@@ -629,6 +810,72 @@ const testObject = {
 				}
 			`
 		},
+		// button
+		{
+			prop: 'button',
+			inputId: 'input-button-3',
+			model: 'mod:testObject',
+			newval: 'foo',
+			template: 'tmpl-section',
+			control: [{
+				template: 'tmpl-double-bind',
+				label: "Both button text and value mirror property value",
+				inputId: 'input-button-3',
+				prop: 'button',
+			}],
+			outputCode: `
+				<a-bindgroup
+					model="mod:testObject">
+
+          <a-bind
+          	pull
+          	prop="button">
+
+            <output></output>
+          </a-bind>
+
+          <a-bind
+          	push
+          	prop="button"
+          	event="click">
+
+            <button
+            	value="foo">
+              Set to "foo"
+            </button>
+          </a-bind>
+        </a-bindgroup>
+			`,
+			inputCode: `
+				<a-bindgroup
+					model="mod:testObject">
+
+					<a-bind
+						prop="button"
+						elem-prop="textContent">
+
+						<a-bind
+							prop="button"
+							event="click"
+							func="notify">
+
+							<button></button>
+						</a-bind>
+					</a-bind>
+				</a-bindgroup>
+			`,
+			modelCode: `
+				const testObject = {
+					button: 'Initial Value',
+
+					notify(event) {
+						const newValue = event.target.value;
+						console.log(newValue);
+					}
+				}
+			`
+		},
+		// range
 		{
 			prop: 'range',
 			model: 'mod:testObject',
@@ -644,22 +891,26 @@ const testObject = {
 				elemProp: 'value'
 			}],
 			outputCode: `
-        <a-bind
-        	pull
-        	prop="range">
+				<a-bindgroup
+					model="mod:testObject">
 
-          <output></output>
-        </a-bind>
+	        <a-bind
+	        	pull
+	        	prop="range">
 
-        <a-bind
-        	push
-        	prop="range"
-        	event="click">
+	          <output></output>
+	        </a-bind>
 
-          <button value="80">
-            Set to "80"
-          </button>
-        </a-bind>
+	        <a-bind
+	        	push
+	        	prop="range"
+	        	event="click">
+
+	          <button value="80">
+	            Set to "80"
+	          </button>
+	        </a-bind>
+        </a-bindgroup>
 			`,
 			inputCode: `
 				<a-bind
@@ -675,6 +926,7 @@ const testObject = {
 				}
 			`,
 		},
+		// progress
 		{
 			prop: 'progress',
 			inputId: 'o-inputprogress',
@@ -688,26 +940,31 @@ const testObject = {
 				prop: 'progress',
 			}],
 			outputCode: `
-        <a-bind
-        	pull
-        	prop="progress">
+				<a-bindgroup
+					model="mod:testObject">
 
-          <output></output>
-        </a-bind>
+	        <a-bind
+	        	pull
+	        	prop="progress">
 
-        <a-bind
-        	push
-        	prop="progress"
-        	event="click">
+	          <output></output>
+	        </a-bind>
 
-          <button
-          	value="80">
-            Set to "80"
-          </button>
-        </a-bind>
+	        <a-bind
+	        	push
+	        	prop="progress"
+	        	event="click">
+
+	          <button
+	          	value="80">
+	            Set to "80"
+	          </button>
+	        </a-bind>
+        </a-bindgroup>
 			`,
 			inputCode: `
         <a-bind
+        	pull
         	prop="progress">
 
           <progress
@@ -721,6 +978,7 @@ const testObject = {
 				}
 			`
 		},
+		// file
 		{
 			template: 'tmpl-section-file',
 			inputId: 'o-inputfile',
@@ -729,19 +987,18 @@ const testObject = {
 			inputCode: `
 			<a-bind
 				push
+				model="mod:testObject"
 				event="change"
 				func="fileInfo">
 
 				<input
 					multiple
 					type="file">
-			</a-bind>
-			`,
+			</a-bind>`,
 			modelCode: `
 			const testObject = {
-
 				fileInfo(event) {
-				 console.log(event.target.files)[]
+				 console.log(event.target.files);
 				},
 			}
 			`
@@ -808,7 +1065,7 @@ const testObject = {
 		}
 	},
 
-	sendForm(event) {
+	submitForm(event) {
 		const form = event.target.localName === 'form' ? event.target : event.target.form;
 		const formdata = new FormData(form);
 		const data = [];
@@ -833,6 +1090,7 @@ const testObject = {
 
 	set checkboxArr(value) {
 		if (typeof value === 'string') value = value.split(',');
+		if (value === this._checkboxArr) return;
 		this._checkboxArr = value;
 	},
 
@@ -846,12 +1104,16 @@ const testObject = {
 		}
 	},
 	set editable(value) {
+		if (value === this._editable) return;
 		this._editable = value;
 	},
 
 	get options() { return this._options },
 	set options(value) {
-		if (typeof value === 'string') value = value.split(',');
+		if (typeof value === 'string') {
+			value = value.split(',');
+		}
+		if (value === this._options) return;
 		this._options = value;
 		ABind.update(this, 'options', value);
 	},

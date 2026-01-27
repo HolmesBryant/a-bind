@@ -2,112 +2,19 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>FOO</title>
-	<script type="module" src="src/index.js"></script>
-  <script type="module" src="extra/a-code.min.js"></script>
-  <script type="module">
-    import {loader} from './src/index.js';
-
-    const Obj = {
-      checkbox: 'foo',
-      selected: ['foo', 'baz'],
-      options: ['foo', 'bar', 'baz'],
-      sections: [
-        {
-          prop: 'selected',
-          inputId: 'select'
-        }
-      ]
-    }
-
-    loader.define('obj', Obj);
-  </script>
-
-  <script type="module">
-    class MyElem extends HTMLElement {
-      #text = 'fubar';
-      #number = 42;
-      sections = [
-        {
-          prop: 'text',
-          type: 'text'
-        },
-        {
-          prop: 'number',
-          type: 'number'
-        }
-      ];
-
-      static observedAttributes = [
-        'text',
-        'number'
-      ];
-
-      static template = document.createElement('template');
-      static {
-        this.template.innerHTML = `
-          <a-bindgroup model="this">
-            <a-repeat prop="sections">
-              <template>
-                <a-bind prop="{{prop}}">
-                  <input type="{{type}}">
-                </a-bind>
-                <hr>
-              </template>
-            </a-repeat>
-            </a-bindgroup>
-        `;
-      }
-
-      constructor() {
-        super();
-        this.attachShadow({mode:'open'});
-      }
-
-      get text() { return this.#text }
-      set text(value) { this.setAttribute('text', value) }
-      get number() { return this.#number }
-      set number(value) { this.setAttribute('number', value) }
-
-      attributeChangedCallback(attr, oldval, newval) {
-        if (newval === oldval) return;
-        switch (attr) {
-        case 'text':
-          this.#text = newval;
-          break;
-        case 'number':
-          this.#number = newval;
-          break;
-        }
-      }
-
-      connectedCallback() {
-        this.shadowRoot.append(MyElem.template.content.cloneNode(true));
-      }
-    }
-
-    customElements.define('my-elem', MyElem);
-  </script>
+  <script type="module" src="src/index.js"></script>
 </head>
 <body>
 
 <h1>Foo</h1>
 
-<a-code>
-  <textarea></textarea>
-</a-code>
+  <a-bindgroup model="mod:/extra/testObject.js">
 
-<script>
-  const elem = document.querySelector('a-code textarea');
-  elem.textContent = `
-    <a-bind
-      model="obj"
-      prop="checkbox">
-
-      <output></output>
+    <a-bind prop="text">
+      <input>
     </a-bind>
-  `;
-</script>
+  </a-bindgroup>
+
 </body>
 </html>

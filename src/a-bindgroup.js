@@ -102,7 +102,7 @@ export default class ABindgroup extends HTMLElement {
   #applyDefaultsToChild(child) {
     if (this.#debug) child.toggleAttribute('debug', true);
     // only apply if child hasn't defined its own
-    if (!child.model) child.model = this.#modelInstance;
+    if (!child.model && this.#modelInstance) child.model = this.#modelInstance;
 
     if (!child.property && !child.modelAttr) {
       if (this.#property) child.property = this.#property;

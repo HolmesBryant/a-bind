@@ -1,275 +1,444 @@
 <!-- file: tab-object.html -->
-<a-bindgroup model="mod:testObject">
-  <a-repeat prop="sections">
 
-    <template id="tmpl-section">
-      <section class="flex column stretch">
-        <div class="flex stretch">
+<details>
+<summary class="nofrills">Setup</summary>
 
-          <div class="flex column flex1 card center">
-            <label for="{{inputId}}-output">
-              Property: <i>{{prop}}</i>
-            </label>
+  <a-code highlight="javascript">
+    // testObject.js
+    const testObject = {...}
+    export default testObject;
+  </a-code>
 
-            <div class="flex center">
-              <a-bind pull prop="{{prop}}">
-                <output for="{{inputId}}"></output>
-              </a-bind>
+  <a-code highlight>
+    <textarea>
+      <!-- index.html -->
+      &lt;head>
+        &lt;script type="importmap">
+          {
+            "imports": {
+              "testObject": "/path/to/testObject.js"
+            }
+          }
+        </script>
 
-              <a-bind push prop={{prop}} event="click">
-                <button value="{{newval}}">
-                  Set to "{{newval}}"
-                </button>
-              </a-bind>
-            </div><!-- /output -->
-          </div><!-- /card -->
+      </head>
+    </textarea>
+  </a-code>
+</details>
 
-          <a-repeat prop="control">
-            <template id="tmpl-basic">
-              <div class="flex column flex1 card center">
-                <label for="{{inputId}}">
-                  {{label}}
-                </label>
+<details>
+<summary class="nofrills">Inputs</summary>
+  <a-bindgroup model="mod:testObject">
+    <a-repeat prop="sections">
 
-                <a-bind
-                  prop="{{prop}}">
-                  <input id="{{inputId}}" type="{{inputType}}" value="{{inputValue}}">
+      <template id="tmpl-section">
+        <section class="flex column stretch">
+          <div class="flex stretch">
+
+            <div class="flex column flex1 card center">
+              <strong>
+                Property: <i>{{prop}}</i>
+              </strong>
+
+              <div class="flex center">
+                <a-bind pull prop="{{prop}}">
+                  <output for="{{inputId}}"></output>
                 </a-bind>
-              </div><!-- /card -->
-            </template>
 
-            <template id="tmpl-color">
-              <div class="flex column flex1 card center">
-                <a-bind prop="{{prop}}" elem-prop="style.background">
+                <a-bind push prop={{prop}} event="click">
+                  <button value="{{newval}}">
+                    Set to "{{newval}}"
+                  </button>
+                </a-bind>
+              </div><!-- /output -->
+            </div><!-- /card -->
+
+            <a-repeat prop="control">
+              <template id="tmpl-basic">
+                <div class="flex column flex1 card center">
                   <label for="{{inputId}}">
                     {{label}}
                   </label>
-                </a-bind>
 
-                <a-bind
-                  prop="{{prop}}">
-                  <input id="{{inputId}}" type="{{inputType}}" value="{{inputValue}}">
-                </a-bind>
-              </div><!-- /card -->
-            </template>
+                  <a-bind
+                    prop="{{prop}}">
+                    <input id="{{inputId}}" type="{{inputType}}" value="{{inputValue}}">
+                  </a-bind>
+                </div><!-- /card -->
+              </template>
 
-            <template id="tmpl-checkbox">
-              <div class="flex column flex1 card center">
-                <label for="{{inputId}}">
-                  {{label}}
-                </label>
+              <template id="tmpl-color">
+                <div class="flex column flex1 card center">
+                  <a-bind prop="{{prop}}" elem-prop="style.background">
+                    <label for="{{inputId}}">
+                      {{label}}
+                    </label>
+                  </a-bind>
 
-                <a-bind
-                  prop="{{prop}}"
-                  elem-prop="{{elemProp}}">
-                  <input
-                    id="{{inputId}}"
-                    type="{{inputType}}">
-                </a-bind>
-              </div><!-- /card -->
-            </template>
+                  <a-bind
+                    prop="{{prop}}">
+                    <input id="{{inputId}}" type="{{inputType}}" value="{{inputValue}}">
+                  </a-bind>
+                </div><!-- /card -->
+              </template>
 
-            <template id="tmpl-input-arr">
-              <fieldset class="flex column flex1 card">
-                <legend>{{label}}</legend>
-
-                <div>
-                  <label class="flex row-reverse">
-                      value="foo"
-
-                    <a-bind prop="{{prop}}">
-                      <input
-                        id="input-arr-foo{{idx}}"
-                        type="{{inputType}}"
-                        name="input-arr-{{idx}}"
-                        value="foo">
-                    </a-bind>
+              <template id="tmpl-checkbox">
+                <div class="flex column flex1 card center">
+                  <label for="{{inputId}}">
+                    {{label}}
                   </label>
 
-                  <label class="flex row-reverse">
-                      value="bar"
+                  <a-bind
+                    prop="{{prop}}"
+                    elem-prop="{{elemProp}}">
+                    <input
+                      id="{{inputId}}"
+                      type="{{inputType}}">
+                  </a-bind>
+                </div><!-- /card -->
+              </template>
 
-                    <a-bind prop="{{prop}}">
-                      <input
-                        id="input-arr-bar{{idx}}"
-                        name="input-arr-{{idx}}"
-                        type="{{inputType}}"
-                        value="bar">
-                    </a-bind>
+              <template id="tmpl-input-arr">
+                <fieldset class="flex column flex1 card">
+                  <legend>{{label}}</legend>
+
+                  <div>
+                    <label class="flex row-reverse">
+                        value="foo"
+
+                      <a-bind prop="{{prop}}">
+                        <input
+                          id="input-arr-foo{{idx}}"
+                          type="{{inputType}}"
+                          name="input-arr-{{idx}}"
+                          value="foo">
+                      </a-bind>
+                    </label>
+
+                    <label class="flex row-reverse">
+                        value="bar"
+
+                      <a-bind prop="{{prop}}">
+                        <input
+                          id="input-arr-bar{{idx}}"
+                          name="input-arr-{{idx}}"
+                          type="{{inputType}}"
+                          value="bar">
+                      </a-bind>
+                    </label>
+
+                    <label class="flex row-reverse">
+                        value="baz"
+
+                      <a-bind prop="{{prop}}">
+                        <input
+                          id="input-arr-baz{{idx}}"
+                          name="input-arr-{{idx}}"
+                          type="{{inputType}}"
+                          value="baz">
+                      </a-bind>
+                    </label>
+                  </div><!-- /input -->
+                </fieldset>
+              </template>
+
+              <template id="tmpl-select">
+                <div class="flex column flex1 card center">
+                  <label for="{{inputId}}">
+                    {{label}}
                   </label>
 
-                  <label class="flex row-reverse">
-                      value="baz"
+                  <a-bind prop="{{prop}}">
+                    <select id="{{inputId}}"></select>
+                  </a-bind>
 
-                    <a-bind prop="{{prop}}">
-                      <input
-                        id="input-arr-baz{{idx}}"
-                        name="input-arr-{{idx}}"
-                        type="{{inputType}}"
-                        value="baz">
-                    </a-bind>
+                  <a-repeat
+                    target="#{{inputId}}"
+                    prop="{{options}}"
+                    scope="mod:testObject">
+
+                    <template>
+                      <option value="{{value}}">{{label}}</option>
+                    </template>
+                  </a-repeat>
+                </div><!-- /card -->
+              </template>
+
+              <template id="tmpl-select-multi">
+                <div class="flex column flex1 card center">
+                  <label for="{{inputId}}">
+                    {{label}}
                   </label>
-                </div><!-- /input -->
-              </fieldset>
-            </template>
 
-            <template id="tmpl-select">
-              <div class="flex column flex1 card center">
-                <label for="{{inputId}}">
-                  {{label}}
-                </label>
+                  <a-bind
+                    prop="{{prop}}">
+                    <select multiple id="{{inputId}}"></select>
+                  </a-bind>
 
-                <a-bind prop="{{prop}}">
-                  <select id="{{inputId}}"></select>
-                </a-bind>
+                  <a-repeat
+                    target="#{{inputId}}"
+                    prop="{{options}}"
+                    scope="mod:testObject">
 
-                <a-repeat
-                  target="#{{inputId}}"
-                  prop="{{options}}"
-                  scope="mod:testObject">
+                    <template>
+                      <option value="{{value}}">{{label}}</option>
+                    </template>
+                  </a-repeat>
+                </div><!-- /card -->
+              </template>
 
-                  <template>
-                    <option value="{{value}}">{{label}}</option>
-                  </template>
-                </a-repeat>
-              </div><!-- /card -->
-            </template>
+              <template id="tmpl-button">
+                <div class="flex column flex1 card center">
+                  <label for={{inputId}}>
+                    {{label}}
+                  </label>
 
-            <template id="tmpl-select-multi">
-              <div class="flex column flex1 card center">
-                <label for="{{inputId}}">
-                  {{label}}
-                </label>
+                  <a-bind
+                    prop="button"
+                    elem-prop="{{elemProp}}"
+                    event="click"
+                    func="notify">
+                    <button id="{{inputId}}" value={{inputValue}}>
+                      Click Me!
+                    </button>
+                  </a-bind>
+                </div><!-- /card -->
+              </template>
 
-                <a-bind
-                  prop="{{prop}}">
-                  <select multiple id="{{inputId}}"></select>
-                </a-bind>
+              <template id="tmpl-progress">
+                <div class="flex column flex1 card center">
+                  <label for="{{inputId}}">
+                    {{label}}
+                  </label>
 
-                <a-repeat
-                  target="#{{inputId}}"
-                  prop="{{options}}"
-                  scope="mod:testObject">
+                  <a-bind
+                    prop="{{prop}}">
+                    <progress id="{{inputId}}" value="{{inputValue}}" max="100">foo</progress>
+                  </a-bind>
+                </div><!-- /card -->
+              </template>
 
-                  <template>
-                    <option value="{{value}}">{{label}}</option>
-                  </template>
-                </a-repeat>
-              </div><!-- /card -->
-            </template>
+              <template id="tmpl-datalist">
+                <div class="flex column flex1 card center">
+                  <label for="{{inputId}}">
+                    {{label}}
+                  </label>
 
-            <template id="tmpl-button">
-              <div class="flex column flex1 card center">
-                <label for={{inputId}}>
-                  {{label}}
-                </label>
+                  <a-bind
+                    push
+                    prop="text"
+                    throttle="300">
+                    <input id="{{inputId}}" list="o-datalist">
+                  </a-bind>
 
-                <a-bind
-                  prop="button"
-                  elem-prop="{{elemProp}}"
-                  event="click"
-                  func="notify">
-                  <button value={{inputValue}}>
-                    Click Me!
-                  </button>
-                </a-bind>
-              </div><!-- /card -->
-            </template>
+                  <datalist id="o-datalist"></datalist>
 
-            <template id="tmpl-progress">
-              <div class="flex column flex1 card center">
-                <label for="{{inputId}}">
-                  {{label}}
-                </label>
+                  <a-repeat
+                    target="#o-datalist"
+                    prop="{{prop}}"
+                    scope="mod:testObject">
 
-                <a-bind
-                  prop="{{prop}}">
-                  <progress id="{{inputId}}" value="{{inputValue}}" max="100">foo</progress>
-                </a-bind>
-              </div><!-- /card -->
-            </template>
+                    <template>
+                      <option value="{{item}}"></option>
+                    </template>
+                  </a-repeat>
+                </div><!-- /card -->
+              </template>
 
-            <template id="tmpl-datalist">
-              <div class="flex column flex1 card center">
-                <label for="{{inputId}}">
-                  {{label}}
-                </label>
+              <template id="tmpl-double-bind">
+                <div class="flex column flex1 card center">
+                  <label for={{inputId}}>
+                    {{label}}
+                  </label>
 
-                <a-bind
-                  push
-                  prop="text"
-                  throttle="300">
-                  <input id="{{inputId}}" list="o-datalist">
-                </a-bind>
+                  <a-bind
+                    prop="button"
+                    elem-prop="textContent">
 
-                <datalist id="o-datalist"></datalist>
+                    <a-bind
+                      prop="button"
+                      event="click"
+                      func="notify">
+                      <button id="{{inputId}}"></button>
+                    </a-bind>
+                  </a-bind>
+                </div><!-- /card -->
+              </template>
+            </a-repeat>
 
-                <a-repeat
-                  target="#o-datalist"
-                  prop="{{prop}}"
-                  scope="mod:testObject">
-
-                  <template>
-                    <option value="{{item}}"></option>
-                  </template>
-                </a-repeat>
-              </div><!-- /card -->
-            </template>
-          </a-repeat>
-
-        </div><!-- row -->
-
-        <details>
-          <summary id="{{inputId}}-details" class="nofrills">code</summary>
-          <div class="flex stretch">
-            <div class="flex1 card">
-              <a-code highlight>
-                <textarea>{{outputCode}}</textarea>
-              </a-code>
-            </div><!-- card -->
-
-            <div class="flex1 card">
-              <a-code highlight>
-                <textarea>{{inputCode}}</textarea>
-              </a-code>
-            </div><!-- card -->
           </div><!-- row -->
-          <div class="flex column center card">
-              <strong>The Model</strong>
-            <a-code highlight="javascript">{{modelCode}}</a-code>
+
+          <details>
+            <summary id="{{inputId}}-details" class="nofrills">code</summary>
+            <div class="flex stretch">
+              <div class="flex1 card">
+                <a-code highlight>
+                  <textarea>{{outputCode}}</textarea>
+                </a-code>
+              </div><!-- card -->
+
+              <div class="flex1 card">
+                <a-code highlight>
+                  <textarea>{{inputCode}}</textarea>
+                </a-code>
+              </div><!-- card -->
+            </div><!-- row -->
+            <div class="flex column center card">
+                <strong>The Model</strong>
+              <a-code highlight="javascript">{{modelCode}}</a-code>
+            </div>
+          </details>
+        </section>
+        <hr>
+      </template>
+
+      <template id="tmpl-section-file">
+        <section class="flex column stretch">
+
+          <div class="flex column card center">
+            <label for="{{inputId}}">
+              {{label}}
+            </label>
+
+            <a-bind
+              push
+              event="change"
+              func="fileInfo">
+              <input id="{{inputId}}" type="file" multiple>
+            </a-bind>
+          </div><!-- /card -->
+
+          <details>
+            <summary id="{{inputId}}-details" class="nofrills">code</summary>
+              <div class="flex center card">
+                <a-code highlight>
+                  <textarea>{{inputCode}}</textarea>
+                </a-code>
+              </div><!-- card -->
+
+              <div class="flex column center card">
+                <strong>The Model</strong>
+              <a-code highlight="javascript">{{modelCode}}</a-code>
+            </div>
+          </details>
+        </section>
+      </template>
+    </a-repeat>
+  </a-bindgroup>
+</details>
+
+<details>
+<summary class="nofrills">Form Submission</summary>
+  <a-bindgroup
+    model="mod:testObject">
+
+    <a-bind
+      event="submit"
+      func="submitForm">
+
+      <form onsubmit="return false">
+        <div class="flex column">
+          <div class="flex column gap0">
+            <label for="o-form-name">Name</label>
+
+            <a-bind
+              prop="name">
+
+              <input
+                id="o-form-name"
+                type="text"
+                name="name">
+            </a-bind>
           </div>
-        </details>
-      </section>
-      <hr>
-    </template>
 
-    <template id="tmpl-section-file">
-      <section class="flex column stretch">
+          <div class="flex column gap0">
+            <label for="o-form-email">Email</label>
 
-        <div class="flex column card center">
-          <label for="{{inputId}}">
-            {{label}}
-          </label>
+            <a-bind
+              prop="email">
+
+              <input
+                id="o-form-email"
+                type="email"
+                name="email">
+            </a-bind>
+          </div>
+
+          <div class="flex center">
+            <input type="submit">
+            <input type="reset">
+          </div>
+        </div>
+      </form>
+    </a-bind>
+  </a-bindgroup>
+
+  <hr>
+
+  <div class="flex column card">
+    <strong>code</strong>
+
+    <a-code highlight>
+      <textarea>
+        <a-bindgroup
+          model="mod:testObject">
 
           <a-bind
-            push
-            event="change"
-            func="fileInfo">
-            <input id="{{inputId}}" type="file" multiple>
-          </a-bind>
-        </div><!-- /card -->
+            event="submit"
+            func="submitForm">
 
-        <details>
-          <summary id="{{inputId}}-details" class="nofrills">code</summary>
-            <div class="flex1 card">
-              <a-code highlight>
-                <textarea>
-                  {{inputCode}}
-                </textarea>
-              </a-code>
-            </div><!-- card -->
-        </details>
-      </section>
-    </template>
-  </a-repeat>
-</a-bindgroup>
+            <form
+              onsubmit="return false">
+
+              <a-bind
+                prop="name">
+
+                <input
+                  type="text"
+                  name="name">
+              </a-bind>
+
+              <a-bind
+                prop="email">
+
+                <input
+                  type="email"
+                  name="email">
+              </a-bind>
+
+              <input type="submit">
+              <input type="reset">
+            </form>
+          </a-bind>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+  </div>
+</details>
+
+<details open>
+<summary class="nofrills">Content Editable</summary>
+  <a-bindgroup model="mod:testObject">
+    <div class="flex stretch">
+      <a-bind
+        debug
+        once
+        class="flex1 card"
+        prop="editable"
+        elem-prop="textContent">
+
+        <div contenteditable>
+        </div>
+      </a-bind>
+
+      <abind
+        pull
+        class="flex1 card"
+        prop="editable"
+        elem-prop="textContent">
+
+        <div></div>
+      </abind>
+    </div>
+  </a-bindgroup>
+</details>
