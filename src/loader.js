@@ -143,30 +143,55 @@ export default class Loader {
 
   async #getDomElement(selector, context) {
       if (typeof document === 'undefined') return null;
+
+      // wait for Document Ready if loading
       if (!context || context === document) {
         if (document.readyState === 'loading') {
           this.#domReadyPromise ??= new Promise(r => window.addEventListener('DOMContentLoaded', r, { once: true }));
           await this.#domReadyPromise;
         }
       }
+
       const root = (context && context.getRootNode) ? context.getRootNode() : document;
-      if (selector.includes('>>>')) {
-        const parts = selector.split('>>>').map(s => s.trim());
-        let currentRoot = root;
-        let target = null;
-        for (const part of parts) {
-          if (!currentRoot) return null;
-          const found = currentRoot.querySelector(part);
-          if (!found) return null;
-          if (part === parts[parts.length - 1]) target = found;
-          else if (found.shadowRoot) currentRoot = found.shadowRoot;
-          else return null;
+
+      const findNode = () => {
+        if (selector.includes('>>>')) {
+          const parts = selector.split('>>>').map(s => s.trim());
+          let currentRoot = root;
+          let target = null;
+          for (const part of parts) {
+            if (!currentRoot) return null;
+            const found = currentRoot.querySelector(part);
+            if (!found) return null;
+            if (part === parts[parts.length - 1]) {
+              target = found;
+            } else if (found.shadowRoot) {
+              currentRoot = found.shadowRoot;
+            } else {
+              return null;
+            }
+          }
+
+          return target;
         }
-        if (target?.localName.includes('-')) await customElements.whenDefined(target.localName);
-        return target;
+
+        return root.querySelector(selector);
+      };
+
+      let elem;
+      try {
+        // Attempat to find the element, retry until timeout
+        elem = await this.#when(findNode, this.timeout, 50);
+      } catch (error) {
+        // timeout reached
+        return null;
       }
-      const elem = root.querySelector(selector);
-      if (elem?.localName.includes('-')) await customElements.whenDefined(elem.localName);
+
+      // wait for custom elements
+      if (elem?.localName.includes('-')) {
+        await customElements.whenDefined(elem.localName);
+      }
+
       return elem;
   }
 
@@ -180,6 +205,30 @@ export default class Loader {
     if (typeof obj !== 'function') return obj;
     const isConstructor = obj.prototype && obj.prototype.constructor === obj;
     try { return isConstructor ? new obj(...args) : obj; } catch (e) { return obj; }
+  }
+
+  /**
+   * Waits for a condition to become truthy, polling at a specified interval.
+   * @async
+   * @param {Function|*} condition - The condition to wait for. Can be a function or a value.
+   * @param {number} [timeout=1000] - The maximum time to wait in milliseconds.
+   * @param {number} [pollInterval=100] - The interval between checks in milliseconds.
+   * @returns {Promise<*>} A promise that resolves with the result of the condition when it becomes truthy.
+   * @throws {Error} If the condition function throws an error.
+   */
+  async #when(condition, timeout = 1000, pollInterval = 100) {
+    const startTime = Date.now();
+    const check = typeof condition === 'function' ? async () => condition() : async () => condition;
+    while (true) {
+      if (Date.now() - startTime >= timeout) return await check();
+      try {
+        const result = await check();
+        if (result) return result;
+      } catch (e) {
+        throw e;
+      }
+      await this.wait(pollInterval);
+    }
   }
 
   get keys() { return this.#registry.keys() }

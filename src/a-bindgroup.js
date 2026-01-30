@@ -16,7 +16,7 @@ export default class ABindgroup extends HTMLElement {
   #modelKey;
   #modelInstance;
   #property;
-
+  #initPending = false;
 
   static observedAttributes = ['model', 'attr', 'prop', 'debug'];
 
@@ -69,10 +69,19 @@ export default class ABindgroup extends HTMLElement {
 
       this.#childObserver = new MutationObserver(() => {
         if (this.#isConnected && this.querySelector('a-bind, a-repeat')) {
-          this.#childObserver.disconnect();
-          this.#childObserver = null;
-          if (this.#debug) console.warn('a-bindgroup: children have arrived');
-          this.#init();
+          if (this.#initPending) return;
+          this.#initPending = true;
+          requestAnimationFrame(() => {
+            if (!this.#isConnected) return;
+            if (this.#childObserver) {
+              this.#childObserver.disconnect();
+              this.#childObserver = null;
+            }
+
+            this.#initPending = false;
+            if (this.#debug) console.warn('a-bindgroup: children have arrived');
+            this.#init();
+          });
         }
       });
 
@@ -127,7 +136,7 @@ export default class ABindgroup extends HTMLElement {
   #registerChildren() {
     const children = this.querySelectorAll('a-bind, a-repeat');
     for (const child of children) {
-      if (child.closest('a-bindgroup') === this) {
+      if (child.closest('a-bindgroup') === this && !child.hasAttribute('model')) {
         this.register(child);
       }
     }

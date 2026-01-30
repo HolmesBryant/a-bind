@@ -1,12 +1,24 @@
 class ExampleComponent extends HTMLElement {
 
-	#foo = "foo";
 	#fooBar = "foobar";
 
-	static observedAttributes = ['foo', 'foo-bar'];
+	static observedAttributes = ['foo-bar'];
+
+	static template = document.createElement('template');
+
+	static {
+		this.template.innerHTML = `
+			<style>
+				:host { display: block }
+			</style>
+
+			<slot></slot>
+		`;
+	}
 
 	constructor() {
 		super();
+		this.sttachShadow({ mode: 'open' })
 	}
 
 	attributeChangedCallback(attr, oldval, newval) {
@@ -14,20 +26,16 @@ class ExampleComponent extends HTMLElement {
 		let prop;
 
 		switch (attr) {
-			case 'foo':
-				prop = 'foo';
-				this.#foo = newval;
-				break;
 			case 'foo-bar':
 				prop = 'fooBar';
 				this.#fooBar = newval;
 				break;
 		}
-
-		window.abind?.update?.(this, prop, newval);
 	}
 
 	connectedCallback() {
+		this.shadowRoot.append(ExampleComponent.template.content.cloneNode(true));
+
 		// Ignore this, it just displays this code.
 		this.innerHTML = `<a-code highlight="javascript">\n${this.constructor.toString()}\n</a-code>`;
 	}

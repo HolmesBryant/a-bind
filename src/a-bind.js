@@ -1,10 +1,8 @@
 /**
  * @file a-bind.js
  * @description specific Data-binding for Custom Elements and ESM Modules.
- *              Features MutationObserver support, batched DOM updates via requestAnimationFrame,
- *              and intelligent throttling (Input Debounce / Output Rate Limiting).
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @version 2.6.0
+ * @version 3.0.0
  * @license GPL-3.0
  */
 
@@ -157,7 +155,7 @@ export default class ABind extends HTMLElement {
 
     if (!bound && !this.target) {
       console.debug('a-bind: Waiting for valid child.');
-      this.#observer.observe(this, { childList: true });
+      this.#observer.observe(this, { childList: true, subtree: true });
     } else {
       this.#init();
     }
@@ -193,6 +191,15 @@ export default class ABind extends HTMLElement {
   applyUpdate(target, name, value) {
     if (!this.#isConnected || !target || typeof name !== 'string') return;
     this.log?.('applyUpdate()', {target, name, value});
+
+    // Check if the target is the focused element within its own scope (Document or ShadowRoot).
+    // This prevents loopback updates from resetting the caret while typing.
+    if (target.getRootNode) {
+      const root = target.getRootNode();
+      if (root.activeElement === target && target.isContentEditable) {
+        return;
+      }
+    }
 
     // Bind to attribute of bound element
     if (name.startsWith('$')) {
@@ -234,7 +241,7 @@ export default class ABind extends HTMLElement {
 
     if (target instanceof HTMLSelectElement && target.multiple && name === 'value') {
       if (value === null || value === undefined) value = [];
-      const values = Array.isArray(value) ? value : String(value).split(',').map(member => member.trim());
+      const values = Array.isArray(value) ? value : [String(value)];
       for (const option of target.options) {
         const optVal = option.value || option.text;
         option.selected = values.includes(optVal);
@@ -243,16 +250,15 @@ export default class ABind extends HTMLElement {
     }
 
     // Standard property/attribute
-    const isElement = typeof target.setAttribute === 'function';
     const parsedValue = this.#parsedValue(value, target);
 
     if (name in target) {
       try {
         target[name] = parsedValue;
       } catch (error) {
-        if (isElement) target.setAttribute(name, value);
+        target.setAttribute(name, value);
       }
-    } else if (isElement) {
+    } else {
       if (value === null || value === undefined) {
         target.removeAttribute(name);
       } else {
@@ -359,9 +365,6 @@ export default class ABind extends HTMLElement {
       if (parts.length > 0) {
         const contextPath = parts.join('.');
         context = this.#getPropertyValue(this.#model, contextPath);
-        // if (!context || typeof context[fnName] !== 'function') {
-          // context = this.#getPropertyValue(window, contextPath);
-        // }
       } else {
         context = this.#model;
         if (typeof context[fnName] !== 'function') {
@@ -380,38 +383,37 @@ export default class ABind extends HTMLElement {
   }
 
   #getBoundElement() {
-    let element = this.firstChild;
+    const findTarget = (root) => {
+      let child = root.firstElementChild;
 
-    // find the first relevant node
-    while (element) {
-      // If it's an Element, we found it.
-      if (element.nodeType === Node.ELEMENT_NODE) {
-        // skip templates. they are definitions, not targets.
-        if (element.localName === 'template') {
-          element = element.nextSibling;
+      while (child) {
+        // Skip templates
+        if (child.localName === 'template') {
+          child = child.nextElementSibling;
           continue;
         }
 
-        // If it's a nested a-bind, drill down
-        if (element.localName === 'a-bind') {
-          return element.firstElementChild || element.firstChild;
+        // If it is another a-bind, drill down to find the real element.
+        if (child.localName === 'a-bind') {
+          const deepTarget = findTarget(child);
+          // If the nested bind has a target, return it.
+          // If not, keep looking at siblings.
+          if (deepTarget) return deepTarget;
         }
-        return element;
+        // If it is NOT an a-bind, it is our target
+        else {
+          return child;
+        }
+
+        child = child.nextElementSibling;
       }
 
-      // If it's a Text Node, check if it has actual content
-      if (element.nodeType === Node.TEXT_NODE) {
-        if (element.nodeValue.trim().length > 0) {
-          return element;
-        }
-      }
+      return null;
+    };
 
-      // If it was whitespace or comment, move to next
-      element = element.nextSibling;
-    }
-
-    this.log?.('getBoundElement()', null);
-    return null;
+    const element = findTarget(this);
+    this.log?.('getBoundElement()', element);
+    return element;
   }
 
   /**
@@ -460,7 +462,7 @@ export default class ABind extends HTMLElement {
     if (!this.isConnected) return;
 
     // wait for child
-    if (!this.#bound && this.firstChild) {
+    if (!this.#bound && this.firstElementChild) {
       this.#observer.disconnect();
       this.#init();
       return;
@@ -529,7 +531,7 @@ export default class ABind extends HTMLElement {
 
   async #init() {
     if (this.hasAttribute('debug')) {
-      console.log(this);
+      console.log('Debugging: ', this);
     }
     const gen = this.#initIdx;
     if (this.#shouldBail(gen)) return;
@@ -620,7 +622,7 @@ export default class ABind extends HTMLElement {
     }
 
     try {
-      this.#model = await loader.load(this.#modelKey, this);
+      if (!this.#model) this.#model = await loader.load(this.#modelKey, this);
       return true;
     } catch (error) {
       console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error, this);
@@ -739,10 +741,10 @@ export default class ABind extends HTMLElement {
 
   get bound() { return this.#bound }
   set bound(value) {
-    if (value instanceof HTMLElement || value instanceof Text) {
+    if (value instanceof HTMLElement) {
       this.#bound = value;
     } else {
-      console.error('a-bind: Bound element must be HTML element or Text node', value, this);
+      console.error('a-bind: Bound element must be HTML element', value, this);
     }
   }
 

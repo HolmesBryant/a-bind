@@ -1,4 +1,44 @@
-<p>In these examples, there is no external model. The models are HTML elements. This is pure DOM-to-DOM binding.</p>
+<style>
+  #themer-theme {
+    --themer-accentcolor: #00ff00;
+    --themer-accenttext: #1f0040;
+    --themer-rounded: 4;
+
+    /* Multiply by 1px to convert raw number to pixels */
+    --themer-radius: calc(var(--themer-rounded) * 1px);
+
+    border: 1px solid var(--themer-accentcolor);
+    border-radius: var(--themer-radius);
+    padding: var(--themer-radius);
+  }
+
+  #themer-theme button {
+  	border: 1px solid var(--themer-accentcolor);
+  	border-radius: var(--themer-radius);
+  	padding: var(--themer-radius);
+  }
+
+  #themer-theme button.primary {
+  	background: var(--themer-accentcolor);
+  	color: var(--themer-accenttext);
+  }
+</style>
+
+<p>In these examples, there is no external model. The models are vanilla HTML elements. This is pure DOM-to-DOM binding.</p>
+
+<details>
+	<summary>Setup</summary>
+	<div class="content">
+		<p>Just include the module in the head of your html page.</p>
+		<a-code highlight>
+			<textarea>
+				&lt;head>
+					<script type="module" src="path/to/a-bind.min.js"></script>
+				&lt;/head>
+			</textarea>
+		</a-code>
+	</div>
+</details>
 
 <h2>Basic example</h2>
 <div class="card">
@@ -9,8 +49,8 @@
 			</label>
 
 			<a-bind
-				model="#ex1-model"
-				property="value">
+				model="dom:#ex1-model"
+				prop="value">
 			<input
 				id="ex1-model"
 				value="foo">
@@ -23,8 +63,8 @@
 			</label>
 
 			<a-bind
-				model="#ex1-model"
-				property="value">
+				model="dom:#ex1-model"
+				prop="value">
 				<input id="ex1-bound-input">
 			</a-bind>
 		</div>
@@ -36,8 +76,8 @@
 
 			<a-bind
 				pull
-				model="#ex1-model"
-				property="value">
+				model="dom:#ex1-model"
+				prop="value">
 				<output
 					id="ex1-bound-output">
 					...
@@ -53,8 +93,8 @@
 			<a-code highlight class="flex1">
 				<textarea>
 					<a-bind
-						model="#ex1-model"
-						property="value">
+						model="dom:#ex1-model"
+						prop="value">
 					<input
 						id="ex1-model"
 						value="foo">
@@ -65,8 +105,8 @@
 			<a-code highlight class="flex1">
 				<textarea>
 					<a-bind
-						model="#ex1-model"
-						property="value">
+						model="dom:#ex1-model"
+						prop="value">
 						<input>
 					</a-bind>
 				</textarea>
@@ -76,8 +116,8 @@
 				<textarea>
 					<a-bind
 						pull
-						model="#ex1-model"
-						property="value">
+						model="dom:#ex1-model"
+						prop="value">
 						<output>
 						</output>
 					</a-bind>
@@ -92,8 +132,8 @@
 	<form onsubmit="return false" class="flex space-around">
 		<a-bind
 			push
-			model="#ex2-model"
-			property="value"
+			model="dom:#ex2-model"
+			prop="value"
 			event="click">
 			<button
 				value="button value">
@@ -107,9 +147,9 @@
 
 		<a-bind
 			pull
-			model="#ex2-model"
-			property="value">
-			<output>output value</output>
+			model="dom:#ex2-model"
+			prop="value">
+			<output></output>
 		</a-bind>
 
 		<input type="reset">
@@ -127,8 +167,8 @@
 
 					<a-bind
 						push
-						model="#ex2-model"
-						property="value"
+						model="dom:#ex2-model"
+						prop="value"
 						event="click">
 						<button
 							value="button value">
@@ -142,11 +182,9 @@
 
 					<a-bind
 						pull
-						model="#ex2-model"
-						property="value">
-						<output>
-							output value
-						</output>
+						model="dom:#ex2-model"
+						prop="value">
+						<output></output>
 					</a-bind>
 
 					<input type="reset">
@@ -166,7 +204,7 @@
 
 			<a-bindgroup
 				class="flex space-around"
-				model="#ex3-model">
+				model="dom:#ex3-model">
 
 				<div class="flex column">
 					<label for="ex3-radio-true">
@@ -175,10 +213,9 @@
 
 					<a-bind
 						push
-						property="checked"
+						prop="checked"
 						event="change">
 						<input
-							checked
 							id="ex3-radio-true"
 							type="radio"
 							name="ex3"
@@ -192,7 +229,7 @@
 					</label>
 					<a-bind
 						push
-						property="checked"
+						prop="checked"
 						event="change">
 						<input
 							id="ex3-radio-false"
@@ -218,11 +255,11 @@
 		<a-code highlight>
 			<textarea>
 				<a-bindgroup
-					model="#ex3-model">
+					model="dom:#ex3-model">
 
 						<a-bind
 							push
-							property="checked"
+							prop="checked"
 							event="change">
 							<input
 								checked
@@ -233,7 +270,7 @@
 
 						<a-bind
 							push
-							property="checked"
+							prop="checked"
 							event="change">
 							<input
 								type="radio"
@@ -261,9 +298,9 @@
 
 			<a-bind
 				push
-				model="#ex4-model"
+				model="dom:#ex4-model"
 				model-attr="checked"
-				elem-attr="checked"
+				elem-prop="checked"
 				event="change">
 				<input
 					id="ex4-model"
@@ -274,14 +311,14 @@
 		<fieldset class="flex1">
 			<legend>Bound Elements</legend>
 
-			<a-bindgroup model="#ex4-model" class="flex space-around">
+			<a-bindgroup model="dom:#ex4-model" class="flex space-around">
 		    <div class="flex column">
 		      <label for="ex4-radio-true">true</label>
 
 		      <a-bind
 		      	pull
-		        elem-attr="checked"
-		        property="checked">
+		        elem-prop="checked"
+		        prop="checked">
 		        <input
 		        	disabled
 		          id="ex4-radio-true"
@@ -295,8 +332,8 @@
 		      <label for="ex4-radio-false">false</label>
 		      <a-bind
 		      	pull
-		        elem-attr="checked"
-		        property="checked">
+		        elem-prop="checked"
+		        prop="checked">
 		        <input
 		        	disabled
 		          id="ex4-radio-false"
@@ -335,14 +372,14 @@
 
 			<a-bindgroup
 				class="flex space-around"
-				model="#ex5-model">
+				model="dom:#ex5-model">
 
 				<div class="flex column">
 					<label for='ex5-radio-true'>True</label>
 
 			    <a-bind
-			    	property="checked"
-			    	elem-attr="checked">
+			    	prop="checked"
+			    	elem-prop="checked">
 						<input
 							id="ex5-radio-true"
 							type="radio"
@@ -355,8 +392,8 @@
 			  	<label for="ex5-radio-false">False</label>
 
 			    <a-bind
-			    	property="checked"
-			    	elem-attr="checked">
+			    	prop="checked"
+			    	elem-prop="checked">
 						<input
 				    	id="ex5-radio-false"
 							type="radio"
@@ -377,11 +414,11 @@
 					type="checkbox">
 
 				<a-bindgroup
-					model="#ex5-model">
+					model="dom:#ex5-model">
 
 					<a-bind
-						property="checked"
-						elem-attr="checked">
+						prop="checked"
+						elem-prop="checked">
 						<input
 							type="radio"
 							name="ex5"
@@ -389,8 +426,8 @@
 					</a-bind>
 
 					<a-bind
-						property="checked"
-						elem-attr="checked">
+						prop="checked"
+						elem-prop="checked">
 						<input
 							type="radio"
 							name="ex5"
@@ -414,9 +451,9 @@
 
 			<a-bind
 				pull
-				model="#ex6-model"
-				property="value"
-				elem-attr="textContent">
+				model="dom:#ex6-model"
+				prop="value"
+				elem-prop="textContent">
 				<span></span>
 			</a-bind>
 		</div>
@@ -435,9 +472,9 @@
 				Range Value
 				<a-bind
 					pull
-					model="#ex6-model"
-					property="value"
-					elem-attr="textContent">
+					model="dom:#ex6-model"
+					prop="value"
+					elem-prop="textContent">
 					<span></span>
 				</a-bind>
 
@@ -455,69 +492,41 @@
 
 <h2>Binding CSS Variables</h2>
 
-<!-- Ensure the style block or stylesheet is loaded and parsed BEFORE the a-bind elements are parsed -->
-<style>
-  #ex7-theme {
-    --ex7-accentcolor: #00ff00;
-    --ex7-accenttext: #1f0040;
-    --ex7-rounded: 4;
-
-    /* Multiply by 1px to convert raw range number to pixels */
-    --ex7-radius: calc(var(--ex7-rounded) * 1px);
-
-    border: 1px solid var(--ex7-accentcolor);
-    border-radius: var(--ex7-radius);
-    padding: var(--ex7-radius);
-  }
-
-  #ex7-theme button {
-  	border: 1px solid var(--ex7-accentcolor);
-  	border-radius: var(--ex7-radius);
-  	padding: var(--ex7-radius);
-  }
-
-  #ex7-theme button.primary {
-  	background: var(--ex7-accentcolor);
-  	color: var(--ex7-accenttext);
-  }
-</style>
-
 <div class="card">
 	<div class="flex stretch space-around">
 
 		<a-bindgroup
 			class="flex column"
-			model="#ex7-theme"
-			property="--ex7-accentcolor">
+			model="dom:#themer-theme">
 
-			<label for="ex7-accent-color">
+			<label for="themer-accent-color">
 				Accent Color
 			</label>
 
-			<a-bind once>
+			<a-bind
+				once
+				prop="--themer-accentcolor">
+
 				<input
-					id="ex7-accent-color"
+					id="themer-accent-color"
 					type="color">
 			</a-bind>
 
-			<!--
-				Bind both 'value' and 'style.background-color'.
-				Default elem-attr is 'value'and output element
-				uses value property, so first a-bind
-				doesn't need elem-attr.
-			-->
-			<a-bind pull>
+			<a-bind
+				pull
+				prop="--themer-accentcolor">
 
 				<a-bind
 					pull
-					elem-attr="style.background-color">
+					elem-prop="style.background-color"
+					prop="--themer-accentcolor">
 
 					<a-bind
 						pull
-						property="--ex7-accenttext"
-						elem-attr="style.color">
+						prop="--themer-accenttext"
+						elem-prop="style.color">
 
-						<output> </output>
+						<output></output>
 					</a-bind>
 				</a-bind>
 			</a-bind>
@@ -525,30 +534,28 @@
 
 		<a-bindgroup
 			class="flex column"
-			model="#ex7-theme"
-			property="--ex7-accenttext">
+			model="dom:#themer-theme"
+			prop="--themer-accenttext">
 
-			<label for="ex7-accent-text">
+			<label for="themer-accent-text">
 				Accent Text
 			</label>
 
 			<a-bind once>
 				<input
-					id="ex7-accent-text"
+					id="themer-accent-text"
 					type="color">
 			</a-bind>
 
-			<!-- binding to 'style.'
-			can use either kebab-case
-			or camelCase property names -->
 			<a-bind pull>
 
 				<a-bind
-					elem-attr="style.backgroundColor">
+					elem-prop="style.backgroundColor">
 
 					<a-bind
-						property="--ex7-accentcolor"
-						elem-attr="style.color">
+						pull
+						prop="--themer-accentcolor"
+						elem-prop="style.color">
 
 						<output>
 						</output>
@@ -559,16 +566,16 @@
 
 		<a-bindgroup
 			class="flex column"
-			model="#ex7-theme"
-			property="--ex7-rounded">
+			model="dom:#themer-theme"
+			prop="--themer-rounded">
 
-			<label for="ex7-radius">
+			<label for="themer-radius">
 				Padding / Border Radius
 			</label>
 
 			<a-bind once>
 				<input
-					id="ex7-radius"
+					id="themer-radius"
 					type="range"
 					max="50">
 			</a-bind>
@@ -582,28 +589,22 @@
 
 	<hr>
 
-	<!--
-    Wrap the section in three a-binds.
-    Each one maps a specific input's 'value' property
-    to a specific CSS variable on the #ex7-theme element.
-  -->
-
   <a-bind
-  	model="#ex7-accent-color"
-  	property="value"
-  	elem-attr="--accent-color">
+  	model="dom:#themer-accent-color"
+  	prop="value"
+  	elem-prop="--accent-color">
 
   	<a-bind
-  		model="#ex7-accent-text"
-  		property="value"
-  		elem-attr="--accent-text">
+  		model="dom:#themer-accent-text"
+  		prop="value"
+  		elem-prop="--accent-text">
 
   		<a-bind
-  			model="#ex7-radius"
-  			property="value"
-  			elem-attr="--rounded">
+  			model="dom:#themer-radius"
+  			prop="value"
+  			elem-prop="--rounded">
 
-				<section id="ex7-theme">
+				<section id="themer-theme">
 					<p>Lorem ipsum ...</p>
 					<button class="primary">Primary Button</button>
 					<button>Normal Button</button>
@@ -615,149 +616,171 @@
 
 	<hr>
 
-	<details open>
+	<details>
 		<summary class="nofrills">Code</summary>
 
 		<a-code highlight>
 			<textarea>
 				<!-- Ensure the style block or stylesheet is loaded
 				and parsed BEFORE the a-bind elements are parsed -->
+
 				<style>
-					#ex7-theme {
-						--ex7-accentcolor: #00ff00;
-						--ex7-accenttext: #1f0040;
-						--ex7-rounded: 4;
+					#themer-theme {
+						--themer-accentcolor: #00ff00;
+						--themer-accenttext: #1f0040;
+						/* Since themer-rounded is bound to the value
+						of a range input, its value must be a raw number */
+						--themer-rounded: 4;
 
-						/* Multiply by 1px to convert raw range number to pixels */
-						--ex7-radius: calc(var(--ex7-rounded) * 1px);
+						/* Multiply by 1px to convert the raw number to pixels */
+						--themer-radius: calc(var(--themer-rounded) * 1px);
 
-						border: 1px solid var(--ex7-accentcolor);
-						border-radius: var(--ex7-radius);
-						padding: var(--ex7-radius);
+						border: 1px solid var(--themer-accentcolor);
+						border-radius: var(--themer-radius);
+						padding: var(--themer-radius);
 					}
 
-					#ex7-theme button {
-						border: 1px solid var(--ex7-accentcolor);
-						border-radius: var(--ex7-radius);
-						padding: var(--ex7-radius);
+					#themer-theme button {
+						border: 1px solid var(--themer-accentcolor);
+						border-radius: var(--themer-radius);
+						padding: var(--themer-radius);
 					}
 
-					#ex7-theme button.primary {
-						background: var(--ex7-accentcolor);
-						color: var(--ex7-accenttext);
+					#themer-theme button.primary {
+						background: var(--themer-accentcolor);
+						color: var(--themer-accenttext);
 					}
 				</style>
 
 				<a-bindgroup
-					model="#ex7-theme"
-					property="--ex7-accentcolor">
-
-					Accent Color
-					<a-bind once>
-						<input type="color">
-					</a-bind>
-
-					<!--
-						Bind 'value', 'style.background-color', and 'style.color'.
-						Default elem-attr is 'value' and output element
-						uses value property, so first a-bind
-						does not need elem-attr.
-					-->
-					<a-bind pull>
-
-						<a-bind
-							pull
-							elem-attr="style.background-color">
-
-							<a-bind
-								pull
-								property="--ex7-accenttext"
-								elem-attr="style.color">
-
-								<output> </output>
-
-							</a-bind>
-						</a-bind>
-					</a-bind>
-				</a-bindgroup>
-
-				<a-bindgroup
-					model="#ex7-theme"
-					property="--ex7-accenttext">
-
-					Accent Text
-					<a-bind once>
-						<input type="color">
-					</a-bind>
-
-					<!-- binding to 'style.'
-					can use either kebab-case
-					or camelCase property names -->
-					<a-bind pull>
-
-						<a-bind
-							elem-attr="style.backgroundColor">
-
-							<a-bind
-								property="--ex7-accentcolor"
-								elem-attr="style.color">
-
-								<output> </output>
-
-							</a-bind>
-						</a-bind>
-					</a-bind>
-				</a-bindgroup>
-
-				<a-bindgroup
-					model="#ex7-theme"
-					property="--ex7-rounded">
-
-					Padding / Border Radius
-					<a-bind once>
-						<input type="range" max="50">
-					</a-bind>
-
-					<a-bind pull>
-						<output> </output>px
-					</a-bind>
-				</a-bindgroup>
-
-				<!--
-					Wrap the section in three a-binds.
-					Each one maps a specific input's 'value' property
-					to a specific CSS variable on the #ex7-theme element.
-			  -->
-
-			  <a-bind
-					model="#ex7-accent-color"
-					property="value"
-					elem-attr="--accent-color">
+					model="dom:#themer-theme">
 
 					<a-bind
-						model="#ex7-accent-text"
-						property="value"
-						elem-attr="--accent-text">
+						once
+						prop="--themer-accentcolor">
 
+						<input
+							id="themer-accent-color"
+							type="color">
+					</a-bind>
+
+					<!-- This binds the output element's value
+					 to the model's css variable "--themer-accentcolor" -->
+					<a-bind
+						pull
+						prop="--themer-accentcolor">
+
+						<!-- This binds the output element's background color
+						to the model's css variable "--themer-accentcolor" -->
 						<a-bind
-							model="#ex7-radius"
-							property="value"
-							elem-attr="--rounded">
+							pull
+							elem-prop="style.background-color"
+							prop="--themer-accentcolor">
 
-							<section id="ex7-theme">
-								<p>Lorem ipsum ...</p>
-								<button class="primary">
-									Primary Button
-								</button>
-								<button>
-									Normal Button
-								</button>
-							</section>
+							<!-- This binds the output element's text color
+							to the model's css variable "--themer-accenttext" -->
+							<a-bind
+								pull
+								prop="--themer-accenttext"
+								elem-prop="style.color">
 
+								<output></output>
+							</a-bind>
 						</a-bind>
 					</a-bind>
+				</a-bindgroup>
+
+				<!-- In addition to setting "model" on a-bindgroup,
+				you can also set "prop". Setting prop, like setting model,
+				causes a-bindgroup to assign prop to all child a-bind elements.
+				Individual a-bind elements can override
+				this by setting their own 'prop' attribute. -->
+
+				<a-bindgroup
+					model="dom:#themer-theme"
+					prop="--themer-accenttext">
+
+					<a-bind once>
+						<input
+							id="themer-accent-text"
+							type="color">
+					</a-bind>
+
+					<!-- This binds the output's value to the model's
+					css property "--themer-accenttext". 'prop' is
+					inherited from a-bindgroup. -->
+
+					<a-bind pull>
+
+						<!-- binding to 'style.'
+						can use either kebab-case
+						or camelCase css property names -->
+						<a-bind
+							elem-prop="style.backgroundColor">
+
+							<!-- This binds the output's text color
+							to the model's css variable "--themer-accentcolor" -->
+							<a-bind
+								pull
+								prop="--themer-accentcolor"
+								elem-prop="style.color">
+
+								<output>
+								</output>
+							</a-bind>
+						</a-bind>
+					</a-bind>
+				</a-bindgroup>
+
+				<a-bindgroup
+					model="dom:#themer-theme"
+					prop="--themer-rounded">
+
+					<a-bind once>
+						<input
+							id="themer-radius"
+							type="range"
+							max="50">
+					</a-bind>
+
+					<a-bind pull>
+						<output></output>px
+					</a-bind>
+				</a-bindgroup>
+			</div>
+
+			<hr>
+
+			<!-- Wrap the section in three a-binds.
+		    Each one maps the value of a specific input (model)
+		    to a specific CSS variable
+		    on the #themer-theme element (bound element). -->
+
+		  <a-bind
+		  	model="dom:#themer-accent-color"
+		  	prop="value"
+		  	elem-prop="--accent-color">
+
+		  	<a-bind
+		  		model="dom:#themer-accent-text"
+		  		prop="value"
+		  		elem-prop="--accent-text">
+
+		  		<a-bind
+		  			model="dom:#themer-radius"
+		  			prop="value"
+		  			elem-prop="--rounded">
+
+						<section id="themer-theme">
+							<p>Lorem ipsum ...</p>
+							<button class="primary">Primary Button</button>
+							<button>Normal Button</button>
+						</section>
+
+					</a-bind>
 				</a-bind>
+			</a-bind>
 			</textarea>
 		</a-code>
 	</details>
-</div><!-- /card -->
+</div>

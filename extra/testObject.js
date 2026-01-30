@@ -3,27 +3,6 @@ import ABind from '../src/index.js';
 /**
  * @file extra/testObject.js
  */
-const DEFAULTS = {
-	text: "Initial Text",
-	email: "name@email.com",
-	number: 12345,
-	textarea: "Initial content.",
-	date: "1914-12-25",
-	selected: "bar",
-	selectMulti: 'foo, baz',
-	checkbox: 'foo',
-	checkboxBool: undefined,
-	radioGroup: 'foo',
-	button: "Click Me!",
-	color: "#cd5c5c",
-	range: 50,
-	progress: 50,
-	// meter: 50,
-	file: null,
-	name: "My Name",
-	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
-};
-
 const testObject = {
 	text: "Initial Text",
 	listInput:"",
@@ -32,7 +11,7 @@ const testObject = {
 	textarea: "Initial content.",
 	date: "1914-12-25",
 	selected: "bar",
-	selectMulti: 'foo, baz',
+	selectMulti: ['foo', 'baz'],
 	checkbox: 'foo',
 	checkboxBool: false,
 	_checkboxArr: ['foo', 'baz'],
@@ -42,10 +21,7 @@ const testObject = {
 	range: 50,
 	progress: 50,
 	name: "My Name",
-	editable: "<p>Eiusmod magna eiusmod anim ut nostrud anim ullamco quis in consequat eu exercitation laboris culpa laboris.</p>",
-
-	_editableFormatted: "",
-	_editableRegex: /(<[^>]+>)(?=[^\r\n])/g,
+	editable: "<p>Eiusmod magna eiusmod anim</p>",
 
 	optionsA: [
 		{value: 'foo', label: 'Foo!'},
@@ -164,6 +140,10 @@ const testObject = {
         </a-repeat>
 			`,
 			modelCode: `
+				/* Must use ABind.update() here
+				because the setter transforms the original
+				string value to an array */
+
 				import ABind from './path/to/a-bind.min.js';
 
 				const testModel = {
@@ -687,7 +667,7 @@ const testObject = {
 				const testObject = {
 					radioGroup: 'foo',
 				}
-			`,
+			`
 		},
 		// button
 		{
@@ -924,7 +904,7 @@ const testObject = {
 				const testObject = {
 					range: 50,
 				}
-			`,
+			`
 		},
 		// progress
 		{
@@ -985,22 +965,23 @@ const testObject = {
 			label: 'input type="file"',
 			model: 'mod:testObject',
 			inputCode: `
-			<a-bind
-				push
-				model="mod:testObject"
-				event="change"
-				func="fileInfo">
+				<a-bind
+					push
+					model="mod:testObject"
+					event="change"
+					func="fileInfo">
 
-				<input
-					multiple
-					type="file">
-			</a-bind>`,
+					<input
+						multiple
+						type="file">
+				</a-bind>
+			`,
 			modelCode: `
-			const testObject = {
-				fileInfo(event) {
-				 console.log(event.target.files);
-				},
-			}
+				const testObject = {
+					fileInfo(event) {
+					 console.log(event.target.files);
+					},
+				}
 			`
 		},
 	],
@@ -1094,21 +1075,8 @@ const testObject = {
 		this._checkboxArr = value;
 	},
 
-	get editable() {
-		if (!this._editable) return "";
-		if (this._editableFormatted) {
-			return this._editableFormatted;
-		} else {
-			this._editableFormatted = this._editable.replace(this._editableRegex, "\n$1\n").trim();
-			return this._editableFormatted;
-		}
-	},
-	set editable(value) {
-		if (value === this._editable) return;
-		this._editable = value;
-	},
-
 	get options() { return this._options },
+
 	set options(value) {
 		if (typeof value === 'string') {
 			value = value.split(',');
@@ -1117,8 +1085,6 @@ const testObject = {
 		this._options = value;
 		ABind.update(this, 'options', value);
 	},
-
-
 } // object
 
 export default testObject;

@@ -49,7 +49,7 @@ export default class PathResolver {
     }
 
     // standard object path
-    return parts.reduce((acc, part) => acc && acc[part], obj);
+    return parts.reduce((acc, part) => acc?.[part], obj);
   }
 
   static setValue(target, path, value) {

@@ -1,4 +1,46 @@
 <!-- tab-component.html -->
 <!-- all content is in component shadow dom -->
-<test-component></test-component>
+<details>
+<summary class="nofrills">Setup</summary>
 
+  <a-code highlight="javascript">
+    // test-component.js
+    export default class TestComponent extends HTMLElement {
+      text = 'foo';
+      static template = `
+        /* When binding elements in Shadow DOM,
+        use "this" as the model.*/
+
+        &lt;a-bind model="this" prop="text">
+          <input>
+        &lt;/a-bind>
+      `;
+
+      constructor() {
+        super();
+        this.attachShadow({mode: 'open'})
+      }
+      attributeChangedCallback(attr, oldval, newval) {...}
+      connectedCallback() {
+        this.shadowRoot.innerHTML = TestComponent.template
+      }
+      disconnectedCallback() {...}
+    }
+  </a-code>
+
+  <a-code highlight>
+    <textarea>
+      <!-- index.html -->
+      <test-component id="my-elem"></test-component>
+
+      <!-- When binding elements in the Light DOM,
+      use "dom:#id" for the model -->
+
+      <a-bind model="dom:#my-elem" prop="text">
+        <input>
+      </a-bind>
+    </textarea>
+  </a-code>
+</details>
+
+<test-component id="my-elem"></test-component>

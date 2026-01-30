@@ -254,3 +254,22 @@ Struggling to see why a value isn't updating? Add the "debug" attribute to any a
 ```
 
 Open your browser console. You will see logs grouping the lifecycle events:
+
+## Notes
+
+### When to use ABind.update() in your model.
+
+**No ABind.update needed:** If the data type coming from the UI is the exact same data type your Model stores (e.g., String -> String).
+
+**ABind.update IS needed:** If your setter transforms the data (String -> Array, String -> Number, etc.).
+Or if the data changes due to background logic (e.g., a timer or API fetch) where no user interaction occurred to trigger an update.
+
+### Binding elements in the Shadow DOM of a custom element.
+
+When you are binding element in a custom element's shadow DOM, use "this" as the model.
+
+```html
+<a-bind model="this" prop="...">...</a-bind>
+
+<a-bindgroup model="this">...</a-bindgroup>
+```

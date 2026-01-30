@@ -30,6 +30,9 @@ export default class ARepeat extends HTMLElement {
   #targetElem;
   #templateMap = new Map();
   #unsubscribe;
+  #modelLoadId = 0;
+  #scopeLoadId = 0;
+  #implicitTemplate;
 
   static observedAttributes = [
     'key',
@@ -55,40 +58,57 @@ export default class ARepeat extends HTMLElement {
       case 'key':
         this.#key = newval;
         break;
+
       case 'model':
+        const currentModelId = ++this.#modelLoadId;
         loader.load(newval)
         .then( model => {
+          if (this.#modelLoadId !== currentModelId) return;
+          if (!this.#isConnected) return;
           this.#model = model
-          if (this.#isConnected) this.#subscribe();
+          this.#subscribe();
         })
         .catch( error => {
+          // only log errors for the active request
+          if (this.#modelLoadId !== currentModelId) return;
           console.error(`a-repeat: Failed to load model: ${newval}`, error);
         });
         break;
+
       case 'prop':
         this.#prop = newval;
         this.#subscribe();
         break;
+
       case 'scope':
         if (newval === "this") {
           this.#scope = this.getRootNode().host;
           if (this.#isConnected) this.#subscribe();
           return;
         }
+
+        const currentScopeId = ++this.#scopeLoadId;
+
         loader.load(newval)
         .then( scope => {
+          if (this.#scopeLoadId !== currentScopeId) return;
+          if (!this.#isConnected) return;
           this.#scope = scope;
-          if (this.#isConnected) this.#subscribe();
+          this.#subscribe();
         }).catch ( error => {
+          if (this.#scopeLoadId !== currentScopeId) return;
           console.error(`a-repeat: Failed to load scope: ${newval}`, this, error);
         });
         break;
+
       case 'target':
         this.#target = newval;
         break;
+
       case 'template':
         this.#template = newval;
         break;
+
       case 'templates':
         try {
           const list = JSON.parse(newval);
@@ -156,13 +176,32 @@ export default class ARepeat extends HTMLElement {
     }
 
     // Self-Templating (Implicit Default)
-    if (this.#templateMap.size === 0 && !this.#defaultTemplate && this.childNodes.length > 0) {
+    // Only proceed if no explicit templates are found.
+
+    /* if (this.#templateMap.size === 0 && !this.#defaultTemplate && this.childNodes.length > 0) {
       const range = document.createRange();
       range.selectNodeContents(this);
       const content = range.cloneContents();
       const bindings = this.#compile(content);
       this.#defaultTemplate = { content, bindings };
       this.replaceChildren();
+    }*/
+
+    if (this.#templateMap.size === 0 && !this.#defaultTemplate) {
+      if (this.#implicitTemplate) {
+        this.#defaultTemplate = this.#implicitTemplate;
+      } else if (this.childNodes.length > 0) {
+        // Parse children as template (first run)
+        const range = document.createRange();
+        range.selectNodeContents(this);
+        const content = range.cloneContents();
+        const bindings = this.#compile(content);
+
+        // save content and bindings so they'll persist across disconnect/reconnect
+        this.#implicitTemplate = { content, binding };
+        this.defaultTemplate = this.#implicitTemplate;
+        this.replaceChildren();
+      }
     }
 
     // Validate Compatibility with Keyed Rendering
@@ -404,6 +443,7 @@ export default class ARepeat extends HTMLElement {
     }
 
     if (!this.#targetElem) {
+      console.warn('Cannot find target', this)
       this.#data = data;
       return;
     }
@@ -411,7 +451,6 @@ export default class ARepeat extends HTMLElement {
     const parent = this.#targetElem;
     const oldData = this.#data;
     this.#data = data;
-
     // Helper: Create DOM content for a single item
     const createNode = (item, index) => {
       let templateId = item.template;

@@ -106,7 +106,8 @@ body {
 	.card
 	{ border: 1px solid var(--border-color); }
 
-	output
+	output,
+	[contenteditable]
 	{ border: 1px dashed var(--border-color); }
 
   article,
@@ -334,6 +335,9 @@ body {
 	.card > div {
     padding: var(--pad);
   }
+
+  .content
+  { padding:  var(--pad); }
 
 	.nofrills {
 		padding: 5px;

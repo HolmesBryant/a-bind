@@ -10,11 +10,23 @@
 <h1>Foo</h1>
 
   <a-bindgroup model="mod:/extra/testObject.js">
-
     <a-bind prop="text">
       <input>
     </a-bind>
   </a-bindgroup>
+
+  <hr>
+
+  <select id="select"></select>
+
+  <a-repeat
+    model="mod:/extra/testObject.js"
+    target="dom:#select"
+    prop="options">
+    <template>
+      <option>{{item}}</option>
+    </template>
+  </a-repeat>
 
 </body>
 </html>
