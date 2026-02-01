@@ -190,7 +190,6 @@ export default class ABind extends HTMLElement {
    */
   applyUpdate(target, name, value) {
     if (!this.#isConnected || !target || typeof name !== 'string') return;
-    this.log?.('applyUpdate()', {target, name, value});
 
     // Check if the target is the focused element within its own scope (Document or ShadowRoot).
     // This prevents loopback updates from resetting the caret while typing.
@@ -200,6 +199,8 @@ export default class ABind extends HTMLElement {
         return;
       }
     }
+
+    this.log?.('applyUpdate()', {target, name, value});
 
     // Bind to attribute of bound element
     if (name.startsWith('$')) {
@@ -283,7 +284,7 @@ export default class ABind extends HTMLElement {
         let value = this.#bound[this.#elemProp];
         const isCheckbox = this.#bound instanceof HTMLInputElement && this.#bound.type === 'checkbox';
 
-        // Multi-Select Box Logic (Array Mutation) OR Boolean Toggle
+        // checkbox Array Mutation OR Boolean Toggle
         if (isCheckbox && this.#model) {
           const currentModelVal = this.#getPropertyValue(this.#model, prop);
 
@@ -291,18 +292,26 @@ export default class ABind extends HTMLElement {
             const boxValue = this.#bound.value;
             const isChecked = this.#bound.checked;
             // Clone array to trigger immutability detection/reactivity
-            value = isChecked
-              ? [...currentModelVal, boxValue]
-              : currentModelVal.filter(item => item !== boxValue);
+            value = isChecked ?
+              [...currentModelVal, boxValue] :
+              currentModelVal.filter(item => item !== boxValue);
           } else if (typeof currentModelVal === 'boolean') {
             // If boolean, ignore 'value' attribute and toggle state
             value = this.#bound.checked;
+          } else if (!this.#bound.checked) {
+            // even if bound element has a value, if not checked set value to null
+            value = null;
+          } else if (value === 'on') {
+            // value = true;
           }
         }
 
+        // Multi-select
         if (this.#bound instanceof HTMLSelectElement && this.#bound.multiple) {
           value = Array.from(this.#bound.selectedOptions).map(option => option.value || option.text);
         }
+
+        this.log?.(`Event: ${this.#event}`, {value, event});
         this.#updateModel(value, event);
       }, { signal: this.#abortController.signal });
     }
@@ -607,6 +616,7 @@ export default class ABind extends HTMLElement {
 
   async #resolveModel(gen) {
     this.log?.('resolveModel()', {gen});
+
     if (this.#model && !this.#modelKey) {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
       return true;
@@ -698,6 +708,15 @@ export default class ABind extends HTMLElement {
   #updateModel(value, event) {
     const prop = this.#property || this.#modelAttr;
     if (this.#func) return this.#executeFunction(event);
+
+    // auto convert text values that look like objects or arrays
+    if (typeof value === 'string' && (value.includes('[') || value.includes('{'))) {
+      try {
+        value = JSON.parse(value);
+      } catch (error) {
+        // pass through
+      }
+    }
 
     // Use the identity 'value' if present, otherwise stick to boolean 'checked'
     const isRadio = this.#bound instanceof HTMLInputElement && this.#bound.type === 'radio';

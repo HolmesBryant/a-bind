@@ -443,7 +443,6 @@ export default class ARepeat extends HTMLElement {
     }
 
     if (!this.#targetElem) {
-      console.warn('Cannot find target', this)
       this.#data = data;
       return;
     }

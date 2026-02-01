@@ -18,16 +18,14 @@ class ExampleComponent extends HTMLElement {
 
 	constructor() {
 		super();
-		this.sttachShadow({ mode: 'open' })
+		this.attachShadow({ mode: 'open' })
 	}
 
 	attributeChangedCallback(attr, oldval, newval) {
 		if (oldval === newval) return;
-		let prop;
 
 		switch (attr) {
 			case 'foo-bar':
-				prop = 'fooBar';
 				this.#fooBar = newval;
 				break;
 		}
@@ -39,9 +37,6 @@ class ExampleComponent extends HTMLElement {
 		// Ignore this, it just displays this code.
 		this.innerHTML = `<a-code highlight="javascript">\n${this.constructor.toString()}\n</a-code>`;
 	}
-
-	get foo() { return this.#foo }
-	set foo(value) { this.setAttribute('foo', value) }
 
 	get fooBar() { return this.#fooBar }
 	set fooBar(value) { this.setAttribute('foo-bar', value) }

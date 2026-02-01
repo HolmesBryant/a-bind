@@ -97,11 +97,13 @@ body {
 
 /**** Borders ****/
 	.button,
+	.nofrills,
 	button,
 	details,
 	input,
 	select,
 	option,
+	fieldset,
 	textarea,
 	.card
 	{ border: 1px solid var(--border-color); }
@@ -109,6 +111,9 @@ body {
 	output,
 	[contenteditable]
 	{ border: 1px dashed var(--border-color); }
+
+	details:has(.nofrills)
+	{ border: none; }
 
   article,
   button,
@@ -118,6 +123,7 @@ body {
   section,
   select,
   summary,
+  fieldset,
   textarea,
   .card
   { border-radius: .5rem; }
@@ -416,30 +422,20 @@ body {
 	.center
 	{ justify-content: center; }
 
-	.vcenter,
 	.middle
-	.column.center
 	{ align-items: center; }
 
 	.end
-	{ justify-content: flex-end; }
+	{ justify-content: end; }
 
-	.vend,
-	.bottom,
-	.column.end
-	{ align-items: flex-end; }
+	.bottom
+	{ align-items: end; }
 
 	.start
 	{ justify-content: start; }
 
-	.top,
-	.vstart,
-	.column.start
-	{ align-items: flex-start; }
-
-	.column.vstart,
-	.column.top
-	{ justify-content: flex-start; }
+	.top
+	{ align-items: start; }
 
 	.stretch
 	{ align-items: stretch; }

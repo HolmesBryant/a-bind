@@ -26,7 +26,7 @@
   </a-code>
 </details>
 
-<details open name="o-examples">
+<details name="o-examples">
 <summary class="nofrills">Inputs</summary>
   <a-bindgroup model="mod:testObject">
     <a-repeat prop="sections">
@@ -328,6 +328,69 @@
 </details>
 
 <details name="o-examples">
+<summary class="nofrills">Content Editable</summary>
+  <a-bindgroup model="mod:testObject">
+    <div class="flex stretch">
+      <a-bind
+        once
+        prop="editable"
+        elem-prop="innerHTML"
+        class="flex1 card"
+        throttle="300">
+
+        <div contenteditable></div>
+      </a-bind>
+
+      <a-bind
+        pull
+        class="flex1 card"
+        prop="editable">
+
+        <output></output>
+      </a-bind>
+    </div>
+  </a-bindgroup>
+
+  <div class="flex stretch">
+    <a-code highlight class="flex1 card">
+      <textarea>
+        <a-bind
+          once
+          model="mod:testObject"
+          prop="editable"
+          elem-prop="innerHTML"
+          throttle="300">
+
+          <div contenteditable></div>
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight class="flex1 card">
+      <textarea>
+        <a-bind
+          pull
+          model="mod:testObject"
+          prop="editable">
+
+          <output></output>
+        </a-bind>
+      </textarea>
+    </a-code>
+  </div>
+
+  <div class="flex column card">
+    <strong>The Model</strong>
+
+    <a-code highlight="javascript">
+      const testObject = {
+        editable: "<p>Eiusmod magna eiusmod anim</p>",
+      }
+    </a-code>
+  </div>
+</details>
+
+<details name="o-examples">
 <summary class="nofrills">Form Submission</summary>
   <a-bindgroup
     model="mod:testObject">
@@ -412,69 +475,6 @@
           </a-bind>
         </a-bindgroup>
       </textarea>
-    </a-code>
-  </div>
-</details>
-
-<details name="o-examples">
-<summary class="nofrills">Content Editable</summary>
-  <a-bindgroup model="mod:testObject">
-    <div class="flex stretch">
-      <a-bind
-        once
-        prop="editable"
-        elem-prop="innerHTML"
-        class="flex1 card"
-        throttle="300">
-
-        <div contenteditable></div>
-      </a-bind>
-
-      <a-bind
-        pull
-        class="flex1 card"
-        prop="editable">
-
-        <output></output>
-      </a-bind>
-    </div>
-  </a-bindgroup>
-
-  <div class="flex stretch">
-    <a-code highlight class="flex1 card">
-      <textarea>
-        <a-bind
-          once
-          model="mod:testObject"
-          prop="editable"
-          elem-prop="innerHTML"
-          throttle="300">
-
-          <div contenteditable></div>
-        </a-bind>
-      </textarea>
-    </a-code>
-
-    <a-code highlight class="flex1 card">
-      <textarea>
-        <a-bind
-          pull
-          model="mod:testObject"
-          prop="editable">
-
-          <output></output>
-        </a-bind>
-      </textarea>
-    </a-code>
-  </div>
-
-  <div class="flex column card">
-    <strong>The Model</strong>
-
-    <a-code highlight="javascript">
-      const testObject = {
-        editable: "<p>Eiusmod magna eiusmod anim</p>",
-      }
     </a-code>
   </div>
 </details>

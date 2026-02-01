@@ -1,11 +1,9 @@
 <!-- tab-component.html -->
-<!-- all content is in component shadow dom -->
-<details>
+<details name="tc-examples">
 <summary class="nofrills">Setup</summary>
-
   <a-code highlight="javascript">
     // test-component.js
-    export default class TestComponent extends HTMLElement {
+    export class TestComponent extends HTMLElement {
       text = 'foo';
       static template = `
         /* When binding elements in Shadow DOM,
@@ -43,4 +41,1005 @@
   </a-code>
 </details>
 
-<test-component id="my-elem"></test-component>
+<details name="tc-examples">
+<summary class="nofrills">Inputs</summary>
+  <!-- text -->
+  <test-component
+    id="tc-text"
+    prop="text"
+    label='input type="text"'
+    newval="New Value">
+    <a-bind model="dom:#tc-text" prop="text" slot="input">
+      <input name="text">
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          model="dom:#tc-text"
+          prop="text"
+          slot="input">
+
+          <input name="text">
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        text = 'Initial Text';
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- datalist -->
+  <test-component
+    id="tc-datalist"
+    prop="options"
+    label="dynamic datalist"
+    newval='[ "bing", "bang", "boom" ]'>
+
+    <div slot="input">
+      <input name="tc-listinput" list="c-datalist">
+      <datalist id="c-datalist"></datalist>
+      <a-repeat
+        model="dom:#tc-datalist"
+        target="dom:#c-datalist"
+        prop="options">
+
+        <template>
+          <option>{{item}}</option>
+        </template>
+      </a-repeat>
+    </div>
+
+    <a-code highight slot="input-code">
+      <textarea>
+        <div slot="input">
+          <input
+            list="c-datalist">
+
+          <datalist
+            id="c-datalist">
+          </datalist>
+
+          <a-repeat
+            model="dom:#tc-datalist"
+            target="dom:#c-datalist"
+            prop="options">
+
+            <template>
+              <option>{{item}}</option>
+            </template>
+          </a-repeat>
+        </div>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        options = ['foo', 'bar', 'baz'];
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- email -->
+  <test-component
+    id="tc-email"
+    prop="email"
+    label='input type="email"'
+    newval="new@foo.com">
+    <a-bind model="dom:#tc-email" prop="email" slot="input">
+      <input name="email">
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          model="dom:#tc-email"
+          prop="email"
+          slot="input">
+
+          <input name="email">
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        email = 'name@email.com';
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- date -->
+  <test-component
+    id="tc-date"
+    prop="date"
+    label='input type="date"'
+    newval="1215-06-15">
+
+    <a-bind model="dom:#tc-date" prop="date" slot="input">
+      <input name="date" type="date">
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          model="dom:#tc-date"
+          prop="date"
+          slot="input">
+
+          <input name="date">
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        date = '1914-12-25';
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- color -->
+  <test-component
+    id="tc-color"
+    prop="color"
+    label='input type="color"'
+    newval="#049f9d">
+
+    <div slot="input">
+      <a-bindgroup class="flex center" model="dom:#tc-color" prop="color">
+        <a-bind>
+          <input name="color" type="color">
+        </a-bind>
+
+        <a-bind pull>
+          <a-bind pull elem-prop="style.background">
+            <output></output>
+          </a-bind>
+        </a-bind>
+      </a-bindgroup>
+    </div>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <div slot="input">
+          <a-bindgroup
+            model="dom:#tc-color"
+            prop="color">
+
+            <a-bind>
+              <input type="color">
+            </a-bind>
+
+            <a-bind pull>
+              <a-bind
+                pull
+                elem-prop="style.background">
+
+                <output></output>
+              </a-bind>
+            </a-bind>
+          </a-bindgroup>
+        </div>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        color = '#cd5c5c';
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- range -->
+  <test-component
+    id="tc-range"
+    prop="range"
+    label='input type="range"'
+    newval="85">
+
+    <a-bindgroup
+      class="flex column gap0"
+      model="dom:#tc-range"
+      prop="range"
+      slot="input">
+
+      <a-bind
+        pull
+        elem-prop="textContent">
+        <span></span>
+      </a-bind>
+
+      <a-bind>
+        <input name="range" type="range">
+      </a-bind>
+    </a-bindgroup>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bindgroup
+          model="dom:#tc-range"
+          prop="range"
+          slot="input">
+
+          <a-bind
+            pull
+            elem-prop="textContent">
+            <span></span>
+          </a-bind>
+
+          <a-bind>
+            <input type="range">
+          </a-bind>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent {
+        range = 50;
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- progress -->
+  <test-component
+    id="tc-progress"
+    prop="progress"
+    label="progress"
+    newval="80">
+
+    <a-bind
+      model="dom:#tc-progress"
+      prop="progress"
+      slot="input">
+      <progress max="100">
+      </progress>
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          model="dom:#tc-progress"
+          prop="progress"
+          slot="input">
+          <progress max="100">
+          </progress>
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        progress = 50;
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- select -->
+  <test-component
+    id="tc-select"
+    prop="selected"
+    label='select'
+    newval='baz'>
+
+    <a-bindgroup model="dom:#tc-select" slot="input">
+      <a-bind prop="selected">
+        <select id="c-select"></select>
+      </a-bind>
+
+      <a-repeat
+        target="dom:#c-select"
+        prop="options">
+        <template>
+          <option>{{item}}</option>
+        </template>
+      </a-repeat>
+    </a-bindgroup>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bindgroup
+          model="dom:#tc-select"
+          slot="input">
+
+          <a-bind prop="selected">
+            <select id="c-select"></select>
+          </a-bind>
+
+          <a-repeat
+            target="dom:#c-select"
+            prop="options">
+            <template>
+              <option>{{item}}</option>
+            </template>
+          </a-repeat>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- select multiple -->
+  <test-component
+    id="tc-select-multi"
+    prop="selectMulti"
+    label='dynamic select [multiple]'
+    newval=' [ "bar", "baz" ] '>
+
+    <a-bindgroup model="dom:#tc-select-multi" slot="input">
+      <a-bind prop="selectMulti">
+        <select multiple id="c-selectmulti"></select>
+      </a-bind>
+
+      <a-repeat target="dom:#c-selectmulti" prop="optionsA">
+        <template>
+          <option value={{value}}>{{label}}</option>
+        </template>
+      </a-repeat>
+    </a-bindgroup>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bindgroup
+          model="dom:#tc-select-multi"
+          slot="input">
+
+          <a-bind
+            prop="selectMulti">
+
+            <select
+              multiple
+              id="c-selectmulti">
+            </select>
+          </a-bind>
+
+          <a-repeat
+            target="dom:#c-selectmulti"
+            prop="optionsA">
+
+            <template>
+              <option value={{value}}>{{label}}</option>
+            </template>
+          </a-repeat>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        selectMulti = ['foo', 'baz'];
+
+        optionsA = [
+          {value: 'foo', label: 'Foo!'},
+          {value: 'bar', label: 'Bar!'},
+          {value: 'baz', label: 'Baz!'}
+        ];
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- checkbox -->
+  <test-component
+    id="tc-checkbox"
+    prop="checkbox"
+    label='input type="checkbox" value="foo"'
+    newval='bar'>
+
+    <a-bind model="dom:#tc-checkbox" prop="checkbox" slot="input">
+      <input name="checkbox" type="checkbox" value="foo">
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          model="dom:#tc-checkbox"
+          prop="checkbox"
+          slot="input">
+
+          <input
+            type="checkbox"
+            value="foo">
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        checkbox = 'foo';
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- checkboxBool -->
+  <test-component
+    id="tc-checkboxbool"
+    prop="checkboxBool"
+    label='checkbox (no value)'
+    newval="true">
+
+    <a-bind model="dom:#tc-checkboxbool" prop="checkboxBool" slot="input">
+      <input name="checkbox-bool" type="checkbox">
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          model="dom:#tc-checkboxbool"
+          prop="checkboxBool"
+          slot="input">
+
+          <input type="checkbox">
+      </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        checkboxBool = false;
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- checkboxes array -->
+  <test-component
+    id="tc-checkbox-arr"
+    prop="checkboxArr"
+    label='checkboxes bound to array'
+    newval='[ "bar" ]'>
+
+    <fieldset slot="input">
+      <a-bindgroup
+        class="flex column"
+        model="dom:#tc-checkbox-arr"
+        prop="checkboxArr">
+
+        <label class="flex center">
+          <a-bind>
+            <input name="checks" type="checkbox" value="foo">
+          </a-bind>
+            value="foo"
+        </label>
+
+        <label class="flex center">
+          <a-bind>
+            <input name="checks" type="checkbox" value="bar">
+          </a-bind>
+          value="bar"
+        </label>
+
+        <label class="flex center">
+          <a-bind>
+            <input name="checks" type="checkbox" value="baz">
+          </a-bind>
+          value="baz"
+        </label>
+      </a-bindgroup>
+    </fieldset>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bindgroup
+          model="dom:#tc-checkbox-arr"
+          prop="checkboxArr">
+
+          <a-bind>
+            <input
+              name="checks"
+              type="checkbox"
+              value="foo">
+          </a-bind>
+
+          <a-bind>
+            <input
+              name="checks"
+              type="checkbox"
+              value="bar">
+          </a-bind>
+
+            <a-bind>
+              <input
+                name="checks"
+                type="checkbox"
+                value="baz">
+            </a-bind>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        checkboxArr = ['foo', 'baz'];
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- radioGroup -->
+  <test-component
+    id="tc-radio"
+    prop="radioGroup"
+    label='radio group'
+    newval='bar'>
+
+    <fieldset slot="input">
+      <a-bindgroup
+        class="flex column"
+        model="dom:#tc-radio"
+        prop="radioGroup">
+
+        <label class="flex center">
+          <a-bind>
+            <input type="radio" name="radio" value="foo">
+          </a-bind>
+          value="foo"
+        </label>
+
+        <label class="flex center">
+          <a-bind>
+            <input type="radio" name="radio" value="bar">
+          </a-bind>
+          value="bar"
+        </label>
+
+        <label class="flex center">
+          <a-bind>
+            <input type="radio" name="radio" value="baz">
+          </a-bind>
+          value="baz"
+        </label>
+      </a-bindgroup>
+    </fieldset>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bindgroup
+          model="dom:#tc-radio"
+          prop="radioGroup"
+          slot="input">
+
+          <a-bind>
+            <input
+              type="radio"
+              name="radio"
+              value="foo">
+          </a-bind>
+
+          <a-bind>
+            <input
+              type="radio"
+              name="radio"
+              value="bar">
+          </a-bind>
+
+          <a-bind>
+            <input
+              type="radio"
+              name="radio"
+              value="baz">
+          </a-bind>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        radioGroup = 'foo';
+        ...
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- button 1 -->
+  <test-component
+    id="tc-button1"
+    prop="button"
+    label='button text mirrors property value, but button value does not'
+    newval="New Value">
+
+    <a-bind
+      slot="input"
+      model="dom:#tc-button1"
+      prop="button"
+      elem-prop="textContent"
+      event="click"
+      func="notify">
+
+      <button
+        value="button value">
+      </button>
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          slot="input"
+          model="dom:#tc-button1"
+          prop="button"
+          elem-prop="textContent"
+          event="click"
+          func="notify">
+
+          <button
+            value="button value">
+          </button>
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestCommponent extends HTMLElement {
+        button = "Initial Value";
+
+        ...
+
+        notify(event) {
+          console.log(event.target.value);
+        }
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- button 2 -->
+  <test-component
+    id="tc-button2"
+    prop="button"
+    label='button text does not mirror property value, but button value does'
+    newval="Another Value">
+
+    <a-bind
+      slot="input"
+      model="dom:#tc-button2"
+      prop="button"
+      event="click"
+      func="notify">
+
+      <button>Click Me!</button>
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          slot="input"
+          model="dom:#tc-button1"
+          prop="button"
+          event="click"
+          func="notify">
+
+          <button>Click Me!</button>
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestCommponent extends HTMLElement {
+        button = "Initial Value";
+
+        ...
+
+        notify(event) {
+          console.log(event.target.value);
+        }
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- button 3 -->
+  <test-component
+    id="tc-button3"
+    prop="button"
+    label='both button text and value mirror property value'
+    newval="New Value">
+
+    <a-bindgroup
+      model="dom:#tc-button3"
+      prop="button"
+      slot="input">
+
+      <a-bind
+        event="click"
+        func="notify">
+
+        <a-bind
+          pull
+          elem-prop="textContent">
+          <button>Click Me!</button>
+        </a-bind>
+      </a-bind>
+    </a-bindgroup>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bindgroup
+          model="dom:#tc-button3"
+          prop="button"
+          slot="input">
+
+          <a-bind
+            event="click"
+            func="notify">
+
+            <a-bind
+              pull
+              elem-prop="textContent">
+              <button>Click Me!</button>
+            </a-bind>
+          </a-bind>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestCommponent extends HTMLElement {
+        button = "Initial Value";
+
+        ...
+
+        notify(event) {
+          console.log(event.target.value);
+        }
+      }
+    </a-code>
+  </test-component>
+
+  <hr>
+
+  <!-- file -->
+  <test-component
+    id="tc-file"
+    label='input type="file"'>
+
+    <a-bind
+      model="dom:#tc-file"
+      event="change"
+      func="fileInfo"
+      slot="input">
+      <input type="file" multiple>
+    </a-bind>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bind
+          model="dom:#tc-file"
+          event="change"
+          func="fileInfo"
+          slot="input">
+          <input type="file" multiple>
+        </a-bind>
+      </textarea>
+    </a-code>
+
+    <a-code highlight="javascript" slot="model-code">
+      export class TestComponent extends HTMLElement {
+        ...
+        fileInfo(event) {
+          console.log(event.target.files);
+        }
+      }
+    </a-code>
+  </test-component>
+</details>
+
+<!-- contenteditable -->
+<details name="tc-examples">
+<summary class="nofrills">Contenteditable</summary>
+  <section>
+    <div class="flex column stretch">
+      <div class="flex stretch">
+        <div class="card flex1">
+          <a-bind
+            pull
+            model="dom:test-component"
+            prop="editable">
+            <output></output>
+          </a-bind>
+        </div>
+
+        <div class="card flex1">
+          <a-bind
+            once
+            model="dom:test-component"
+            prop="editable"
+            elem-prop="innerHTML">
+            <div contenteditable></div>
+          </a-bind>
+        </div>
+      </div>
+
+      <details>
+        <summary class="nofrills">code</summary>
+        <div class="flex column stretch">
+          <div class="flex stretch">
+            <a-code highlight class="card flex1">
+              <textarea>
+                <a-bind
+                  pull
+                  model="dom:test-component"
+                  prop="editable">
+
+                  <output></output>
+                </a-bind>
+              </textarea>
+            </a-code>
+
+            <a-code highlight class="card flex1">
+              <textarea>
+                <a-bind
+                  once
+                  model="dom:test-component"
+                  prop="editable"
+                  elem-prop="innerHTML">
+
+                  <div contenteditable></div>
+                </a-bind>
+              </textarea>
+            </a-code>
+          </div><!-- /row -->
+
+          <a-code highlight="javascript" class="card">
+            export class TestComponent extends HTMLElement {
+              editable = "<p>Eiusmod magna eiusmod anim</p>";
+              ...
+            }
+          </a-code><!-- /row -->
+        </div> <!-- column -->
+
+        </div>
+    </div>
+  </section>
+</details>
+
+<!-- form submission -->
+<details name="tc-examples">
+<summary class="nofrills">Form Submission</summary>
+  <a-bindgroup
+    model="dom:test-component">
+
+    <a-bind
+      event="submit"
+      func="submitForm">
+
+      <form onsubmit="return false">
+        <div class="flex column">
+          <div class="flex column gap0">
+            <label for="tc-form-name">Name</label>
+
+            <a-bind
+              prop="name">
+
+              <input
+                required
+                id="tc-form-name"
+                type="text"
+                name="name">
+            </a-bind>
+          </div>
+
+          <div class="flex column gap0">
+            <label for="tc-form-email">Email</label>
+
+            <a-bind
+              prop="email">
+
+              <input
+                required
+                id="tc-form-email"
+                type="email"
+                name="email">
+            </a-bind>
+          </div>
+
+          <div class="flex center">
+            <input type="submit">
+            <input type="reset">
+          </div>
+        </div>
+      </form>
+    </a-bind>
+  </a-bindgroup>
+
+  <hr>
+
+  <div class="flex column">
+    <strong>HTML</strong>
+
+    <a-code highlight class="card">
+      <textarea>
+        <a-bindgroup
+          model="dom:test-component">
+
+          <a-bind
+            event="submit"
+            func="submitForm">
+
+            <form
+              onsubmit="return false">
+
+              <a-bind
+                prop="name">
+
+                <input
+                  required
+                  type="text"
+                  name="name">
+              </a-bind>
+
+              <a-bind
+                prop="email">
+
+                <input
+                  required
+                  type="email"
+                  name="email">
+              </a-bind>
+
+              <input type="submit">
+              <input type="reset">
+            </form>
+          </a-bind>
+        </a-bindgroup>
+      </textarea>
+    </a-code>
+
+    <strong>Model</strong>
+    <a-code highlight="javascript" class="card">
+      export class TestComponent extends HTML {
+        name = "My Name";
+        email = "name@email.com";
+        ...
+        submitForm(event) {
+          const formdata = new FormData(event.target);
+          console.log(Array.from(formdata));
+        }
+      }
+    </a-code>
+  </div>
+</details>
+
