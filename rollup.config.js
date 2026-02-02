@@ -4,36 +4,31 @@ import terser from '@rollup/plugin-terser';
 export default {
   input: 'src/index.js',
   output: [
-    // Modern ES Module (Bundlers, <script type="module">)
+    // Standard ES Module (unminified)
     {
-      file: 'dist/abind.js',
+      file: 'dist/a-bind.js',
       format: 'es',
-      sourcemap: true
+      sourcemap: false,
+      inlineDynamicImports: true
     },
-    // Minified Browser Bundle (CDN, Old school <script>)
+    // Minified ES Module
     {
-      file: 'dist/abind.min.js',
-      format: 'iife',
-      name: 'abind',   // Global variable name (window.abind)
-      plugins: [terser()],
-      sourcemap: true
+      file: 'dist/a-bind.min.js',
+      format: 'es',
+      plugins: [terser({
+        output: { comments: false },
+        compress: {
+          keep_infinity: true,
+          reduce_funcs: true,
+          join_vars: true
+        },
+        mangle: { keep_classnames: true }
+      })],
+      sourcemap: true,
+      inlineDynamicImports: true
     }
   ],
   plugins: [
     resolve(),
-    terser({
-      output: {
-        comments: false
-      },
-      compress: {
-        keep_infinity: true,
-        reduce_funcs: true,
-        join_vars: true,
-        keep_fnames: false
-      },
-        mangle: {
-          keep_classnames: true
-        }
-    }),
   ]
 };

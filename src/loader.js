@@ -9,6 +9,10 @@
 
 import PathResolver from './PathResolver.js';
 
+/**
+ * A utility class for resolving dependencies, managing a registry of objects,
+ * and safely retrieving DOM elements (including Shadow DOM piercing).
+ */
 export default class Loader {
   #domReadyPromise = null;
   #namespace = null;
@@ -16,6 +20,11 @@ export default class Loader {
   #pending = new Map();
   #deferred = new Map();
   #validator = null;
+
+  /**
+   * Default timeout in milliseconds for waiting for DOM elements or deferred definitions.
+   * @type {number}
+   */
   timeout = 2000;
 
   /**
@@ -55,10 +64,30 @@ export default class Loader {
     }
   }
 
+  /**
+   * Checks if a key exists in the internal registry.
+   * @param {string} key - The key to check.
+   * @returns {boolean}
+   */
   has(key) {
     return this.#registry.has(key);
   }
 
+  /**
+   * Main entry point to load a resource.
+   * Supports:
+   * - Registry lookups.
+   * - Protocol specific loads (`mod:`, `dom:`).
+   * - Namespace path resolution.
+   * - Deferred waiting (if a definition is pending).
+   * - DOM selection (fallback).
+   *
+   * @async
+   * @param {string} key - The identifier to load.
+   * @param {Node} [context=document] - The context for DOM queries.
+   * @param {...any} args - Arguments to pass to the constructor if the result is a class.
+   * @returns {Promise<any>} The resolved resource.
+   */
   async load(key, context = document, ...args) {
     if (!key || typeof key === 'object') return key;
 
@@ -92,6 +121,15 @@ export default class Loader {
     }
   }
 
+  /**
+   * Routing logic for resolution strategies.
+   *
+   * @private
+   * @param {string} key - The resource key.
+   * @param {Node} context - DOM context.
+   * @param {...any} args - Constructor arguments.
+   * @returns {Promise<any>}
+   */
   async #resolve(key, context, ...args) {
     // Check protocol
     if (key.startsWith('mod:')) {
@@ -116,6 +154,14 @@ export default class Loader {
     return this.#getDomElement(key, context);
   }
 
+  /**
+   * Creates a pending Promise that waits for `define()` to be called with the specific key.
+   * Used to handle race conditions where a consumer requests a dependency before it is registered.
+   *
+   * @private
+   * @param {string} key - The missing key.
+   * @returns {Promise<any>}
+   */
   #waitForDefinition(key) {
     if (this.#deferred.has(key)) return this.#deferred.get(key).promise;
 
@@ -132,6 +178,14 @@ export default class Loader {
     return promise;
   }
 
+  /**
+   * Dynamically imports a module and instantiates it if it is a class.
+   *
+   * @private
+   * @param {string} path - The module path.
+   * @param {...any} args - Constructor arguments.
+   * @returns {Promise<any>}
+   */
   async #importModule(path, ...args) {
     try {
       const mod = await import(path);
@@ -141,6 +195,19 @@ export default class Loader {
     }
   }
 
+  /**
+   * Resolves a DOM element selector.
+   * Features:
+   * - Waits for `DOMContentLoaded`.
+   * - Supports Shadow DOM piercing via `>>>` syntax.
+   * - Waits for Custom Elements to be defined.
+   * - Retries until timeout.
+   *
+   * @private
+   * @param {string} selector - The CSS selector.
+   * @param {Node} context - The root node to search within.
+   * @returns {Promise<Element|null>}
+   */
   async #getDomElement(selector, context) {
       if (typeof document === 'undefined') return null;
 
@@ -195,12 +262,25 @@ export default class Loader {
       return elem;
   }
 
+  /**
+   * Validates if a string is a valid import path.
+   * @private
+   * @param {string} path - The path to check.
+   * @returns {boolean}
+   */
   #isImportable(path) {
     if (this.#validator) return this.#validator(path);
     const normalized = path.replace(/\\/g, '/');
     return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
   }
 
+  /**
+   * Helper to instantiate a value if it is a class constructor.
+   * @private
+   * @param {any} obj - The object to check.
+   * @param {...any} args - Constructor arguments.
+   * @returns {any} The instance or the original object.
+   */
   #instantiate(obj, ...args) {
     if (typeof obj !== 'function') return obj;
     const isConstructor = obj.prototype && obj.prototype.constructor === obj;
@@ -210,6 +290,7 @@ export default class Loader {
   /**
    * Waits for a condition to become truthy, polling at a specified interval.
    * @async
+   * @private
    * @param {Function|*} condition - The condition to wait for. Can be a function or a value.
    * @param {number} [timeout=1000] - The maximum time to wait in milliseconds.
    * @param {number} [pollInterval=100] - The interval between checks in milliseconds.
@@ -231,10 +312,23 @@ export default class Loader {
     }
   }
 
+  /**
+   * Returns an iterator of registered keys.
+   * @returns {Iterator<string>}
+   */
   get keys() { return this.#registry.keys() }
+
+  /**
+   * Sets a custom validator function for import paths.
+   * @param {Function} fn - The validator function.
+   */
   set validator(fn) { this.#validator = fn }
 }
 
+/**
+ * Singleton instance of the Loader.
+ * @type {Loader}
+ */
 const loader = new Loader();
 Object.freeze(loader);
 export { loader };

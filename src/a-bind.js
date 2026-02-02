@@ -1,6 +1,6 @@
 /**
  * @file a-bind.js
- * @description specific Data-binding for Custom Elements and ESM Modules.
+ * @description Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
  * @version 3.0.0
  * @license GPL-3.0
@@ -23,13 +23,6 @@ export {
  * JavaScript models/variables and DOM elements.
  *
  * @extends HTMLElement
- *
- * @note If you need a global handle, use this example
- * @example
- * <script type="module">
- *  import ABind from './a-bind.min.js';
- *  window.abind = ABind;
- * </script>
  */
 export default class ABind extends HTMLElement {
   #debug;
@@ -178,6 +171,14 @@ export default class ABind extends HTMLElement {
 
   // -- Static --
 
+  /**
+   * Static helper to announce an update to the global event bus.
+   * Useful for manually triggering updates from outside the element.
+   *
+   * @param {object|string} model - The model object or identifier.
+   * @param {string} property - The property name on the model.
+   * @param {any} value - The new value.
+   */
   static update(model, property, value) {
     const key = Bus.getKey(model, property);
     crosstownBus.announce(key, value)
@@ -187,6 +188,12 @@ export default class ABind extends HTMLElement {
 
   /**
    * Main entry point for applying updates to the DOM or Model.
+   * Handles attribute binding, boolean updates, CSS variables, and nested paths.
+   *
+   * @param {HTMLElement} target - The element to update.
+   * @param {string} name - The property, attribute, or CSS variable name.
+   * @param {any} value - The value to apply.
+   * @returns {void}
    */
   applyUpdate(target, name, value) {
     if (!this.#isConnected || !target || typeof name !== 'string') return;
@@ -270,6 +277,11 @@ export default class ABind extends HTMLElement {
 
   // -- Private --
 
+  /**
+   * Sets up event listeners on the bound element (View -> Model) and
+   * subscriptions to the Bus (Model -> View).
+   * @private
+   */
   #addListeners() {
     if (!this.#model) {
       return console.warn('a-bind.addListeners(): No model present, aborting.', this)
@@ -336,6 +348,11 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  /**
+   * Dynamically imports and attaches a Logger instance for debugging.
+   * @private
+   * @returns {Promise<Function>} A logging function wrapper.
+   */
   async #attachLogger() {
     try {
       const mods = await import('./Logger.js');
@@ -351,6 +368,14 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  /**
+   * Determines if a specific HTML element can accept child nodes.
+   * Used to pause MutationObservers during updates.
+   *
+   * @private
+   * @param {HTMLElement} elem - The element to check.
+   * @returns {boolean} True if the element is not a void element.
+   */
   #canHaveChildren(elem) {
     // Text nodes and Comments cannot have children
     if (elem.nodeType !== Node.ELEMENT_NODE) return false;
@@ -362,6 +387,13 @@ export default class ABind extends HTMLElement {
     return !voidElements.includes(elem.localName);
   }
 
+  /**
+   * Executes a specific function defined on the model when an event occurs.
+   * Used when the 'func' attribute is present.
+   *
+   * @private
+   * @param {Event} event - The DOM event triggered.
+   */
   #executeFunction(event) {
     if (!this.#func) return;
     this.log?.('executeFunction()', event);
@@ -391,6 +423,13 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  /**
+   * Locates the valid child element to bind to.
+   * Drills down through templates or nested <a-bind> elements to find the real target.
+   *
+   * @private
+   * @returns {HTMLElement|null} The target element.
+   */
   #getBoundElement() {
     const findTarget = (root) => {
       let child = root.firstElementChild;
@@ -426,7 +465,12 @@ export default class ABind extends HTMLElement {
   }
 
   /**
-   * Accounts for nested properties ie. user.name
+   * safe getter for nested object properties (e.g. user.name).
+   *
+   * @private
+   * @param {object} obj - The source object.
+   * @param {string} path - The dot-notation path.
+   * @returns {any} The resolved value.
    */
   #getPropertyValue(obj, path) {
     this.log?.('getPropertyValue()', {obj, path});
@@ -434,8 +478,14 @@ export default class ABind extends HTMLElement {
     return (value !== undefined) ? value : obj?.getAttribute?.(path);
   }
 
+
   /**
-   * logic for Radio and Checkbox 'checked' state.
+   * Handles logic for Radio and Checkbox 'checked' state updates.
+   * Supports boolean toggles and array mutations (for multi-select).
+   *
+   * @private
+   * @param {HTMLInputElement} target - The checkbox or radio input.
+   * @param {any} value - The value from the model.
    */
   #handleBooleanUpdate(target, value) {
     const modelValue = this.#parsedValue(value, target);
@@ -455,18 +505,21 @@ export default class ABind extends HTMLElement {
     // Support Array.includes for Multi-Select Checkboxes
     if (Array.isArray(modelValue) && target.type === 'checkbox') {
       target.checked = modelValue.includes(comparisonValue);
-    }
-    // Support strict Boolean binding (ignoring value attribute)
-    else if (typeof modelValue === 'boolean' && target.type === 'checkbox') {
+    } else if (typeof modelValue === 'boolean' && target.type === 'checkbox') {
+      // Support strict Boolean binding (ignoring value attribute)
       target.checked = modelValue;
-    }
-    else {
+    } else {
       target.checked = (modelValue === comparisonValue);
     }
 
     this.log?.('handleBooleanUpdate()', {target, value, targetChecked: target.checked});
   }
 
+  /**
+   * Handles DOM mutations (children added/removed).
+   * Re-syncs the model value to the view if the bound element changes.
+   * @private
+   */
   #handleMutation() {
     if (!this.isConnected) return;
 
@@ -497,7 +550,12 @@ export default class ABind extends HTMLElement {
   }
 
   /**
-   * logic for nested paths (e.g., style.color).
+   * Handles updates for nested paths on the DOM element (e.g., style.color).
+   *
+   * @private
+   * @param {HTMLElement} target - The target element.
+   * @param {string} name - The nested path string.
+   * @param {any} value - The value to set.
    */
   #handleNestedUpdate(target, name, value) {
     this.log?.('handleNestedUpdate()', {target, name, value});
@@ -538,6 +596,12 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  /**
+   * Main initialization logic.
+   * Resolves the model, target, group, and sets up subscribers.
+   * @private
+   * @returns {Promise<void>}
+   */
   async #init() {
     if (this.hasAttribute('debug')) {
       console.log('Debugging: ', this);
@@ -575,6 +639,15 @@ export default class ABind extends HTMLElement {
     this.#addListeners();
   }
 
+  /**
+   * Parses and coerces values based on the target element type.
+   * Converts strings 'true'/'false' to booleans for checkboxes/radios.
+   *
+   * @private
+   * @param {any} value - The raw value.
+   * @param {HTMLElement} target - The target element.
+   * @returns {any} The parsed value.
+   */
   #parsedValue(value, target) {
     // Only coerce strings to boolean if the target is a Checkbox or Radio
     if (target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio')) {
@@ -586,6 +659,11 @@ export default class ABind extends HTMLElement {
     return value;
   }
 
+  /**
+   * Tears down existing bindings and re-runs initialization.
+   * Used when critical attributes (like model or prop) change.
+   * @private
+   */
   async #reinit() {
     this.log?.('reinit()');
     this.#initIdx++;
@@ -593,6 +671,12 @@ export default class ABind extends HTMLElement {
     await this.#init();
   }
 
+  /**
+   * Checks for a parent <a-bindgroup> and registers this element with it.
+   *
+   * @private
+   * @returns {boolean} False if waiting for group data, True otherwise.
+   */
   #resolveGroup() {
     this.log?.('resolveGroup()');
     this.#group = this.closest('a-bindgroup');
@@ -614,6 +698,14 @@ export default class ABind extends HTMLElement {
     return true;
   }
 
+  /**
+   * Resolves the model object using the Loader.
+   * Handles 'this', string keys, and deferred loading.
+   *
+   * @private
+   * @param {number} gen - The generation index for race condition checking.
+   * @returns {Promise<boolean>} True if model resolved, false if failed.
+   */
   async #resolveModel(gen) {
     this.log?.('resolveModel()', {gen});
 
@@ -640,6 +732,13 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  /**
+   * Resolves a custom target selector using the Loader.
+   *
+   * @private
+   * @param {string} selector - The selector string.
+   * @returns {Promise<HTMLElement>} The resolved element.
+   */
   async #resolveTarget(selector) {
     this.log?.('#resolveTarget()', {target: selector});
     try {
@@ -651,12 +750,20 @@ export default class ABind extends HTMLElement {
   }
 
   /**
-   * Check if reinit() was called during load, or element was removed from the DOM.
+   * Checks if initialization should abort due to race conditions or disconnection.
+   *
+   * @private
+   * @param {number} idx - The generation index at the start of the async process.
+   * @returns {boolean} True if the process should stop.
    */
   #shouldBail(idx) {
     return (this.#initIdx !== idx || !this.#isConnected);
   }
 
+  /**
+   * Pushes the current Model value to the DOM (View).
+   * @private
+   */
   #syncView() {
     if (this.#push) return;
     const prop = this.#property || this.#modelAttr;
@@ -682,6 +789,10 @@ export default class ABind extends HTMLElement {
     this.log?.('syncView()');
   }
 
+  /**
+   * Cleans up subscriptions, abort controllers, and pending scheduler tasks.
+   * @private
+   */
   #teardown() {
     crosstownBus.hopOff(this.#busKey, this.#updateSubscribers);
 
@@ -697,6 +808,13 @@ export default class ABind extends HTMLElement {
     this.log?.('teardown()', {});
   }
 
+  /**
+   * Callback for Bus subscriptions.
+   * Schedules a DOM update via the UpdateManager.
+   *
+   * @private
+   * @param {any} value - The new value from the Bus.
+   */
   #updateBound(value) {
     const prop = this.#property || this.#modelAttr;
     this.log?.('updateBound()', {prop, value});
@@ -705,6 +823,14 @@ export default class ABind extends HTMLElement {
     }, this);
   }
 
+  /**
+   * Handles View -> Model updates (e.g., input events).
+   * Parses values, handles throttling, and announces changes to the Bus.
+   *
+   * @private
+   * @param {any} value - The value from the DOM element.
+   * @param {Event} event - The triggering event.
+   */
   #updateModel(value, event) {
     const prop = this.#property || this.#modelAttr;
     if (this.#func) return this.#executeFunction(event);
@@ -753,11 +879,34 @@ export default class ABind extends HTMLElement {
 
   // -- properties --
 
+  /**
+   * Checks if debug mode is enabled.
+   * @returns {boolean}
+   */
   get debug() { return this.hasAttribute('debug') }
+
+  /**
+   * Returns the shared Bus instance.
+   * @returns {Bus}
+   */
   get bus() { return crosstownBus }
+
+  /**
+   * Returns the computed unique key for the Bus subscription.
+   * @returns {string}
+   */
   get busKey() { return this.#busKey }
+
+  /**
+   * Returns the property name or attribute name being bound.
+   * @returns {string}
+   */
   get prop() { return this.#property || this.#modelAttr }
 
+  /**
+   * Gets or sets the actual DOM element being bound.
+   * @type {HTMLElement}
+   */
   get bound() { return this.#bound }
   set bound(value) {
     if (value instanceof HTMLElement) {
@@ -767,21 +916,45 @@ export default class ABind extends HTMLElement {
     }
   }
 
-  // this resolves to the attribute 'model'
+  /**
+   * Gets the model key string (attribute value).
+   * Sets the 'model' attribute.
+   * @type {string}
+   */
   get modelKey() { return this.#modelKey }
   set modelKey(value) { this.setAttribute('model', value) }
 
   // -- attributes --
 
+  /**
+   * Gets/Sets the 'elem-prop' attribute.
+   * Defines which property on the DOM element to bind to (e.g., 'value', 'checked').
+   * @type {string}
+   */
   get elemProp() { return this.#elemProp }
   set elemProp(value) { this.setAttribute('elem-prop', value) }
 
+  /**
+   * Gets/Sets the 'event' attribute.
+   * Defines which DOM event triggers a model update (default: 'input').
+   * @type {string}
+   */
   get event() { return this.#event }
   set event(value) { this.setAttribute('event', value) }
 
+  /**
+   * Gets/Sets the 'func' attribute.
+   * If set, this function is called instead of updating a property.
+   * @type {string}
+   */
   get func() { return this.#func }
   set func(value) { this.setAttribute('func', value) }
 
+  /**
+   * Gets or sets the Model object.
+   * If a string is passed, it sets the attribute. If an object is passed, it sets the internal instance.
+   * @type {object|string}
+   */
   get model() { return this.#model }
   set model(value) {
     if (typeof value === 'function' || typeof value === 'object' && value !== null) {
@@ -792,24 +965,59 @@ export default class ABind extends HTMLElement {
     }
   }
 
+  /**
+   * Gets/Sets the 'attr' attribute.
+   * Used when binding to a model that is also an HTML element (attribute binding).
+   * @type {string}
+   */
   get modelAttr() { return this.#modelAttr }
   set modelAttr(value) { this.setAttribute('attr', value) }
 
+  /**
+   * Gets/Sets the 'once' attribute.
+   * If true, binding is one-time only (no listeners).
+   * @type {boolean}
+   */
   get once() { return this.#once }
   set once(value) { this.toggleAttribute('once', value !== false) }
 
+  /**
+   * Gets/Sets the 'prop' attribute.
+   * The property name on the model object.
+   * @type {string}
+   */
   get property() { return this.#property }
   set property(value) { this.setAttribute('prop', value) }
 
+  /**
+   * Gets/Sets the 'pull' attribute.
+   * If true, data only flows Model -> View (one-way).
+   * @type {boolean}
+   */
   get pull() { return this.#pull }
   set pull(value) { this.toggleAttribute('pull', value !== false) }
 
+  /**
+   * Gets/Sets the 'push' attribute.
+   * If true, data only flows View -> Model (one-way).
+   * @type {boolean}
+   */
   get push() { return this.#push }
   set push(value) { this.toggleAttribute('push', value !== false) }
 
+  /**
+   * Gets/Sets the 'throttle' attribute.
+   * Time in milliseconds to debounce/throttle input events.
+   * @type {number}
+   */
   get throttle() { return this.#throttle }
   set throttle(value) { this.setAttribute('throttle', parseInt(value)) }
 
+  /**
+   * Gets/Sets the 'target' attribute.
+   * A CSS selector to find the element to bind to (if not a direct child).
+   * @type {string}
+   */
   get target() { return this.#target }
   set target(value) { this.setAttribute('target', value) }
 }

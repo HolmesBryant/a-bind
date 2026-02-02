@@ -13,6 +13,13 @@ const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
 const PROTOCOL_REGEX = /^[a-zA-Z][a-zA-Z0-9+.-]*:/; // RFC 3986 Scheme validation
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'ftp:']);
 
+/**
+ * A Custom Element (<a-repeat>) that iterates over an array (from a model or property)
+ * and renders a template for each item. Supports data binding, nested scopes,
+ * keyed rendering, and external templates.
+ *
+ * @extends HTMLElement
+ */
 export default class ARepeat extends HTMLElement {
   // -- Attributes --
   #key;
@@ -34,6 +41,11 @@ export default class ARepeat extends HTMLElement {
   #scopeLoadId = 0;
   #implicitTemplate;
 
+  /**
+   * List of attributes to observe for changes.
+   * @static
+   * @returns {string[]} ['key', 'model', 'prop', 'scope', 'target', 'template', 'templates']
+   */
   static observedAttributes = [
     'key',
     'model',
@@ -52,6 +64,14 @@ export default class ARepeat extends HTMLElement {
 
   // --- Lifecycle ---
 
+  /**
+   * Called when an observed attribute has been added, removed, updated, or replaced.
+   * Handles loading of models and scopes, parsing JSON templates, and triggering subscriptions.
+   *
+   * @param {string} attr - The attribute name.
+   * @param {string} oldval - The old value.
+   * @param {string} newval - The new value.
+   */
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
     switch (attr) {
@@ -120,6 +140,10 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  /**
+   * Called when the element is connected to the DOM.
+   * Initializes templates, resolves the target container, and sets up initial data binding.
+   */
   async connectedCallback() {
     this.#isConnected = true;
     this.#upgrade('model');
@@ -146,6 +170,10 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  /**
+   * Called when the element is disconnected from the DOM.
+   * Cleans up event bus subscriptions and references.
+   */
   disconnectedCallback() {
     this.#isConnected = false;
     this.#cleanup();
@@ -154,6 +182,10 @@ export default class ARepeat extends HTMLElement {
 
   // --- Private ---
 
+  /**
+   * Unsubscribes from the event bus.
+   * @private
+   */
   #cleanup() {
     if (this.#unsubscribe) {
       this.#unsubscribe();
@@ -161,6 +193,16 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  /**
+   * parses and registers available templates.
+   * Checks for:
+   * 1. Internal <template> children.
+   * 2. External templates via 'template' attribute.
+   * 3. Implicit templates (the element's own initial children).
+   * Also validates compatibility with keyed rendering.
+   *
+   * @private
+   */
   async #initTemplates() {
     this.#templateMap.clear();
     this.#defaultTemplate = null;
@@ -177,15 +219,6 @@ export default class ARepeat extends HTMLElement {
 
     // Self-Templating (Implicit Default)
     // Only proceed if no explicit templates are found.
-
-    /* if (this.#templateMap.size === 0 && !this.#defaultTemplate && this.childNodes.length > 0) {
-      const range = document.createRange();
-      range.selectNodeContents(this);
-      const content = range.cloneContents();
-      const bindings = this.#compile(content);
-      this.#defaultTemplate = { content, bindings };
-      this.replaceChildren();
-    }*/
 
     if (this.#templateMap.size === 0 && !this.#defaultTemplate) {
       if (this.#implicitTemplate) {
@@ -239,8 +272,12 @@ export default class ARepeat extends HTMLElement {
   }
 
   /**
-   * Scans a DocumentFragment for bindings and returns a list of instructions.
-   * Walk the DOM once at startup rather than every render.
+   * Scans a DocumentFragment for mustache-style bindings ({{ }}) and returns a list of instructions.
+   * This walks the DOM once at startup to create a compilation definition.
+   *
+   * @private
+   * @param {DocumentFragment} fragment - The template content to parse.
+   * @returns {Array<object>} A list of binding instructions.
    */
   #compile(fragment) {
     const bindings = [];
@@ -303,6 +340,13 @@ export default class ARepeat extends HTMLElement {
     return bindings;
   }
 
+  /**
+   * Parses a string for `{{ token }}` patterns.
+   *
+   * @private
+   * @param {string} str - The string to parse.
+   * @returns {Array<string|object>|null} Array of static strings and token objects, or null if no bindings found.
+   */
   #parseTemplateString(str) {
     if (!str.includes('{{')) return null;
 
@@ -328,6 +372,13 @@ export default class ARepeat extends HTMLElement {
 
   /**
    * Applies data to a cloned template instance using pre-compiled bindings.
+   * Handles text nodes, attributes, nested repeats, and nested template recursion.
+   *
+   * @private
+   * @param {DocumentFragment|Element} root - The root of the cloned template.
+   * @param {Array<object>} bindings - The compilation instructions.
+   * @param {any} item - The current data item.
+   * @param {number} index - The index of the item in the list.
    */
   #applyBindings(root, bindings, item, index) {
     for (const binding of bindings) {
@@ -361,6 +412,14 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  /**
+   * Helper to traverse the DOM using a path array (child indices).
+   *
+   * @private
+   * @param {Node} root - The starting node.
+   * @param {Array<number>} path - Array of childNode indices.
+   * @returns {Node|null}
+   */
   #getNode(root, path) {
     let node = root;
     for (const i of path) {
@@ -370,6 +429,15 @@ export default class ARepeat extends HTMLElement {
     return node;
   }
 
+  /**
+   * Resolves a list of string parts and tokens into a final string value.
+   *
+   * @private
+   * @param {Array} parts - Mixed array of strings and token objects.
+   * @param {any} item - Data context.
+   * @param {number} index - Loop index.
+   * @returns {string} The resolved string.
+   */
   #resolveBinding(parts, item, index) {
     let result = '';
     for (const part of parts) {
@@ -382,6 +450,16 @@ export default class ARepeat extends HTMLElement {
     return result;
   }
 
+  /**
+   * Evaluates a single token path against the item or scope.
+   * Includes security checks for unsafe URL protocols.
+   *
+   * @private
+   * @param {string} path - The property path (e.g. "user.name" or "index").
+   * @param {any} item - The current list item.
+   * @param {number} index - The current index.
+   * @returns {string|any} The resolved value.
+   */
   #evaluateToken(path, item, index) {
     if (path === 'index') return index;
     if (path === 'this' || path === 'item') {
@@ -417,6 +495,12 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  /**
+   * Compiles and stores a template definition in the internal map.
+   *
+   * @private
+   * @param {HTMLTemplateElement} tmpl - The template element.
+   */
   #registerTemplate(tmpl) {
     if (!(tmpl instanceof HTMLTemplateElement)) return;
     const content = tmpl.content;
@@ -431,6 +515,17 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  /**
+   * The core rendering loop.
+   * Handles:
+   * 1. Target resolution (where to render).
+   * 2. Keyed rendering (moving/reusing nodes based on a unique ID).
+   * 3. Index-based rendering (reusing nodes based on position).
+   * 4. Full re-rendering (fallback).
+   *
+   * @private
+   * @param {Array} data - The list of data to render.
+   */
   #render(data) {
     // Validation
     if (!Array.isArray(data)) {
@@ -578,7 +673,9 @@ export default class ARepeat extends HTMLElement {
 
   /**
    * Subscribes to the crosstownBus.
-   * This allows ARepeat to react whenever data is announced on the Bus.
+   * Connects the component to the Model/Property for reactive updates.
+   *
+   * @private
    */
   #subscribe() {
     this.#cleanup();
@@ -605,6 +702,9 @@ export default class ARepeat extends HTMLElement {
   /**
    * Captures properties set on the instance before the class was upgraded.
    * Deletes the own property and resets it to trigger the class setter.
+   *
+   * @private
+   * @param {string} prop - The property name.
    */
   #upgrade(prop) {
     if (Object.prototype.hasOwnProperty.call(this, prop)) {
@@ -616,29 +716,50 @@ export default class ARepeat extends HTMLElement {
 
    // --- Public ---
 
+  // --- Getters / Setters ---
+
+  /**
+   * Gets or sets the unique key property name for keyed rendering.
+   * @type {string}
+   */
   get key() { return this.#key }
   set key(value) {
     if (this.#key === value) return;
     this.setAttribute('key', value);
   }
 
+  /**
+   * Gets or sets the model source.
+   * If an object is passed, it sets the internal reference and subscribes.
+   * If a string is passed, it updates the attribute (triggering the Loader).
+   * @type {object|string}
+   */
   get model() { return this.#model; }
   set model(value) {
     if (this.#model === value) return;
-    if (typeof value === 'object' && value !== null) {
+    if (typeof value === 'string') {
+      this.setAttribute('model', value);
+    } else {
       this.#model = value;
       if (this.#isConnected && this.#prop) this.#subscribe();
-    } else {
-      this.setAttribute('model', value);
     }
   }
 
+  /**
+   * Gets or sets the property name to observe on the model.
+   * @type {string}
+   */
   get prop() { return this.#prop; }
   set prop(value) {
     if (this.#prop === value) return;
     this.setAttribute('prop', value);
   }
 
+  /**
+   * Gets or sets the fallback scope object.
+   * Used for variable resolution if a property is not found on the loop item.
+   * @type {object|string}
+   */
   get scope() { return this.#scope }
   set scope(value) {
     if (this.#scope === value) return;
@@ -650,18 +771,31 @@ export default class ARepeat extends HTMLElement {
     }
   }
 
+  /**
+   * Gets or sets the target selector.
+   * Defines where the list should be rendered (if not inside the element itself).
+   * @type {string}
+   */
   get target() { return this.#target }
   set target(value) {
     if (this.#target === value) return;
     this.setAttribute('target', value);
   }
 
+  /**
+   * Gets or sets the external template selector.
+   * @type {string}
+   */
   get template() { return this.#template }
   set template(value) {
     if (this.#template === value) return;
     this.setAttribute('template', value);
   }
 
+  /**
+   * Gets or sets the 'templates' JSON configuration.
+   * @type {string|object}
+   */
   get templates() { return this.#templates }
   set templates(value) {
     if (!value) return this.removeAttribute('templates');
@@ -670,7 +804,9 @@ export default class ARepeat extends HTMLElement {
   }
 
   /**
-   * Direct setter for data if not using Pub/Sub
+   * Direct setter for the data array.
+   * Bypasses the Bus/Model lookup and renders immediately.
+   * @type {Array}
    */
   get items() { return this.#data; }
   set items(value) {

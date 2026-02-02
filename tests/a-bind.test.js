@@ -23,7 +23,8 @@ const {
 	when,
 	wait,
 	info,
-	log
+	log,
+	skip
 } = runner;
 
 // --- Utilities ---
@@ -313,13 +314,13 @@ group("ARepeat", () => {
 	async function setupRepeat(items, templateStr) {
 		const model = { list: items };
 		const container = document.createElement('div');
-		container.id = 'list-container';
+		container.id = 'id_' + crypto.randomUUID();
 		document.body.append(container);
 
 		const repeat = document.createElement('a-repeat');
 		repeat.model = model;
 		repeat.setAttribute('prop', 'list');
-		repeat.setAttribute('target', '#list-container');
+		repeat.setAttribute('target', `#${container.id}`);
 
 		if (templateStr) {
 			const t = document.createElement('template');
@@ -335,20 +336,21 @@ group("ARepeat", () => {
 		return { model, container, repeat, teardown: () => { repeat.remove(); container.remove(); } };
 	}
 
-	test("Rendering: Basic Array", async () => {
-		const { container, teardown } = await setupRepeat(
-			['A', 'B', 'C'],
-			'<span>{{item}}</span>'
-		);
-		const html = container.innerHTML;
-		teardown();
-		return html.includes('A') && html.includes('B') && html.includes('C');
+	test("Rendering: Basic Array",
+		async () => {
+			const { container, teardown } = await setupRepeat(
+				['A', 'B', 'C'],
+				'<span>{{item}}</span>'
+			);
+			const html = container.innerHTML;
+			teardown();
+			return html.includes('A') && html.includes('B') && html.includes('C');
 	}, true);
 
 	test("Rendering: Object Array with index", async () => {
 		const { container, teardown } = await setupRepeat(
 			[{ id: 1, name: 'Bob' }],
-			'<div>{{index}}: {{item.name}}</div>'
+			'<div>{{index}}: {{name}}</div>'
 		);
 		const text = container.textContent;
 		teardown();
@@ -376,15 +378,16 @@ group("ARepeat", () => {
 	test("Keyed Rendering: Reuses elements", async () => {
 		const items = [{id: 1, val: 'a'}, {id: 2, val: 'b'}];
 		const model = { items };
-
+		const container_id = 'id_' + crypto.randomUUID();
 		const container = document.createElement('div');
+		container.id = container_id;
 		document.body.append(container);
 
 		const repeat = document.createElement('a-repeat');
 		repeat.model = model;
 		repeat.setAttribute('prop', 'items');
 		repeat.setAttribute('key', 'id'); // Use ID as key
-		repeat.target = container; // direct element assignment
+		repeat.target = `#${container_id}`;
 
 		const tmpl = document.createElement('template');
 		tmpl.innerHTML = '<div>{{item.val}}</div>';

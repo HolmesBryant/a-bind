@@ -1,7 +1,7 @@
 {
   "name": "a-bind",
-  "version": "2.5.2",
-  "description": "A web component that performs two-way data binding",
+  "version": "3.0.0",
+  "description": "Data-binding for Custom Elements and ESM Modules.",
   "type": "module",
   "main": "./dist/a-bind.min.js",
   "module": "./dist/a-bind.min.js",

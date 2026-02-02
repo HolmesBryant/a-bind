@@ -7,5 +7,5 @@ import ARepeat from './a-repeat.js';
 // Re-export utilities from core (Bus, Loader, etc.)
 export * from './a-bind.js';
 
-export { ABind, ABindgroup, ARepeat };
+export { ABindgroup, ARepeat };
 export default ABind;

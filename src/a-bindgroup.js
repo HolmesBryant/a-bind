@@ -2,11 +2,17 @@
  * @file a-bindgroup.js
  * @author Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
- * @version 2.6.0
  */
 
 import { loader } from './Loader.js';
 
+/**
+ * A Custom Element (<a-bindgroup>) that acts as a context provider for
+ * child <a-bind> and <a-repeat> elements. It allows setting a shared 'model',
+ * 'prop', or 'attr' on a parent level to avoid repetition on children.
+ *
+ * @extends HTMLElement
+ */
 export default class ABindgroup extends HTMLElement {
   #childObserver;
   #children = new Set();
@@ -22,6 +28,15 @@ export default class ABindgroup extends HTMLElement {
 
   constructor() { super() }
 
+  // --- Getters / Setters ---
+
+  /**
+   * Gets the resolved model instance.
+   * Sets the model:
+   * - If string: updates the 'model' attribute.
+   * - If object: sets the internal instance and triggers initialization.
+   * @type {object|string}
+   */
   get model() { return this.#modelInstance }
   set model(value) {
     if (typeof value === 'string') {
@@ -32,15 +47,39 @@ export default class ABindgroup extends HTMLElement {
     }
   }
 
+  /**
+   * Gets or sets the 'attr' attribute.
+   * Represents a shared attribute name to bind to on the model (if the model is an Element).
+   * @type {string}
+   */
   get modelAttr() { return this.#modelAttr }
   set modelAttr(value) { this.setAttribute('attr', value) }
 
+  /**
+   * Gets or sets the model key (identifier).
+   * @type {string}
+   */
   get modelKey() { return this.#modelKey }
   set modelKey(value) { this.#modelKey = value }
 
+  /**
+   * Gets or sets the 'prop' attribute.
+   * Represents a shared property name to bind to on the model.
+   * @type {string}
+   */
   get property() { return this.#property }
   set property(value) { this.setAttribute('prop', value) }
 
+  // -- Lifecycle --
+
+  /**
+   * Called when an observed attribute changes.
+   * Updates internal state and propagates changes to registered children.
+   *
+   * @param {string} attr - The attribute name.
+   * @param {string} oldval - The old value.
+   * @param {string} newval - The new value.
+   */
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
     switch (attr) {
@@ -61,6 +100,11 @@ export default class ABindgroup extends HTMLElement {
     }
   }
 
+  /**
+   * Called when the element is connected to the DOM.
+   * Initializes the group. If children are not yet present, sets up a
+   * MutationObserver to wait for them.
+   */
   async connectedCallback() {
     this.#isConnected = true;
     // if a-bindgroup was inserted into DOM programatically without first appending children
@@ -91,23 +135,46 @@ export default class ABindgroup extends HTMLElement {
     }
   }
 
+  /**
+   * Called when disconnected from the DOM.
+   * Clears the registry of child elements.
+   */
   disconnectedCallback() {
     this.#children.clear();
   }
 
   // --- Public ---
 
+  /**
+   * Registers a child element (a-bind or a-repeat) with this group.
+   * Applies the group's model, property, or attribute configurations to the child
+   * if the child has not explicitly defined them.
+   *
+   * @param {HTMLElement} child - The child element to register.
+   * @returns {Promise<void>}
+   */
   async register(child) {
     this.#children.add(child);
     this.#applyDefaultsToChild(child);
   }
 
+  /**
+   * Unregisters a child element from the group.
+   * @param {HTMLElement} child - The child element to remove.
+   */
   unregister(child) {
     this.#children.delete(child);
   }
 
   // --- Private ---
 
+  /**
+   * Applies the group's default settings (debug, model, property, attr)
+   * to a specific child element.
+   *
+   * @private
+   * @param {HTMLElement} child - The target child element.
+   */
   #applyDefaultsToChild(child) {
     if (this.#debug) child.toggleAttribute('debug', true);
     // only apply if child hasn't defined its own
@@ -119,6 +186,13 @@ export default class ABindgroup extends HTMLElement {
     }
   }
 
+  /**
+   * Initializes the group.
+   * Resolves the model instance (if needed) and registers existing children.
+   *
+   * @private
+   * @returns {Promise<void>}
+   */
   async #init() {
     if (!this.#isConnected) return;
 
@@ -133,6 +207,12 @@ export default class ABindgroup extends HTMLElement {
     this.#registerChildren();
   }
 
+  /**
+   * Scans the DOM for nested <a-bind> or <a-repeat> elements
+   * and registers them if they don't have their own model defined.
+   *
+   * @private
+   */
   #registerChildren() {
     const children = this.querySelectorAll('a-bind, a-repeat');
     for (const child of children) {
@@ -142,6 +222,13 @@ export default class ABindgroup extends HTMLElement {
     }
   }
 
+  /**
+   * Resolves the model instance using the Loader.
+   * Handles the special "this" keyword (resolves to ShadowRoot host).
+   *
+   * @private
+   * @returns {Promise<object|HTMLElement|null>} The resolved model.
+   */
   async #resolveModel() {
     if (!this.#modelKey) {
       console.error('a-bindgroup: model is required');
@@ -166,6 +253,12 @@ export default class ABindgroup extends HTMLElement {
     }
   }
 
+  /**
+   * Iterates over all registered children and re-applies defaults.
+   * Used when group attributes (like 'prop' or 'attr') change dynamically.
+   *
+   * @private
+   */
   #updateChildrenDefaults() {
     for (const child of this.#children) {
       this.#applyDefaultsToChild(child);

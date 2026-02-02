@@ -1,13 +1,14 @@
 /**
  * We're all bozos on this Bus
+ *
  * @file Bus.js
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @version 1.0.0
  * @license GPL-3.0
  */
 
 /**
  * A simple event bus implementation for managing pub/sub patterns.
+ * Supports unique key generation for object identity tracking.
  */
 class Bus {
   /**
@@ -16,9 +17,28 @@ class Bus {
    * @type {Map<any, Set<Function>>}
    */
   #bozos = new Map();
+
+  /**
+   * WeakMap to associate objects with unique string IDs without modifying them.
+   * @private
+   */
   static #modelIds = new WeakMap();
+
+  /**
+   * Counter for generating unique model IDs.
+   * @private
+   */
   static #idCounter = 0;
 
+  /**
+   * Generates a unique subscription key for a specific model and property.
+   * - If the model is an Object, it is assigned a persistent ID via WeakMap (`ref:m...`).
+   * - If the model is a Primitive, the value is used directly (`val:...`).
+   *
+   * @param {object|function|string|number} model - The data model or primitive value.
+   * @param {string} property - The property name being observed.
+   * @returns {string} A namespaced key (e.g., `abus::ref:m1:propName`).
+   */
   static getKey(model, property) {
     let modelId;
     if (typeof model === 'object' &&
@@ -38,6 +58,11 @@ class Bus {
     return `abus::${modelId}:${property}`;
   }
 
+  /**
+   * Checks if a specific event has any registered listeners.
+   * @param {any} bozo - The event name/identifier.
+   * @returns {boolean} True if the event has listeners.
+   */
   /**
    * Checks if a specific event has any registered listeners.
    * @param {any} bozo - The event name/identifier.
@@ -84,6 +109,8 @@ class Bus {
 
   /**
    * Triggers an event, executing all subscribed functions with the provided arguments.
+   * Safely catches errors in listeners to prevent blocking other listeners.
+   *
    * @param {any} bozo - The event name/identifier.
    * @param {...any} argue - Arguments to pass to the listener functions.
    */
@@ -101,9 +128,11 @@ class Bus {
 
   /**
    * Subscribes a function to an event for a single execution.
+   * Automatically unsubscribes after the first trigger.
+   *
    * @param {any} bozo - The event name/identifier.
    * @param {Function} funk - The callback function to execute once.
-   * @returns {Function} An unsubscribe function.
+   * @returns {Function} An unsubscribe function (can be called before the event fires).
    */
   once(bozo, funk) {
     const off = this.hopOn(bozo, (...argue) => {
@@ -120,7 +149,10 @@ class Bus {
   get bozos() { return Array.from(this.#bozos.keys()) }
 }
 
-// Global instance
+/**
+ * Global singleton instance of the Bus.
+ * @type {Bus}
+ */
 const crosstownBus = new Bus();
 Object.freeze(crosstownBus);
 
