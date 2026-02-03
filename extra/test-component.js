@@ -1,5 +1,5 @@
 import ABind from '../src/index.js';
-import styles from './styles.css' assert {type: 'css'};
+import styles from './styles.css' with {type: 'css'};
 
 export class TestComponent extends HTMLElement {
   text = "Initial Text";
