@@ -252,32 +252,42 @@
 
 	<details>
 		<summary class="nofrills">code</summary>
-		<a-code highlight>
+		<div class="flex stretch">
+
+		<a-code highlight class="card flex1">
 			<textarea>
+				Bound Elements
+
 				<a-bindgroup
 					model="dom:#ex3-model">
 
-						<a-bind
-							push
-							prop="checked"
-							event="change">
-							<input
-								checked
-								type="radio"
-								name="ex3"
-								value="true">
-						</a-bind>
+					<a-bind
+						push
+						prop="checked"
+						event="change">
+						<input
+							checked
+							type="radio"
+							name="ex3"
+							value="true">
+					</a-bind>
 
-						<a-bind
-							push
-							prop="checked"
-							event="change">
-							<input
-								type="radio"
-								name="ex3"
-								value="false">
-						</a-bind>
+					<a-bind
+						push
+						prop="checked"
+						event="change">
+						<input
+							type="radio"
+							name="ex3"
+							value="false">
+					</a-bind>
 				</a-bindgroup>
+			</textarea>
+		</a-code>
+
+		<a-code highlight class="card flex1">
+			<textarea>
+				Model
 
 				<input
 					disabled
@@ -285,6 +295,7 @@
 					type="checkbox">
 			</textarea>
 		</a-code>
+		</div>
 	</details>
 </div>
 
@@ -348,11 +359,60 @@
 
 	<details>
 		<summary class="nofrills">code</summary>
-		<a-code highlight>
-			<textarea>
 
-			</textarea>
-		</a-code>
+		<div class="flex stretch">
+			<a-code highlight class="card flex1">
+				<textarea>
+					Model
+
+					<a-bind
+						push
+						model="dom:#ex4-model"
+						model-attr="checked"
+						elem-prop="checked"
+						event="change">
+
+						<input
+							id="ex4-model"
+							type="checkbox">
+					</a-bind>
+				</textarea>
+			</a-code>
+
+			<a-code highlight class="card flex1">
+				<textarea>
+					Bound Elements
+
+					<a-bindgroup
+						model="dom:#ex4-model">
+
+			      <a-bind
+			      	pull
+			        elem-prop="checked"
+			        prop="checked">
+
+			        <input
+			        	disabled
+			          type="radio"
+			          name="ex4"
+			          value="true">
+			      </a-bind>
+
+			      <a-bind
+			      	pull
+			        elem-prop="checked"
+			        prop="checked">
+
+			        <input
+			        	disabled
+			          type="radio"
+			          name="ex4"
+			          value="false">
+			      </a-bind>
+					</a-bindgroup>
+				</textarea>
+			</a-code>
+		</div>
 	</details>
 </div>
 
@@ -407,35 +467,45 @@
 
 	<details>
 		<summary class="nofrills">code</summary>
-		<a-code highlight>
-			<textarea>
-				<input
-					id="ex5-model"
-					type="checkbox">
+		<div class="flex stretch">
+			<a-code highlight class="card flex1">
+				<textarea>
+					Model
 
-				<a-bindgroup
-					model="dom:#ex5-model">
+					<input
+						id="ex5-model"
+						type="checkbox">
+				</textarea>
+			</a-code>
 
-					<a-bind
-						prop="checked"
-						elem-prop="checked">
-						<input
-							type="radio"
-							name="ex5"
-							value="true">
-					</a-bind>
+			<a-code highlight class="card flex1">
+				<textarea>
+					Bound Elements
 
-					<a-bind
-						prop="checked"
-						elem-prop="checked">
-						<input
-							type="radio"
-							name="ex5"
-							value="false">
-					</a-bind>
-				</a-bindgroup>
-			</textarea>
-		</a-code>
+					<a-bindgroup
+						model="dom:#ex5-model">
+
+						<a-bind
+							prop="checked"
+							elem-prop="checked">
+							<input
+								type="radio"
+								name="ex5"
+								value="true">
+						</a-bind>
+
+						<a-bind
+							prop="checked"
+							elem-prop="checked">
+							<input
+								type="radio"
+								name="ex5"
+								value="false">
+						</a-bind>
+					</a-bindgroup>
+				</textarea>
+			</a-code>
+		</div>
 	</details>
 </div>
 

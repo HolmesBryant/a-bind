@@ -2,14 +2,14 @@
 
 **Data-binding and templating for Custom Elements and ESM Modules.**
 
-a-bind is a lightweight, zero-dependency Web Component library that adds two-way data binding to any HTML application. It bridges the gap between your DOM and your data models (ES Modules, global objects, Custom Elements or other DOM elements).
+a-bind is a lightweight, zero-dependency Web Component library that adds data binding to any HTML application. It bridges the gap between your DOM and your data models (ES Modules, global objects, Custom Elements or other DOM elements).
 
 ## Features
 
 *   **Zero Build Step:** Works directly in the browser via native ES Modules.
 *   **Modes:** Two-way (default), One-way (push/pull), and One-time (once).
 *   **Targets:** Binds to properties, attributes, CSS styles, or event handlers.
-*   **Loading:** Can resolve models via ESM imports (`mod:`), global variables, or DOM IDs (`dom:`).
+*   **Loading:** Can resolve models via ESM imports (`mod:`), DOM IDs (`dom:`), or by (string) key defined with loader.define('key', model).
 *   **Performance:** Uses `requestAnimationFrame` batching via a Scheduler to prevent layout thrashing.
 *   **Lists:** `<a-repeat>` provides efficient template rendering for arrays.
 *   **Scoping:** `<a-bindgroup>` allows for clean, nested model scoping.
@@ -24,16 +24,18 @@ Import the library into your project.
 ```
 ## Quick Start
 
-1. Using a DOM Element as the model
+
+### Using a DOM Element as the model
 
 ```Html
 <custom-element id="my-ce">
+  foo = 'foo';
   ...
 </custom-element>
 
-<!-- Binds the input value to the 'name' property of #my-ce -->
-<a-bind model="dom:#my-ce" prop="name">
-  <input type="text">
+<!-- Binds the input value to the 'foo' property of #my-ce -->
+<a-bind model="dom:#my-ce" prop="foo">
+  <input>
 </a-bind>
 ```
 
@@ -41,19 +43,22 @@ If you are binding data inside the shadow DOM of a custom element, use "this" as
 
 ```javascript
 export class CustomElement extends HTMLElement {
-  name = 'My Name';
+  foo = 'foo';
 
   static template = `
-    <a-bind model="this" prop="name">
+    <a-bind model="this" prop="foo">
       <input>
     </a-bind>
   `;
+
+  ....
 }
 ```
 
-2. Using an ES Module as the model
 
-**Using an importmap**
+### Using an ES Module as the model
+
+#### Using an importmap
 
 ```html
 <head>
@@ -66,21 +71,36 @@ export class CustomElement extends HTMLElement {
   </script>
 </head>
 <body>
-  <a-bind model="mod:myModel" prop="someProperty">
+  <a-bind model="mod:myModel" prop="foo">
     <input>
   </a-bind>
 </body>
 ```
 
-**Load a file path**
+#### Load a file path
 
 ```html
-<a-bind model="mod:./path/to/model.js" prop="theme">
-  <select>
-    <option value="light">Light</option>
-    <option value="dark">Dark</option>
-  </select>
-</a-bin
+<a-bind model="mod:./path/to/model.js" prop="foo">...</a-bin
+```
+
+#### Using loader.define()
+
+```javascript
+// inside App.js or <script type="module">
+
+import { loader } from './a-bind.min.js';
+
+function App() {
+  this.foo = 'foo';
+}
+
+loader.define('app', new App());
+```
+
+```html
+<!-- page.html -->
+
+<a-bind model="app" prop="foo">...</a-bind>
 ```
 
 ## The a-bind Element
@@ -91,16 +111,17 @@ The core element that creates a link between a data source (Model) and a DOM ele
 
 | Attribute | Default | Description |
 | :-------- | :------ | :---------- |
-| model     | null    | The key to resolve the data. Can be a Global var name, a CSS selector (dom:#id), or a Module URL (mod:./file.js). |
-| prop      | null    | The path to the data inside the model (e.g., user.address.city).  |
+| model     | null    | The key to resolve the data. Can be a CSS selector (dom:#id), a Module URL (mod:./file.js) or a (string) key defined via loader.define('key', model). |
+| prop      | null    | The property inside the model (e.g., name or user.address.city).  |
+| attr      | null    | Alternate to prop. Used if the model is an HTML Element and you want to bind to an attribute instead of a property.|
 | elem-prop | value   | The property on the bound DOM element to update (e.g., value, textContent, checked, style.color). |
-| attr      | null    | Alternate to prop. Used if the model is an HTML Element and you want to bind to its attribute instead of a property.|
 | event     | input   | The DOM event that triggers a model update. |
+| func      | null    | The name of a function in the model. ABind will invoke this function and pass an Event object as the sole argument.
 | target    | null    | A CSS selector to find the element to bind to. If omitted, binds to the first child.  |
 | throttle  | 0       | Time in ms to debounce input/output updates.  |
-| pull      | false   | If present, only reads FROM the DOM (One-way: DOM -> Model).  |
-| push      | false   | If present, only writes TO the DOM (One-way: Model -> DOM). |
-| once      | false   | Update the DOM once on load, then stop listening. |
+| pull      | false   | If present, only reads FROM the MODEL (One-way: MODEL -> DOM).  |
+| push      | false   | If present, only writes TO the MODEL (One-way: DOM -> MODEL). |
+| once      | false   | Update the DOM once on load, then stop listening but continue to update the model (unless pull is present)  |
 | debug     | false   | Enables verbose console logging for this binding. |
 
 ### Reactivity (Important)
@@ -117,19 +138,21 @@ const myModel = { count: 0 };
 myModel.count = 5;
 
 // Notify the view
+
 ABind.update(myModel, 'count', 5);
 ```
 
-**Note:** UI interactions, like typing in an input, automatically handle this internally (unless you transform the data type).
+**Note:** UI interactions like typing in an input, automatically handle this internally (unless you transform the data type).
 
 ### Basic Two-Way Binding
 
 By default, a-bind provides two-way binding. Changes in the input update the model, and changes in the model update the input.
 
 ```html
-  <!-- binds the 'name' property on the model
+  <!-- binds the 'foo' property on the model
   to the "value" (default) property on the input -->
-  <a-bind model="mod:myModel" prop="name">
+
+  <a-bind model="mod:myModel" prop="foo">
     <input>
   </a-bind>
 ```
@@ -140,7 +163,8 @@ You can bind to specific attributes or properties of the target element (like st
 
 ```html
 <!-- Binds myModel.color to the element's style.color -->
-<a-bind model="myModel" prop="color" elem-prop="style.color">
+
+<a-bind model="mod:myModel" prop="color" elem-prop="style.color">
   <div>This text is colored</div>
 </a-bind>
 ```
@@ -151,6 +175,7 @@ You can use a DOM element as the model to bind one element to another
 
 ```html
 <!-- the bound element -->
+
 <a-bind
   pull
   model="dom:#range-input"
@@ -161,6 +186,7 @@ You can use a DOM element as the model to bind one element to another
 </a-bind>
 
 <!-- the model -->
+
 <input id="range-input" type="range" max="100" value="50">
 ```
 
@@ -179,10 +205,10 @@ The "pull" attribute tells a-bind to pull updates from the model to the view, bu
 The "push" attribute tells a-bind to push updates from the view to the model, but don't update the view.
 
 ```html
-<!-- if the push attribute were not present, a-bind would change
-the value of the button to the value of myModel.name -->
-<a-bind push model="mod:myModel" prop="name" event="click">
-  <button value="New Name">
+<!-- if the push attribute were not present, a-bind would set the button's value to the value of myModel.foo -->
+
+<a-bind push model="mod:myModel" prop="foo" event="click">
+  <button value="Button Value">
     Change myModel.name to "New Name"
   </button>
 </a-bind>
@@ -218,11 +244,13 @@ When binding to boolean values or non-input elements, you must specify the corre
 
 ```Html
 <!-- Display a boolean as text -->
+
 <a-bind pull model="mod:myModel" prop="isActive" elem-prop="textContent">
   <span></span>
 </a-bind>
 
 <!-- Bind a checkbox to the same boolean -->
+
 <a-bind model="mod:myModel" prop="isActive" elem-prop="checked">
   <input type="checkbox">
 </a-bind>
@@ -234,11 +262,13 @@ You can bind directly to CSS variables or style properties.
 
 ```Html
 <!-- bind an element's background color to a model property -->
+
 <a-bind model="mod:myModel" prop="headerColor" elem-prop="style.backgroundColor">
-  <header>...</header>
+  <header>This header's background is colored.</header>
 </a-bind>
 
 <!-- bind to a css variable on a custom element -->
+
 <a-bind model="dom:#my-custom-element" prop="--header-color">
   <input type="color">
 </a-bind>
@@ -246,7 +276,7 @@ You can bind directly to CSS variables or style properties.
 
 ## The a-bindgroup Element
 
-To avoid repeating the "model" attribute on every a-bind element, wrap them in a-bindgroup. You can also set a "prop" attribute here for html collections that reference the same model property. Nested groups respect scoping.
+To avoid adding the "model" attribute to several a-bind's which share the same model, wrap them all in a-bindgroup. You can also set a "prop" attribute here for html collections that reference the same model property. Nested groups respect scoping.
 
 ```Html
 <a-bindgroup model="mod:myModel">
@@ -262,6 +292,7 @@ To avoid repeating the "model" attribute on every a-bind element, wrap them in a
 </a-bindgroup>
 
 <!-- using the "prop" attribute -->
+
 <a-bindgroup model="mod:myModel" prop="favColor">
   <a-bind>
     <input type="radio" name="fav-color" value="red">
@@ -288,9 +319,9 @@ A DOM-based template engine for rendering lists.
 | Attribute | Description |
 | :-------- | :---------- |
 | model     | The data source object (or module). |
-| prop      | The property on the model containing the array to iterate over. |
-| target    | CSS selector for the container element where items will be rendered.  |
-| key       | Optional. A unique property name (e.g., id) to enable efficient DOM reordering. |
+| prop      | The property on the model containing an Array to iterate over.  |
+| target    | Optional. CSS selector for the container element where items will be rendered. If no target, items are rendered inside the a-repeat element. |
+| key       | Optional. A property name in the model holding unique values (e.g. id) to enable efficient DOM reordering. |
 
 ### Populating Selects and Datalists
 
@@ -306,6 +337,8 @@ export default {
 ````
 
 ```Html
+<!-- page.html -->
+
 <a-bindgroup model="mod:./myModel.js">
   <!-- 1. Bind the Select element's value -->
   <a-bind prop="selected">
@@ -337,6 +370,8 @@ export default {
 ```
 
 ```html
+<!-- page.html -->
+
 <a-bindgroup model="mod:./myModel.js">
   <a-bind prop="selected">
     <select id="my-select"></select>
@@ -362,6 +397,7 @@ Requirement: The file at the URL must be an ES Module (it must export default a 
 
 ```html
 <!-- Load a specific class from a CDN -->
+
 <a-bind
   model="mod:https://esm.sh/uuid"
   prop="v4"
@@ -371,6 +407,7 @@ Requirement: The file at the URL must be an ES Module (it must export default a 
 </a-bind>
 
 <!-- Using a bindgroup to share the remote model -->
+
 <a-bindgroup model="mod:https://cdn.jsdelivr.net/npm/some-library/dist/model.mjs">
   <a-bind prop="userName"><output></output></a-bind>
   <a-bind prop="email"><output></output></a-bind>
@@ -383,10 +420,12 @@ The Loader does not have a built-in fetch. Therefore, you cannot simply put an A
 
 ```JavaScript
 // api-bridge.js
+
 const response = await fetch('https://jsonplaceholder.typicode.com/users');
 const data = await response.json();
 
 // Export the JSON data as the default model
+
 export default data;
 ```
 
@@ -394,17 +433,18 @@ Now use the mod: prefix to point to your local bridge file.
 
 ```html
 <!-- ARepeat example iterating over API results -->
+
 <a-repeat model="mod:./api-bridge.js" prop="users">
   <template>
     <div class="user-card">
-      <h3 data-bind="name">{{name}}</h3>
-      <span data-bind="email">{{email}}</span>
+      <h3>{{name}}</h3>
+      <span>{{email}}</span>
     </div>
   </template>
 </a-repeat>
 ```
 
-### Using loader.define() (Pre-fetching)
+### Using loader.define() (pre-fetching)
 
 If you prefer to handle the fetching in your main application script rather than creating wrapper modules, you can fetch the data and "define" it with a key. ABind will wait for this key to exist.
 
@@ -422,6 +462,7 @@ You can now use that key string directly. The elements will remain empty/idle un
 
 ```html
 <!-- The component waits for 'my-api-data' to be defined -->
+
 <a-repeat model="my-api-data" prop="products">
   <div>{{productName}} - {{price}}</div>
 </a-repeat>
@@ -429,7 +470,7 @@ You can now use that key string directly. The elements will remain empty/idle un
 
 ## Debugging
 
-Struggling to see why a value isn't updating? Add the "debug" attribute to any a-bind or a-bindgroup instance.
+Struggling to see why a value isn't updating? Add the "debug" attribute to any a-bind or a-repeat instance.
 
 ```html
 <a-bind debug ...>
@@ -450,15 +491,10 @@ v3.0.0
 - Loader: Enhanced resolution for mod: and dom: prefixes.
 - Security: PathResolver now blocks prototype pollution attempts.
 
-v2.5.1
+v2.0.1
 
 - made logger more helpful
 - fixed issues with css bindings
-
-v2.5.0
-
-- Simplified logic ... somewhat
-- Made binding strictly boolean checkboxes more intuitive.
 
 - v2.0.0
 

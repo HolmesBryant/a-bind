@@ -729,6 +729,47 @@ const loader = new Loader();
 Object.freeze(loader);
 
 /**
+ * @file Logger.js
+ * @description A dedicated debugging utility for a-bind instances.
+ * Provides formatted console output for inspecting binding state, model values, and attributes.
+ * @author Holmes Bryant <https://github.com/HolmesBryant>
+ * @license GPL-3.0
+ */
+class Logger {
+	/**
+	 * The host a-bind element instance being debugged.
+	 * @type {HTMLElement}
+	 */
+	host;
+
+	/**
+   * Creates an instance of Logger.
+   * @param {HTMLElement} host - The a-bind instance to inspect.
+   */
+	constructor(host, props) {
+		this.host = host;
+		this.props = props;
+	}
+
+	/**
+   * Outputs a collapsed group of debug information to the console.
+   * Includes current model value, bound element state, and configuration attributes.
+   *
+   * @param {string} label - The label for the console group.
+   * @param {object} [object] - Optional extra data/arguments to log.
+   */
+	log(label, object) {
+		console.groupCollapsed(label);
+			console.log('Debugging: ', this.host);
+			if (object) console.log('other', object);
+			for (const prop of this.props) {
+				console.log(`${prop} : `, this.host[prop]);
+			}
+		console.groupEnd();
+	}
+}
+
+/**
  * @file a-bind.js
  * @description Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
@@ -749,13 +790,16 @@ class ABind extends HTMLElement {
   #event = 'input';
   #func;
   #modelKey;
-  #modelAttr;
+  #attr;
   #once = false;
-  #property;
+  #prop;
   #pull = false;
   #push = false;
   #target;
   #throttle = 0;
+
+  /* only relevant if model is an HTML element */
+  #modelEvent = 'input';
 
   #abortController;
   #bound;
@@ -775,13 +819,13 @@ class ABind extends HTMLElement {
    * @returns {string[]} ['debug', 'elem-prop', 'event', 'func', 'model', 'attr', 'once', 'prop', 'pull', 'push', 'throttle']
    */
   static observedAttributes = [
+    'model',
+    'prop',
+    'attr',
     'elem-prop',
     'event',
     'func',
-    'model',
-    'attr',
     'once',
-    'prop',
     'pull',
     'push',
     'target',
@@ -817,13 +861,13 @@ class ABind extends HTMLElement {
         // model is resolved in reinit();
         break;
       case 'attr':
-        this.#modelAttr = newval;
+        this.#attr = newval;
         break;
       case 'once':
         this.#once = this.hasAttribute('once');
         break;
       case 'prop':
-        this.#property = newval;
+        this.#prop = newval;
         break;
       case 'pull':
         this.#pull = this.hasAttribute('pull');
@@ -885,7 +929,7 @@ class ABind extends HTMLElement {
     this.#isConnected = false;
     this.#model = null;
     this.#bound = null;
-    this.log?.('disconnectedCallback()');
+    this.log?.('disconnectedCallback()', this.#logProps());
   }
 
   // -- Static --
@@ -926,7 +970,6 @@ class ABind extends HTMLElement {
       }
     }
 
-    this.log?.('applyUpdate()', {target, name, value});
 
     // Bind to attribute of bound element
     if (name.startsWith('$')) {
@@ -940,23 +983,28 @@ class ABind extends HTMLElement {
         const attrValue = (value === true) ? '' : String(value);
         target.setAttribute(attrName, attrValue);
       }
+
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return;
     }
 
     // Boolean update logic
     if (target instanceof HTMLElement && (target.type === 'checkbox' || target.type === 'radio')) {
       if (name === 'checked' || name === this.#elemProp) {
+        this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
         return this.#handleBooleanUpdate(target, value);
       }
     }
 
     // CSS variables
     if (name.startsWith('--') && target.style) {
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return target.style.setProperty(name, value);
     }
 
     // Nested paths
     if (name.includes('.')) {
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return this.#handleNestedUpdate(target, name, value);
     }
 
@@ -973,6 +1021,7 @@ class ABind extends HTMLElement {
         const optVal = option.value || option.text;
         option.selected = values.includes(optVal);
       }
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return;
     }
 
@@ -992,6 +1041,8 @@ class ABind extends HTMLElement {
         target.setAttribute(name, value);
       }
     }
+
+    this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
   }
 
   // -- Private --
@@ -1006,11 +1057,11 @@ class ABind extends HTMLElement {
       return console.warn('a-bind.addListeners(): No model present, aborting.', this)
     }
 
-    this.log?.('addListeners()', {});
-    const prop = this.#property || this.#modelAttr;
+    const prop = this.#prop || this.#attr;
 
     // Element -> Model (Event)
     if (!this.#pull) {
+      this.log?.('#addListeners() : event', this.#logProps({event: this.#event}));
       this.#bound.addEventListener(this.#event, event => {
         let value = this.#bound[this.#elemProp];
         const isCheckbox = this.#bound instanceof HTMLInputElement && this.#bound.type === 'checkbox';
@@ -1040,7 +1091,6 @@ class ABind extends HTMLElement {
           value = Array.from(this.#bound.selectedOptions).map(option => option.value || option.text);
         }
 
-        this.log?.(`Event: ${this.#event}`, {value, event});
         this.#updateModel(value, event);
       }, { signal: this.#abortController.signal });
     }
@@ -1049,35 +1099,38 @@ class ABind extends HTMLElement {
     if (!this.#push && !this.#once) {
       // Subscribe to pub/sub
       crosstownBus.hopOn(this.#busKey, this.#updateSubscribers);
-      if (this.#push) return;
+      this.log?.('#addListeners() : subscribe', this.#logProps());
 
       // If model is an html element
       if (this.#model.addEventListener) {
-        this.#model.addEventListener('input', event => {
+        this.#model.addEventListener(this.#modelEvent, event => {
           if (event.target === this.#bound || event.composedPath().includes(this.#bound)) {
             return;
           }
-          const prop = this.#property || this.#modelAttr;
+          const prop = this.#prop || this.#attr;
           const value = this.#getPropertyValue(this.#model, prop);
           this.applyUpdate(this.#bound, this.#elemProp, value);
         }, { signal: this.#abortController.signal });
+
+        this.log?.('#addListeners()', this.#logProps({elem:this.#model, event: this.#modelEvent}));
       }
+
     }
   }
 
   /**
-   * Dynamically imports and attaches a Logger instance for debugging.
+   * attaches a Logger instance for debugging.
    * @private
    * @returns {Promise<Function>} A logging function wrapper.
    */
   async #attachLogger() {
+    const publicProps = [];
+    for (const prop of ABind.observedAttributes) {
+      publicProps.push(prop.replace(/-./g, x => x[1].toUpperCase()));
+    }
     try {
-      const mods = await Promise.resolve().then(function () { return Logger$1; });
-      const mod = mods.default;
-      const logger = new mod(this);
+      const logger = new Logger(this, publicProps);
       return (label, obj) => {
-        const boundVal = this.bound?.[this.elemProp];
-        label = this.bound ? `${label}: ${this.bound.localName}: ${boundVal}` : label;
         logger.log(label, obj);
       }
     } catch (error) {
@@ -1113,7 +1166,6 @@ class ABind extends HTMLElement {
    */
   #executeFunction(event) {
     if (!this.#func) return;
-    this.log?.('executeFunction()', event);
     let context;
 
     try {
@@ -1138,6 +1190,8 @@ class ABind extends HTMLElement {
     } catch (error) {
       console.error('a-bind: executeFunction()', error);
     }
+
+    this.log?.('#executeFunction()', this.#logProps({event}));
   }
 
   /**
@@ -1177,7 +1231,7 @@ class ABind extends HTMLElement {
     };
 
     const element = findTarget(this);
-    this.log?.('getBoundElement()', element);
+    this.log?.('#getBoundElement()', this.#logProps({element: element}));
     return element;
   }
 
@@ -1190,7 +1244,7 @@ class ABind extends HTMLElement {
    * @returns {any} The resolved value.
    */
   #getPropertyValue(obj, path) {
-    this.log?.('getPropertyValue()', {obj, path});
+    this.log?.('#getPropertyValue()', this.#logProps({obj, path}));
     const value = PathResolver.getValue(obj, path);
     return (value !== undefined) ? value : obj?.getAttribute?.(path);
   }
@@ -1229,7 +1283,7 @@ class ABind extends HTMLElement {
       target.checked = (modelValue === comparisonValue);
     }
 
-    this.log?.('handleBooleanUpdate()', {target, value, targetChecked: target.checked});
+    this.log?.('#handleBooleanUpdate()', this.#logProps({target, value}));
   }
 
   /**
@@ -1252,7 +1306,7 @@ class ABind extends HTMLElement {
       // stop watching temporarily to prevent infinite loops
       this.#observer.disconnect();
       try {
-        const prop = this.#property || this.#modelAttr;
+        const prop = this.#prop || this.#attr;
         const val = this.#getPropertyValue(this.#model, prop);
 
         // re-apply model value to DOM
@@ -1275,7 +1329,7 @@ class ABind extends HTMLElement {
    * @param {any} value - The value to set.
    */
   #handleNestedUpdate(target, name, value) {
-    this.log?.('handleNestedUpdate()', {target, name, value});
+    this.log?.('#handleNestedUpdate()', this.#logProps({target, name, value}));
     const parts = PathResolver.getParts(name);
     if (PathResolver.isUnsafe(parts)) {
       console.warn(`a-bind: Blocked attempt to modify unsafe path "${name}"`);
@@ -1320,13 +1374,10 @@ class ABind extends HTMLElement {
    * @returns {Promise<void>}
    */
   async #init() {
-    if (this.hasAttribute('debug')) {
-      console.log('Debugging: ', this);
-    }
     const gen = this.#initIdx;
     if (this.#shouldBail(gen)) return;
     if (this.debug && !this.log) this.log = await this.#attachLogger();
-    this.log?.('init()');
+    this.log?.('#init()', this.#logProps());
 
     // Attempt to resolve model. This will wait (via Loader) if the model is pending.
     const modelReady = await this.#resolveModel(gen);
@@ -1348,12 +1399,24 @@ class ABind extends HTMLElement {
       this.bound = this.#getBoundElement();
     }
 
-    const prop = this.#property || this.#modelAttr;
+    const prop = this.#prop || this.#attr;
     this.#busKey = Bus.getKey(this.#model, prop);
     this.#updateSubscribers = this.#updateBound.bind(this);
 
     this.#syncView();
     this.#addListeners();
+  }
+
+  #logProps(method_args = {}) {
+    return {
+      method_args,
+      bound: this.#bound,
+      busKey: this.#busKey,
+      group: this.#group,
+      initIdx: this.#initIdx,
+      isConnected: this.#isConnected,
+      model: this.#model,
+    }
   }
 
   /**
@@ -1372,7 +1435,7 @@ class ABind extends HTMLElement {
       if (value === 'false') value = false;
     }
     if (value === null || value === undefined) value = '';
-    this.log?.('parsedValue()', value);
+    this.log?.('#parsedValue()', this.#logProps({value, target}));
     return value;
   }
 
@@ -1382,7 +1445,7 @@ class ABind extends HTMLElement {
    * @private
    */
   async #reinit() {
-    this.log?.('reinit()');
+    this.log?.('#reinit()', this.#logProps());
     this.#initIdx++;
     this.#teardown();
     await this.#init();
@@ -1395,7 +1458,6 @@ class ABind extends HTMLElement {
    * @returns {boolean} False if waiting for group data, True otherwise.
    */
   #resolveGroup() {
-    this.log?.('resolveGroup()');
     this.#group = this.closest('a-bindgroup');
 
     if (this.#group) {
@@ -1405,13 +1467,14 @@ class ABind extends HTMLElement {
     if (
       this.#group &&
       (!this.#model ||
-        (!this.#property && !this.#modelAttr && !this.#func)
+        (!this.#prop && !this.#attr && !this.#func)
       )
     ) {
-      this.log?.('resolveGroup(): Waiting for group to provide model or property');
+      this.log?.('#resolveGroup(): Waiting for group to provide model or property', this.#logProps());
       return false;
     }
 
+    this.log?.('#resolveGroup()', this.#logProps());
     return true;
   }
 
@@ -1420,14 +1483,14 @@ class ABind extends HTMLElement {
    * Handles 'this', string keys, and deferred loading.
    *
    * @private
-   * @param {number} gen - The generation index for race condition checking.
+   * @param {number} idx - The generation index for race condition checking.
    * @returns {Promise<boolean>} True if model resolved, false if failed.
    */
-  async #resolveModel(gen) {
-    this.log?.('resolveModel()', {gen});
+  async #resolveModel(idx) {
 
     if (this.#model && !this.#modelKey) {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
+      this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     }
 
@@ -1437,11 +1500,13 @@ class ABind extends HTMLElement {
     if (this.#modelKey === "this") {
       this.#model = await loader.load(this.getRootNode().host, this);
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
+      this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     }
 
     try {
       if (!this.#model) this.#model = await loader.load(this.#modelKey, this);
+      this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     } catch (error) {
       console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error, this);
@@ -1457,7 +1522,7 @@ class ABind extends HTMLElement {
    * @returns {Promise<HTMLElement>} The resolved element.
    */
   async #resolveTarget(selector) {
-    this.log?.('#resolveTarget()', {target: selector});
+    this.log?.('#resolveTarget()', this.#logProps({selector}));
     try {
       return await loader.load(selector, this);
     } catch (error) {
@@ -1483,10 +1548,10 @@ class ABind extends HTMLElement {
    */
   #syncView() {
     if (this.#push) return;
-    this.#property || this.#modelAttr;
-    const value = (this.#property) ?
-      this.#getPropertyValue(this.#model, this.#property) :
-      this.#model.getAttribute?.(this.#modelAttr);
+    this.#prop || this.#attr;
+    const value = (this.#prop) ?
+      this.#getPropertyValue(this.#model, this.#prop) :
+      this.#model.getAttribute?.(this.#attr);
 
     // if () console.log(this.#bound, this.#elemProp, value)
     if (value !== undefined) {
@@ -1503,7 +1568,7 @@ class ABind extends HTMLElement {
       this.#observer.observe(this.#bound, { childList: true });
     }
 
-    this.log?.('syncView()');
+    this.log?.('#syncView()', this.#logProps());
   }
 
   /**
@@ -1522,7 +1587,7 @@ class ABind extends HTMLElement {
     if (this.#busKey) {
       this.#updateManager.cancel(`abind-update::${this.#busKey}`);
     }
-    this.log?.('teardown()', {});
+    this.log?.('#teardown()', this.#logProps());
   }
 
   /**
@@ -1533,8 +1598,8 @@ class ABind extends HTMLElement {
    * @param {any} value - The new value from the Bus.
    */
   #updateBound(value) {
-    const prop = this.#property || this.#modelAttr;
-    this.log?.('updateBound()', {prop, value});
+    this.#prop || this.#attr;
+    this.log?.('#updateBound()', this.#logProps({value}));
     this.#updateManager.defer(this, value, (val) => {
       this.applyUpdate(this.#bound, this.#elemProp, val);
     }, this);
@@ -1549,7 +1614,7 @@ class ABind extends HTMLElement {
    * @param {Event} event - The triggering event.
    */
   #updateModel(value, event) {
-    const prop = this.#property || this.#modelAttr;
+    const prop = this.#prop || this.#attr;
     if (this.#func) return this.#executeFunction(event);
 
     // auto convert text values that look like objects or arrays
@@ -1589,7 +1654,7 @@ class ABind extends HTMLElement {
       this.#updateManager.defer(taskKey, value, doUpdate, this);
     }
 
-    this.log?.('updateModel()', {value, eventTarget: event.target, targetValue: event.target.value, event});
+    this.log?.('#updateModel()', this.#logProps({value, event}));
   }
 
   // -- Getters / Setters --
@@ -1601,6 +1666,7 @@ class ABind extends HTMLElement {
    * @returns {boolean}
    */
   get debug() { return this.hasAttribute('debug') }
+  set debug(value) { this.toggleAttribute('debug', true); }
 
   /**
    * Returns the shared Bus instance.
@@ -1618,7 +1684,7 @@ class ABind extends HTMLElement {
    * Returns the property name or attribute name being bound.
    * @returns {string}
    */
-  get prop() { return this.#property || this.#modelAttr }
+  get property() { return this.#prop || this.#attr }
 
   /**
    * Gets or sets the actual DOM element being bound.
@@ -1687,8 +1753,8 @@ class ABind extends HTMLElement {
    * Used when binding to a model that is also an HTML element (attribute binding).
    * @type {string}
    */
-  get modelAttr() { return this.#modelAttr }
-  set modelAttr(value) { this.setAttribute('attr', value); }
+  get attr() { return this.#attr }
+  set attr(value) { this.setAttribute('attr', value); }
 
   /**
    * Gets/Sets the 'once' attribute.
@@ -1703,8 +1769,8 @@ class ABind extends HTMLElement {
    * The property name on the model object.
    * @type {string}
    */
-  get property() { return this.#property }
-  set property(value) { this.setAttribute('prop', value); }
+  get prop() { return this.#prop }
+  set prop(value) { this.setAttribute('prop', value); }
 
   /**
    * Gets/Sets the 'pull' attribute.
@@ -1763,7 +1829,7 @@ class ABindgroup extends HTMLElement {
   #modelAttr;
   #modelKey;
   #modelInstance;
-  #property;
+  #prop;
   #initPending = false;
 
   static observedAttributes = ['model', 'attr', 'prop', 'debug'];
@@ -1806,11 +1872,11 @@ class ABindgroup extends HTMLElement {
 
   /**
    * Gets or sets the 'prop' attribute.
-   * Represents a shared property name to bind to on the model.
+   * Represents a shared prop name to bind to on the model.
    * @type {string}
    */
-  get property() { return this.#property }
-  set property(value) { this.setAttribute('prop', value); }
+  get prop() { return this.#prop }
+  set prop(value) { this.setAttribute('prop', value); }
 
   // -- Lifecycle --
 
@@ -1834,7 +1900,7 @@ class ABindgroup extends HTMLElement {
         this.#updateChildrenDefaults();
         break;
       case 'prop':
-        this.#property = newval;
+        this.#prop = newval;
         this.#updateChildrenDefaults();
         break;
       case 'debug':
@@ -1889,7 +1955,7 @@ class ABindgroup extends HTMLElement {
 
   /**
    * Registers a child element (a-bind or a-repeat) with this group.
-   * Applies the group's model, property, or attribute configurations to the child
+   * Applies the group's model, prop, or attribute configurations to the child
    * if the child has not explicitly defined them.
    *
    * @param {HTMLElement} child - The child element to register.
@@ -1911,20 +1977,19 @@ class ABindgroup extends HTMLElement {
   // --- Private ---
 
   /**
-   * Applies the group's default settings (debug, model, property, attr)
+   * Applies the group's default settings (model, prop, attr)
    * to a specific child element.
    *
    * @private
    * @param {HTMLElement} child - The target child element.
    */
   #applyDefaultsToChild(child) {
-    if (this.#debug) child.toggleAttribute('debug', true);
     // only apply if child hasn't defined its own
     if (!child.model && this.#modelInstance) child.model = this.#modelInstance;
 
-    if (!child.property && !child.modelAttr) {
-      if (this.#property) child.property = this.#property;
-      if (this.#modelAttr) child.modelAttr = this.#modelAttr;
+    if (!child.prop && !child.attr) {
+      if (this.#prop) child.prop = this.#prop;
+      if (this.#modelAttr) child.attr = this.#modelAttr;
     }
   }
 
@@ -2031,6 +2096,7 @@ const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'ftp:']
  */
 class ARepeat extends HTMLElement {
   // -- Attributes --
+  #debug;
   #key;
   #model;
   #prop;
@@ -2155,6 +2221,9 @@ class ARepeat extends HTMLElement {
    */
   async connectedCallback() {
     this.#isConnected = true;
+    if (this.debug && !this.log) this.log = await this.#attachLogger();
+
+    this.log?.('connectedCallback()', this.#logProps());
     this.#upgrade('model');
     this.#upgrade('scope');
     this.#initTemplates();
@@ -2187,197 +2256,10 @@ class ARepeat extends HTMLElement {
     this.#isConnected = false;
     this.#cleanup();
     this.#targetElem = null;
+    this.log?.('disconnectedCallback()', this.#logProps());
   }
 
   // --- Private ---
-
-  /**
-   * Unsubscribes from the event bus.
-   * @private
-   */
-  #cleanup() {
-    if (this.#unsubscribe) {
-      this.#unsubscribe();
-      this.#unsubscribe = null;
-    }
-  }
-
-  /**
-   * parses and registers available templates.
-   * Checks for:
-   * 1. Internal <template> children.
-   * 2. External templates via 'template' attribute.
-   * 3. Implicit templates (the element's own initial children).
-   * Also validates compatibility with keyed rendering.
-   *
-   * @private
-   */
-  async #initTemplates() {
-    this.#templateMap.clear();
-    this.#defaultTemplate = null;
-
-    // Internal Templates
-    const internalTemplates = Array.from(this.children).filter(el => el.localName === 'template');
-    internalTemplates.forEach(tmpl => this.#registerTemplate(tmpl));
-
-    // External Single Template
-    if (this.#template) {
-      const tmpl = await loader.load(this.#template, this);
-      if (tmpl) this.#registerTemplate(tmpl);
-    }
-
-    // Self-Templating (Implicit Default)
-    // Only proceed if no explicit templates are found.
-
-    if (this.#templateMap.size === 0 && !this.#defaultTemplate) {
-      if (this.#implicitTemplate) {
-        this.#defaultTemplate = this.#implicitTemplate;
-      } else if (this.childNodes.length > 0) {
-        // Parse children as template (first run)
-        const range = document.createRange();
-        range.selectNodeContents(this);
-        const content = range.cloneContents();
-        this.#compile(content);
-
-        // save content and bindings so they'll persist across disconnect/reconnect
-        this.#implicitTemplate = { content, binding };
-        this.defaultTemplate = this.#implicitTemplate;
-        this.replaceChildren();
-      }
-    }
-
-    // Validate Compatibility with Keyed Rendering
-    if (this.#key) {
-      let valid = true;
-      let invalidName = '';
-
-      // Check Default Template
-      if (this.#defaultTemplate && this.#defaultTemplate.content.children.length !== 1) {
-        valid = false;
-        invalidName = 'Default Template';
-      }
-
-      // Check Named Templates
-      if (valid) {
-        for (const [id, def] of this.#templateMap) {
-          if (def.content.children.length !== 1) {
-            valid = false;
-            invalidName = `Template "#${id}"`;
-            break;
-          }
-        }
-      }
-
-      // Fallback if invalid
-      if (!valid) {
-        console.warn(
-          `a-repeat: Keyed rendering disabled. ${invalidName} has ${this.#defaultTemplate?.content.children.length || 'multiple'} root elements (must be exactly 1 Element). Falling back to index-based rendering.`,
-          this
-        );
-        this.#key = null;
-        this.removeAttribute('key');
-      }
-    }
-  }
-
-  /**
-   * Scans a DocumentFragment for mustache-style bindings ({{ }}) and returns a list of instructions.
-   * This walks the DOM once at startup to create a compilation definition.
-   *
-   * @private
-   * @param {DocumentFragment} fragment - The template content to parse.
-   * @returns {Array<object>} A list of binding instructions.
-   */
-  #compile(fragment) {
-    const bindings = [];
-
-    const crawl = (node, path) => {
-      // Text Nodes
-      if (node.nodeType === Node.TEXT_NODE) {
-        const parts = this.#parseTemplateString(node.nodeValue);
-        if (parts) {
-          bindings.push({ type: 'text', path: [...path], parts });
-        }
-        return;
-      }
-
-      // Elements
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        // Attributes
-        if (node.hasAttributes()) {
-          for (const attr of node.attributes) {
-            const parts = this.#parseTemplateString(attr.value);
-            if (parts) {
-              bindings.push({ type: 'attr', path: [...path], name: attr.name, parts });
-            }
-          }
-        }
-
-        // Nested Repeats: Stop recursion here.
-        // The nested repeat will handle its own templates when it upgrades.
-        if (node.localName === 'a-repeat') {
-          bindings.push({ type: 'nest-repeat', path: [...path] });
-          return;
-        }
-
-        // Nested Templates
-        if (node.localName === 'template') {
-          const contentBindings = this.#compile(node.content);
-          if (contentBindings.length > 0) {
-            bindings.push({
-              type: 'template-content',
-              path: [...path],
-              bindings: contentBindings
-            });
-          }
-          return;
-        }
-
-        // Recursion
-        const children = node.childNodes;
-        for (let i = 0; i < children.length; i++) {
-          crawl(children[i], [...path, i]);
-        }
-      }
-    };
-
-    const children = fragment.childNodes;
-    for (let i = 0; i < children.length; i++) {
-      crawl(children[i], [i]);
-    }
-
-    return bindings;
-  }
-
-  /**
-   * Parses a string for `{{ token }}` patterns.
-   *
-   * @private
-   * @param {string} str - The string to parse.
-   * @returns {Array<string|object>|null} Array of static strings and token objects, or null if no bindings found.
-   */
-  #parseTemplateString(str) {
-    if (!str.includes('{{')) return null;
-
-    const parts = [];
-    let lastIndex = 0;
-    // Use local RegExp to avoid global state issues
-    const regex = new RegExp(TOKEN_REGEX);
-    let match;
-
-    while ((match = regex.exec(str)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(str.slice(lastIndex, match.index));
-      }
-      parts.push({ token: match[1] });
-      lastIndex = regex.lastIndex;
-    }
-
-    if (lastIndex < str.length) {
-      parts.push(str.slice(lastIndex));
-    }
-    return parts.length > 0 ? parts : null;
-  }
 
   /**
    * Applies data to a cloned template instance using pre-compiled bindings.
@@ -2419,44 +2301,109 @@ class ARepeat extends HTMLElement {
           break;
       }
     }
+
+    this.log?.('#applyBindings()', this.#logProps({root, bindings, item, index}));
   }
 
   /**
-   * Helper to traverse the DOM using a path array (child indices).
-   *
+   * attaches a Logger instance for debugging.
    * @private
-   * @param {Node} root - The starting node.
-   * @param {Array<number>} path - Array of childNode indices.
-   * @returns {Node|null}
+   * @returns {Promise<Function>} A logging function wrapper.
    */
-  #getNode(root, path) {
-    let node = root;
-    for (const i of path) {
-      if (!node.childNodes || !node.childNodes[i]) return null;
-      node = node.childNodes[i];
-    }
-    return node;
-  }
-
-  /**
-   * Resolves a list of string parts and tokens into a final string value.
-   *
-   * @private
-   * @param {Array} parts - Mixed array of strings and token objects.
-   * @param {any} item - Data context.
-   * @param {number} index - Loop index.
-   * @returns {string} The resolved string.
-   */
-  #resolveBinding(parts, item, index) {
-    let result = '';
-    for (const part of parts) {
-      if (typeof part === 'string') {
-        result += part;
-      } else {
-        result += this.#evaluateToken(part.token, item, index);
+  async #attachLogger() {
+    try {
+      const logger = new Logger(this, ARepeat.observedAttributes);
+      return (label, obj) => {
+        logger.log(label, obj);
       }
+    } catch (error) {
+      console.warn('a-repeat.attachLogger() Failed', error);
     }
-    return result;
+  }
+
+  /**
+   * Unsubscribes from the event bus.
+   * @private
+   */
+  #cleanup() {
+    if (this.#unsubscribe) {
+      this.#unsubscribe();
+      this.#unsubscribe = null;
+    }
+    this.log?.('#cleanup()', this.#logProps());
+  }
+
+  /**
+   * Scans a DocumentFragment for mustache-style bindings ({{ }}) and returns a list of instructions.
+   * This walks the DOM once at startup to create a compilation definition.
+   *
+   * @private
+   * @param {DocumentFragment} fragment - The template content to parse.
+   * @returns {Array<object>} A list of binding instructions.
+   */
+  #compile(fragment) {
+    const bindings = [];
+
+    const crawl = (node, path) => {
+      // Text Nodes
+      if (node.nodeType === Node.TEXT_NODE) {
+        const parts = this.#parseTemplateString(node.nodeValue);
+        if (parts) {
+          bindings.push({ type: 'text', path: [...path], parts });
+        }
+        // this.log?.('#compile()', this.#logProps({fragment});
+        return;
+      }
+
+      // Elements
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        // Attributes
+        if (node.hasAttributes()) {
+          for (const attr of node.attributes) {
+            const parts = this.#parseTemplateString(attr.value);
+            if (parts) {
+              bindings.push({ type: 'attr', path: [...path], name: attr.name, parts });
+            }
+          }
+        }
+
+        // Nested Repeats: Stop recursion here.
+        // The nested repeat will handle its own templates when it upgrades.
+        if (node.localName === 'a-repeat') {
+          bindings.push({ type: 'nest-repeat', path: [...path] });
+          // this.log?.('#compile()', this.#logProps({fragment});
+          return;
+        }
+
+        // Nested Templates
+        if (node.localName === 'template') {
+          const contentBindings = this.#compile(node.content);
+          if (contentBindings.length > 0) {
+            bindings.push({
+              type: 'template-content',
+              path: [...path],
+              bindings: contentBindings
+            });
+          }
+          // this.log?.('#compile()', this.#logProps({fragment});
+          return;
+        }
+
+        // Recursion
+        const children = node.childNodes;
+        for (let i = 0; i < children.length; i++) {
+          crawl(children[i], [...path, i]);
+        }
+      }
+    };
+
+    const children = fragment.childNodes;
+    for (let i = 0; i < children.length; i++) {
+      crawl(children[i], [i]);
+    }
+
+    this.log?.('#compile()', this.#logProps({fragment}));
+    return bindings;
   }
 
   /**
@@ -2497,11 +2444,155 @@ class ARepeat extends HTMLElement {
       }
     }
 
+    // this.log?.('#evaluateToken()', this.#logProps({path, item, index});
     if (val === undefined || val === null || typeof val === 'object') {
       return '';
     } else {
       return val;
     }
+  }
+
+  /**
+   * Helper to traverse the DOM using a path array (child indices).
+   *
+   * @private
+   * @param {Node} root - The starting node.
+   * @param {Array<number>} path - Array of childNode indices.
+   * @returns {Node|null}
+   */
+  #getNode(root, path) {
+    let node = root;
+    for (const i of path) {
+      if (!node.childNodes || !node.childNodes[i]) return null;
+      node = node.childNodes[i];
+    }
+    // this.log?.('#getNode()', this.#logProps({root, path});
+    return node;
+  }
+
+  /**
+   * parses and registers available templates.
+   * Checks for:
+   * 1. Internal <template> children.
+   * 2. External templates via 'template' attribute.
+   * 3. Implicit templates (the element's own initial children).
+   * Also validates compatibility with keyed rendering.
+   *
+   * @private
+   */
+  async #initTemplates() {
+    this.#templateMap.clear();
+    this.#defaultTemplate = null;
+
+    // Internal Templates
+    const internalTemplates = Array.from(this.children).filter(el => el.localName === 'template');
+    internalTemplates.forEach(tmpl => this.#registerTemplate(tmpl));
+
+    // External Single Template
+    if (this.#template) {
+      const tmpl = await loader.load(this.#template, this);
+      if (tmpl) this.#registerTemplate(tmpl);
+    }
+
+    // Self-Templating (Implicit Default)
+    // Only proceed if no explicit templates are found.
+
+    if (this.#templateMap.size === 0 && !this.#defaultTemplate) {
+      if (this.#implicitTemplate) {
+        this.#defaultTemplate = this.#implicitTemplate;
+      } else if (this.childNodes.length > 0) {
+        // Parse children as template (first run)
+        const range = document.createRange();
+        range.selectNodeContents(this);
+        const content = range.cloneContents();
+        const bindings = this.#compile(content);
+
+        // save content and bindings so they'll persist across disconnect/reconnect
+        this.#implicitTemplate = { content, bindings };
+        this.#defaultTemplate = this.#implicitTemplate;
+        this.replaceChildren();
+      }
+    }
+
+    // Validate Compatibility with Keyed Rendering
+    if (this.#key) {
+      let valid = true;
+      let invalidName = '';
+
+      // Check Default Template
+      if (this.#defaultTemplate && this.#defaultTemplate.content.children.length !== 1) {
+        valid = false;
+        invalidName = 'Default Template';
+      }
+
+      // Check Named Templates
+      if (valid) {
+        for (const [id, def] of this.#templateMap) {
+          if (def.content.children.length !== 1) {
+            valid = false;
+            invalidName = `Template "#${id}"`;
+            break;
+          }
+        }
+      }
+
+      // Fallback if invalid
+      if (!valid) {
+        console.warn(
+          `a-repeat: Keyed rendering disabled. ${invalidName} has ${this.#defaultTemplate?.content.children.length || 'multiple'} root elements (must be exactly 1 Element). Falling back to index-based rendering.`,
+          this
+        );
+        this.#key = null;
+        this.removeAttribute('key');
+      }
+    }
+
+    // this.log?.('#initTemplates()', this.#logProps());
+  }
+
+  #logProps(method_args = {}) {
+    return {
+      method_args,
+      data: this.#data,
+      defaultTemplate: this.#defaultTemplate,
+      isConnected: this.#isConnected,
+      targetElem: this.#targetElem,
+      templateMap: this.#templateMap,
+      modelLoadId: this.#modelLoadId,
+      scopeLoadId: this.#scopeLoadId,
+      implicitTemplate: this.#implicitTemplate,
+    }
+  }
+
+  /**
+   * Parses a string for `{{ token }}` patterns.
+   *
+   * @private
+   * @param {string} str - The string to parse.
+   * @returns {Array<string|object>|null} Array of static strings and token objects, or null if no bindings found.
+   */
+  #parseTemplateString(str) {
+    if (!str.includes('{{')) return null;
+
+    const parts = [];
+    let lastIndex = 0;
+    // Use local RegExp to avoid global state issues
+    const regex = new RegExp(TOKEN_REGEX);
+    let match;
+
+    while ((match = regex.exec(str)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(str.slice(lastIndex, match.index));
+      }
+      parts.push({ token: match[1] });
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < str.length) {
+      parts.push(str.slice(lastIndex));
+    }
+    this.log?.('#parseTemplateString()', this.#logProps({str}));
+    return parts.length > 0 ? parts : null;
   }
 
   /**
@@ -2522,6 +2613,8 @@ class ARepeat extends HTMLElement {
     } else if (!this.#defaultTemplate) {
       this.#defaultTemplate = def;
     }
+
+    this.log?.('#registerTemplate()', this.#logProps({tmpl}));
   }
 
   /**
@@ -2554,6 +2647,7 @@ class ARepeat extends HTMLElement {
     const parent = this.#targetElem;
     const oldData = this.#data;
     this.#data = data;
+
     // Helper: Create DOM content for a single item
     const createNode = (item, index) => {
       let templateId = item.template;
@@ -2567,6 +2661,7 @@ class ARepeat extends HTMLElement {
         this.#applyBindings(clone, selectedTemplate.bindings, item, index);
         return clone;
       }
+
       return null;
     };
 
@@ -2591,6 +2686,7 @@ class ARepeat extends HTMLElement {
           // Fallback if key missing in data
           const frag = createNode(item, index);
           if (frag) parent.insertBefore(frag, parent.children[index] || null);
+          this.log?.('#render()', this.#logProps({data}));
           return;
         }
 
@@ -2635,6 +2731,7 @@ class ARepeat extends HTMLElement {
 
       // Remove nodes whose keys are no longer in the data
       keyMap.forEach(node => node.remove());
+      this.log?.('#render()', this.#logProps({data}));
       return;
     }
 
@@ -2655,6 +2752,7 @@ class ARepeat extends HTMLElement {
       data.forEach((item, index) => {
         // If data reference is identical, skip
         if (index < oldData.length && item === oldData[index]) {
+          this.log?.('#render()', this.#logProps({data}));
           return;
         }
 
@@ -2678,6 +2776,29 @@ class ARepeat extends HTMLElement {
       });
       parent.replaceChildren(fragment);
     }
+    this.log?.('#render()', this.#logProps({data}));
+  }
+
+  /**
+   * Resolves a list of string parts and tokens into a final string value.
+   *
+   * @private
+   * @param {Array} parts - Mixed array of strings and token objects.
+   * @param {any} item - Data context.
+   * @param {number} index - Loop index.
+   * @returns {string} The resolved string.
+   */
+  #resolveBinding(parts, item, index) {
+    let result = '';
+    for (const part of parts) {
+      if (typeof part === 'string') {
+        result += part;
+      } else {
+        result += this.#evaluateToken(part.token, item, index);
+      }
+    }
+    this.log?.('#resolveBinding()', this.#logProps({parts, item, index}));
+    return result;
   }
 
   /**
@@ -2706,6 +2827,7 @@ class ARepeat extends HTMLElement {
 
     const busKey = Bus.getKey(source, this.#prop);
     this.#unsubscribe = crosstownBus.hopOn(busKey, (val) => { this.#render(val); });
+    this.log?.('#subscribe()', this.#logProps());
   }
 
   /**
@@ -2721,11 +2843,16 @@ class ARepeat extends HTMLElement {
       delete this[prop];
       this[prop] = value;
     }
+
+    this.log?.(`#upgrade(${prop})`, this.#logProps());
   }
 
    // --- Public ---
 
   // --- Getters / Setters ---
+
+  get debug() { return this.hasAttribute('debug') }
+  set debug(value) { this.setAttribute('debug', !!value); }
 
   /**
    * Gets or sets the unique key property name for keyed rendering.
@@ -2825,71 +2952,4 @@ class ARepeat extends HTMLElement {
 
 if (!customElements.get('a-repeat')) customElements.define('a-repeat', ARepeat);
 
-// src/index.js
-
-/**
- * @file Logger.js
- * @description A dedicated debugging utility for a-bind instances.
- * Provides formatted console output for inspecting binding state, model values, and attributes.
- * @author Holmes Bryant <https://github.com/HolmesBryant>
- * @license GPL-3.0
- */
-class Logger {
-	/**
-	 * The host a-bind element instance being debugged.
-	 * @type {HTMLElement}
-	 */
-	host;
-
-	/**
-   * Creates an instance of Logger.
-   * @param {HTMLElement} host - The a-bind instance to inspect.
-   */
-	constructor(host) {
-		this.host = host;
-	}
-
-	/**
-   * Outputs a collapsed group of debug information to the console.
-   * Includes current model value, bound element state, and configuration attributes.
-   *
-   * @param {string} label - The label for the console group.
-   * @param {object} [object] - Optional extra data/arguments to log.
-   */
-	log(label, object) {
-		const value = this.host.model?.[this.host.prop] || this.host.model?.getAttribute?.(this.host.prop);
-		console.groupCollapsed(label);
-			if (object) console.log('args', object);
-			console.groupCollapsed('host');
-				console.log(this.host);
-			console.groupEnd();
-			console.groupCollapsed('model');
-				console.log(this.host.model);
-			console.groupEnd();
-			console.log(`model[${this.host.prop}]`, value);
-			console.log('bound', this.host.bound);
-			console.log(`bound[${this.host.elemProp}]`, this.host.bound?.[this.host.elemProp]);
-			console.groupCollapsed('Other Properties');
-				console.log('elemProp', this.host.elemProp);
-				console.log('property', this.host.property);
-				console.log('modelAttr', this.host.modelAttr);
-				console.log('prop', this.host.prop);
-				console.log('event', this.host.event);
-				console.log('func', this.host.func);
-				console.log('busKey', this.host.busKey);
-				console.log('modelKey', this.host.modelKey);
-				console.log('once', this.host.once);
-				console.log('pull', this.host.pull);
-				console.log('push', this.host.push);
-				console.log('throttle', this.host.throttle);
-			console.groupEnd();
-		console.groupEnd();
-	}
-}
-
-var Logger$1 = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  default: Logger
-});
-
-export { ABindgroup, ARepeat, PathResolver, crosstownBus, ABind as default, loader, scheduler };
+export { ABindgroup, ARepeat, Logger, PathResolver, crosstownBus, ABind as default, loader, scheduler };

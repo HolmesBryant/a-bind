@@ -8,6 +8,7 @@
 import Bus, { crosstownBus } from './Bus.js';
 import { loader } from './Loader.js';
 import PathResolver from './PathResolver.js';
+import Logger from './Logger.js';
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
 const PROTOCOL_REGEX = /^[a-zA-Z][a-zA-Z0-9+.-]*:/; // RFC 3986 Scheme validation
@@ -22,6 +23,7 @@ const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'ftp:']
  */
 export default class ARepeat extends HTMLElement {
   // -- Attributes --
+  #debug;
   #key;
   #model;
   #prop;
@@ -146,6 +148,9 @@ export default class ARepeat extends HTMLElement {
    */
   async connectedCallback() {
     this.#isConnected = true;
+    if (this.debug && !this.log) this.log = await this.#attachLogger();
+
+    this.log?.('connectedCallback()', this.#logProps());
     this.#upgrade('model');
     this.#upgrade('scope');
     this.#initTemplates();
@@ -178,197 +183,10 @@ export default class ARepeat extends HTMLElement {
     this.#isConnected = false;
     this.#cleanup();
     this.#targetElem = null;
+    this.log?.('disconnectedCallback()', this.#logProps());
   }
 
   // --- Private ---
-
-  /**
-   * Unsubscribes from the event bus.
-   * @private
-   */
-  #cleanup() {
-    if (this.#unsubscribe) {
-      this.#unsubscribe();
-      this.#unsubscribe = null;
-    }
-  }
-
-  /**
-   * parses and registers available templates.
-   * Checks for:
-   * 1. Internal <template> children.
-   * 2. External templates via 'template' attribute.
-   * 3. Implicit templates (the element's own initial children).
-   * Also validates compatibility with keyed rendering.
-   *
-   * @private
-   */
-  async #initTemplates() {
-    this.#templateMap.clear();
-    this.#defaultTemplate = null;
-
-    // Internal Templates
-    const internalTemplates = Array.from(this.children).filter(el => el.localName === 'template');
-    internalTemplates.forEach(tmpl => this.#registerTemplate(tmpl));
-
-    // External Single Template
-    if (this.#template) {
-      const tmpl = await loader.load(this.#template, this);
-      if (tmpl) this.#registerTemplate(tmpl);
-    }
-
-    // Self-Templating (Implicit Default)
-    // Only proceed if no explicit templates are found.
-
-    if (this.#templateMap.size === 0 && !this.#defaultTemplate) {
-      if (this.#implicitTemplate) {
-        this.#defaultTemplate = this.#implicitTemplate;
-      } else if (this.childNodes.length > 0) {
-        // Parse children as template (first run)
-        const range = document.createRange();
-        range.selectNodeContents(this);
-        const content = range.cloneContents();
-        const bindings = this.#compile(content);
-
-        // save content and bindings so they'll persist across disconnect/reconnect
-        this.#implicitTemplate = { content, binding };
-        this.defaultTemplate = this.#implicitTemplate;
-        this.replaceChildren();
-      }
-    }
-
-    // Validate Compatibility with Keyed Rendering
-    if (this.#key) {
-      let valid = true;
-      let invalidName = '';
-
-      // Check Default Template
-      if (this.#defaultTemplate && this.#defaultTemplate.content.children.length !== 1) {
-        valid = false;
-        invalidName = 'Default Template';
-      }
-
-      // Check Named Templates
-      if (valid) {
-        for (const [id, def] of this.#templateMap) {
-          if (def.content.children.length !== 1) {
-            valid = false;
-            invalidName = `Template "#${id}"`;
-            break;
-          }
-        }
-      }
-
-      // Fallback if invalid
-      if (!valid) {
-        console.warn(
-          `a-repeat: Keyed rendering disabled. ${invalidName} has ${this.#defaultTemplate?.content.children.length || 'multiple'} root elements (must be exactly 1 Element). Falling back to index-based rendering.`,
-          this
-        );
-        this.#key = null;
-        this.removeAttribute('key');
-      }
-    }
-  }
-
-  /**
-   * Scans a DocumentFragment for mustache-style bindings ({{ }}) and returns a list of instructions.
-   * This walks the DOM once at startup to create a compilation definition.
-   *
-   * @private
-   * @param {DocumentFragment} fragment - The template content to parse.
-   * @returns {Array<object>} A list of binding instructions.
-   */
-  #compile(fragment) {
-    const bindings = [];
-
-    const crawl = (node, path) => {
-      // Text Nodes
-      if (node.nodeType === Node.TEXT_NODE) {
-        const parts = this.#parseTemplateString(node.nodeValue);
-        if (parts) {
-          bindings.push({ type: 'text', path: [...path], parts });
-        }
-        return;
-      }
-
-      // Elements
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        // Attributes
-        if (node.hasAttributes()) {
-          for (const attr of node.attributes) {
-            const parts = this.#parseTemplateString(attr.value);
-            if (parts) {
-              bindings.push({ type: 'attr', path: [...path], name: attr.name, parts });
-            }
-          }
-        }
-
-        // Nested Repeats: Stop recursion here.
-        // The nested repeat will handle its own templates when it upgrades.
-        if (node.localName === 'a-repeat') {
-          bindings.push({ type: 'nest-repeat', path: [...path] });
-          return;
-        }
-
-        // Nested Templates
-        if (node.localName === 'template') {
-          const contentBindings = this.#compile(node.content);
-          if (contentBindings.length > 0) {
-            bindings.push({
-              type: 'template-content',
-              path: [...path],
-              bindings: contentBindings
-            });
-          }
-          return;
-        }
-
-        // Recursion
-        const children = node.childNodes;
-        for (let i = 0; i < children.length; i++) {
-          crawl(children[i], [...path, i]);
-        }
-      }
-    };
-
-    const children = fragment.childNodes;
-    for (let i = 0; i < children.length; i++) {
-      crawl(children[i], [i]);
-    }
-
-    return bindings;
-  }
-
-  /**
-   * Parses a string for `{{ token }}` patterns.
-   *
-   * @private
-   * @param {string} str - The string to parse.
-   * @returns {Array<string|object>|null} Array of static strings and token objects, or null if no bindings found.
-   */
-  #parseTemplateString(str) {
-    if (!str.includes('{{')) return null;
-
-    const parts = [];
-    let lastIndex = 0;
-    // Use local RegExp to avoid global state issues
-    const regex = new RegExp(TOKEN_REGEX);
-    let match;
-
-    while ((match = regex.exec(str)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(str.slice(lastIndex, match.index));
-      }
-      parts.push({ token: match[1] });
-      lastIndex = regex.lastIndex;
-    }
-
-    if (lastIndex < str.length) {
-      parts.push(str.slice(lastIndex));
-    }
-    return parts.length > 0 ? parts : null;
-  }
 
   /**
    * Applies data to a cloned template instance using pre-compiled bindings.
@@ -410,44 +228,109 @@ export default class ARepeat extends HTMLElement {
           break;
       }
     }
+
+    this.log?.('#applyBindings()', this.#logProps({root, bindings, item, index}));
   }
 
   /**
-   * Helper to traverse the DOM using a path array (child indices).
-   *
+   * attaches a Logger instance for debugging.
    * @private
-   * @param {Node} root - The starting node.
-   * @param {Array<number>} path - Array of childNode indices.
-   * @returns {Node|null}
+   * @returns {Promise<Function>} A logging function wrapper.
    */
-  #getNode(root, path) {
-    let node = root;
-    for (const i of path) {
-      if (!node.childNodes || !node.childNodes[i]) return null;
-      node = node.childNodes[i];
-    }
-    return node;
-  }
-
-  /**
-   * Resolves a list of string parts and tokens into a final string value.
-   *
-   * @private
-   * @param {Array} parts - Mixed array of strings and token objects.
-   * @param {any} item - Data context.
-   * @param {number} index - Loop index.
-   * @returns {string} The resolved string.
-   */
-  #resolveBinding(parts, item, index) {
-    let result = '';
-    for (const part of parts) {
-      if (typeof part === 'string') {
-        result += part;
-      } else {
-        result += this.#evaluateToken(part.token, item, index);
+  async #attachLogger() {
+    try {
+      const logger = new Logger(this, ARepeat.observedAttributes);
+      return (label, obj) => {
+        logger.log(label, obj);
       }
+    } catch (error) {
+      console.warn('a-repeat.attachLogger() Failed', error);
     }
-    return result;
+  }
+
+  /**
+   * Unsubscribes from the event bus.
+   * @private
+   */
+  #cleanup() {
+    if (this.#unsubscribe) {
+      this.#unsubscribe();
+      this.#unsubscribe = null;
+    }
+    this.log?.('#cleanup()', this.#logProps());
+  }
+
+  /**
+   * Scans a DocumentFragment for mustache-style bindings ({{ }}) and returns a list of instructions.
+   * This walks the DOM once at startup to create a compilation definition.
+   *
+   * @private
+   * @param {DocumentFragment} fragment - The template content to parse.
+   * @returns {Array<object>} A list of binding instructions.
+   */
+  #compile(fragment) {
+    const bindings = [];
+
+    const crawl = (node, path) => {
+      // Text Nodes
+      if (node.nodeType === Node.TEXT_NODE) {
+        const parts = this.#parseTemplateString(node.nodeValue);
+        if (parts) {
+          bindings.push({ type: 'text', path: [...path], parts });
+        }
+        // this.log?.('#compile()', this.#logProps({fragment});
+        return;
+      }
+
+      // Elements
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        // Attributes
+        if (node.hasAttributes()) {
+          for (const attr of node.attributes) {
+            const parts = this.#parseTemplateString(attr.value);
+            if (parts) {
+              bindings.push({ type: 'attr', path: [...path], name: attr.name, parts });
+            }
+          }
+        }
+
+        // Nested Repeats: Stop recursion here.
+        // The nested repeat will handle its own templates when it upgrades.
+        if (node.localName === 'a-repeat') {
+          bindings.push({ type: 'nest-repeat', path: [...path] });
+          // this.log?.('#compile()', this.#logProps({fragment});
+          return;
+        }
+
+        // Nested Templates
+        if (node.localName === 'template') {
+          const contentBindings = this.#compile(node.content);
+          if (contentBindings.length > 0) {
+            bindings.push({
+              type: 'template-content',
+              path: [...path],
+              bindings: contentBindings
+            });
+          }
+          // this.log?.('#compile()', this.#logProps({fragment});
+          return;
+        }
+
+        // Recursion
+        const children = node.childNodes;
+        for (let i = 0; i < children.length; i++) {
+          crawl(children[i], [...path, i]);
+        }
+      }
+    };
+
+    const children = fragment.childNodes;
+    for (let i = 0; i < children.length; i++) {
+      crawl(children[i], [i]);
+    }
+
+    this.log?.('#compile()', this.#logProps({fragment}));
+    return bindings;
   }
 
   /**
@@ -488,11 +371,155 @@ export default class ARepeat extends HTMLElement {
       }
     }
 
+    // this.log?.('#evaluateToken()', this.#logProps({path, item, index});
     if (val === undefined || val === null || typeof val === 'object') {
       return '';
     } else {
       return val;
     }
+  }
+
+  /**
+   * Helper to traverse the DOM using a path array (child indices).
+   *
+   * @private
+   * @param {Node} root - The starting node.
+   * @param {Array<number>} path - Array of childNode indices.
+   * @returns {Node|null}
+   */
+  #getNode(root, path) {
+    let node = root;
+    for (const i of path) {
+      if (!node.childNodes || !node.childNodes[i]) return null;
+      node = node.childNodes[i];
+    }
+    // this.log?.('#getNode()', this.#logProps({root, path});
+    return node;
+  }
+
+  /**
+   * parses and registers available templates.
+   * Checks for:
+   * 1. Internal <template> children.
+   * 2. External templates via 'template' attribute.
+   * 3. Implicit templates (the element's own initial children).
+   * Also validates compatibility with keyed rendering.
+   *
+   * @private
+   */
+  async #initTemplates() {
+    this.#templateMap.clear();
+    this.#defaultTemplate = null;
+
+    // Internal Templates
+    const internalTemplates = Array.from(this.children).filter(el => el.localName === 'template');
+    internalTemplates.forEach(tmpl => this.#registerTemplate(tmpl));
+
+    // External Single Template
+    if (this.#template) {
+      const tmpl = await loader.load(this.#template, this);
+      if (tmpl) this.#registerTemplate(tmpl);
+    }
+
+    // Self-Templating (Implicit Default)
+    // Only proceed if no explicit templates are found.
+
+    if (this.#templateMap.size === 0 && !this.#defaultTemplate) {
+      if (this.#implicitTemplate) {
+        this.#defaultTemplate = this.#implicitTemplate;
+      } else if (this.childNodes.length > 0) {
+        // Parse children as template (first run)
+        const range = document.createRange();
+        range.selectNodeContents(this);
+        const content = range.cloneContents();
+        const bindings = this.#compile(content);
+
+        // save content and bindings so they'll persist across disconnect/reconnect
+        this.#implicitTemplate = { content, bindings };
+        this.#defaultTemplate = this.#implicitTemplate;
+        this.replaceChildren();
+      }
+    }
+
+    // Validate Compatibility with Keyed Rendering
+    if (this.#key) {
+      let valid = true;
+      let invalidName = '';
+
+      // Check Default Template
+      if (this.#defaultTemplate && this.#defaultTemplate.content.children.length !== 1) {
+        valid = false;
+        invalidName = 'Default Template';
+      }
+
+      // Check Named Templates
+      if (valid) {
+        for (const [id, def] of this.#templateMap) {
+          if (def.content.children.length !== 1) {
+            valid = false;
+            invalidName = `Template "#${id}"`;
+            break;
+          }
+        }
+      }
+
+      // Fallback if invalid
+      if (!valid) {
+        console.warn(
+          `a-repeat: Keyed rendering disabled. ${invalidName} has ${this.#defaultTemplate?.content.children.length || 'multiple'} root elements (must be exactly 1 Element). Falling back to index-based rendering.`,
+          this
+        );
+        this.#key = null;
+        this.removeAttribute('key');
+      }
+    }
+
+    // this.log?.('#initTemplates()', this.#logProps());
+  }
+
+  #logProps(method_args = {}) {
+    return {
+      method_args,
+      data: this.#data,
+      defaultTemplate: this.#defaultTemplate,
+      isConnected: this.#isConnected,
+      targetElem: this.#targetElem,
+      templateMap: this.#templateMap,
+      modelLoadId: this.#modelLoadId,
+      scopeLoadId: this.#scopeLoadId,
+      implicitTemplate: this.#implicitTemplate,
+    }
+  }
+
+  /**
+   * Parses a string for `{{ token }}` patterns.
+   *
+   * @private
+   * @param {string} str - The string to parse.
+   * @returns {Array<string|object>|null} Array of static strings and token objects, or null if no bindings found.
+   */
+  #parseTemplateString(str) {
+    if (!str.includes('{{')) return null;
+
+    const parts = [];
+    let lastIndex = 0;
+    // Use local RegExp to avoid global state issues
+    const regex = new RegExp(TOKEN_REGEX);
+    let match;
+
+    while ((match = regex.exec(str)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(str.slice(lastIndex, match.index));
+      }
+      parts.push({ token: match[1] });
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < str.length) {
+      parts.push(str.slice(lastIndex));
+    }
+    this.log?.('#parseTemplateString()', this.#logProps({str}));
+    return parts.length > 0 ? parts : null;
   }
 
   /**
@@ -513,6 +540,8 @@ export default class ARepeat extends HTMLElement {
     } else if (!this.#defaultTemplate) {
       this.#defaultTemplate = def;
     }
+
+    this.log?.('#registerTemplate()', this.#logProps({tmpl}));
   }
 
   /**
@@ -545,6 +574,7 @@ export default class ARepeat extends HTMLElement {
     const parent = this.#targetElem;
     const oldData = this.#data;
     this.#data = data;
+
     // Helper: Create DOM content for a single item
     const createNode = (item, index) => {
       let templateId = item.template;
@@ -558,6 +588,7 @@ export default class ARepeat extends HTMLElement {
         this.#applyBindings(clone, selectedTemplate.bindings, item, index);
         return clone;
       }
+
       return null;
     };
 
@@ -582,6 +613,7 @@ export default class ARepeat extends HTMLElement {
           // Fallback if key missing in data
           const frag = createNode(item, index);
           if (frag) parent.insertBefore(frag, parent.children[index] || null);
+          this.log?.('#render()', this.#logProps({data}));
           return;
         }
 
@@ -626,6 +658,7 @@ export default class ARepeat extends HTMLElement {
 
       // Remove nodes whose keys are no longer in the data
       keyMap.forEach(node => node.remove());
+      this.log?.('#render()', this.#logProps({data}));
       return;
     }
 
@@ -646,6 +679,7 @@ export default class ARepeat extends HTMLElement {
       data.forEach((item, index) => {
         // If data reference is identical, skip
         if (index < oldData.length && item === oldData[index]) {
+          this.log?.('#render()', this.#logProps({data}));
           return;
         }
 
@@ -669,6 +703,29 @@ export default class ARepeat extends HTMLElement {
       });
       parent.replaceChildren(fragment);
     }
+    this.log?.('#render()', this.#logProps({data}));
+  }
+
+  /**
+   * Resolves a list of string parts and tokens into a final string value.
+   *
+   * @private
+   * @param {Array} parts - Mixed array of strings and token objects.
+   * @param {any} item - Data context.
+   * @param {number} index - Loop index.
+   * @returns {string} The resolved string.
+   */
+  #resolveBinding(parts, item, index) {
+    let result = '';
+    for (const part of parts) {
+      if (typeof part === 'string') {
+        result += part;
+      } else {
+        result += this.#evaluateToken(part.token, item, index);
+      }
+    }
+    this.log?.('#resolveBinding()', this.#logProps({parts, item, index}));
+    return result;
   }
 
   /**
@@ -697,6 +754,7 @@ export default class ARepeat extends HTMLElement {
 
     const busKey = Bus.getKey(source, this.#prop);
     this.#unsubscribe = crosstownBus.hopOn(busKey, (val) => { this.#render(val) });
+    this.log?.('#subscribe()', this.#logProps());
   }
 
   /**
@@ -712,11 +770,16 @@ export default class ARepeat extends HTMLElement {
       delete this[prop];
       this[prop] = value;
     }
+
+    this.log?.(`#upgrade(${prop})`, this.#logProps());
   }
 
    // --- Public ---
 
   // --- Getters / Setters ---
+
+  get debug() { return this.hasAttribute('debug') }
+  set debug(value) { this.setAttribute('debug', !!value) }
 
   /**
    * Gets or sets the unique key property name for keyed rendering.

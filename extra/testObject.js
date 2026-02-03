@@ -335,7 +335,7 @@ const testObject = {
 			inputId: 'o-select-multi',
 			model: 'mod:testObject',
 			template: 'tmpl-section',
-			newval: 'bar, baz',
+			newval: '[ "bar", "baz" ]',
 			control: [{
 				template: 'tmpl-select-multi',
 				label: 'dynamic select [multiple]',

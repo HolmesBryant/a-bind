@@ -16,8 +16,9 @@ export default class Logger {
    * Creates an instance of Logger.
    * @param {HTMLElement} host - The a-bind instance to inspect.
    */
-	constructor(host) {
+	constructor(host, props) {
 		this.host = host;
+		this.props = props;
 	}
 
 	/**
@@ -28,32 +29,12 @@ export default class Logger {
    * @param {object} [object] - Optional extra data/arguments to log.
    */
 	log(label, object) {
-		const value = this.host.model?.[this.host.prop] || this.host.model?.getAttribute?.(this.host.prop);
 		console.groupCollapsed(label);
-			if (object) console.log('args', object);
-			console.groupCollapsed('host');
-				console.log(this.host);
-			console.groupEnd();
-			console.groupCollapsed('model');
-				console.log(this.host.model);
-			console.groupEnd();
-			console.log(`model[${this.host.prop}]`, value);
-			console.log('bound', this.host.bound);
-			console.log(`bound[${this.host.elemProp}]`, this.host.bound?.[this.host.elemProp]);
-			console.groupCollapsed('Other Properties');
-				console.log('elemProp', this.host.elemProp);
-				console.log('property', this.host.property);
-				console.log('modelAttr', this.host.modelAttr);
-				console.log('prop', this.host.prop);
-				console.log('event', this.host.event);
-				console.log('func', this.host.func);
-				console.log('busKey', this.host.busKey);
-				console.log('modelKey', this.host.modelKey);
-				console.log('once', this.host.once);
-				console.log('pull', this.host.pull);
-				console.log('push', this.host.push);
-				console.log('throttle', this.host.throttle);
-			console.groupEnd();
+			console.log('Debugging: ', this.host);
+			if (object) console.log('other', object);
+			for (const prop of this.props) {
+				console.log(`${prop} : `, this.host[prop]);
+			}
 		console.groupEnd();
 	}
 }

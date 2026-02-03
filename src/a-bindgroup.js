@@ -21,7 +21,7 @@ export default class ABindgroup extends HTMLElement {
   #modelAttr;
   #modelKey;
   #modelInstance;
-  #property;
+  #prop;
   #initPending = false;
 
   static observedAttributes = ['model', 'attr', 'prop', 'debug'];
@@ -64,11 +64,11 @@ export default class ABindgroup extends HTMLElement {
 
   /**
    * Gets or sets the 'prop' attribute.
-   * Represents a shared property name to bind to on the model.
+   * Represents a shared prop name to bind to on the model.
    * @type {string}
    */
-  get property() { return this.#property }
-  set property(value) { this.setAttribute('prop', value) }
+  get prop() { return this.#prop }
+  set prop(value) { this.setAttribute('prop', value) }
 
   // -- Lifecycle --
 
@@ -92,7 +92,7 @@ export default class ABindgroup extends HTMLElement {
         this.#updateChildrenDefaults();
         break;
       case 'prop':
-        this.#property = newval;
+        this.#prop = newval;
         this.#updateChildrenDefaults();
         break;
       case 'debug':
@@ -147,7 +147,7 @@ export default class ABindgroup extends HTMLElement {
 
   /**
    * Registers a child element (a-bind or a-repeat) with this group.
-   * Applies the group's model, property, or attribute configurations to the child
+   * Applies the group's model, prop, or attribute configurations to the child
    * if the child has not explicitly defined them.
    *
    * @param {HTMLElement} child - The child element to register.
@@ -169,20 +169,19 @@ export default class ABindgroup extends HTMLElement {
   // --- Private ---
 
   /**
-   * Applies the group's default settings (debug, model, property, attr)
+   * Applies the group's default settings (model, prop, attr)
    * to a specific child element.
    *
    * @private
    * @param {HTMLElement} child - The target child element.
    */
   #applyDefaultsToChild(child) {
-    if (this.#debug) child.toggleAttribute('debug', true);
     // only apply if child hasn't defined its own
     if (!child.model && this.#modelInstance) child.model = this.#modelInstance;
 
-    if (!child.property && !child.modelAttr) {
-      if (this.#property) child.property = this.#property;
-      if (this.#modelAttr) child.modelAttr = this.#modelAttr;
+    if (!child.prop && !child.attr) {
+      if (this.#prop) child.prop = this.#prop;
+      if (this.#modelAttr) child.attr = this.#modelAttr;
     }
   }
 

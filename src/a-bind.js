@@ -8,14 +8,16 @@
 
 import { scheduler } from './Schedule.js';
 import Bus, { crosstownBus } from './Bus.js';
-import Loader, { loader } from './Loader.js';
+import { loader } from './Loader.js';
 import PathResolver from './PathResolver.js';
+import Logger from './Logger.js';
 
 export {
   scheduler,
   crosstownBus,
   loader,
-  PathResolver
+  PathResolver,
+  Logger
 };
 
 /**
@@ -30,13 +32,16 @@ export default class ABind extends HTMLElement {
   #event = 'input';
   #func;
   #modelKey;
-  #modelAttr;
+  #attr;
   #once = false;
-  #property;
+  #prop;
   #pull = false;
   #push = false;
   #target;
   #throttle = 0;
+
+  /* only relevant if model is an HTML element */
+  #modelEvent = 'input';
 
   #abortController;
   #bound;
@@ -56,13 +61,13 @@ export default class ABind extends HTMLElement {
    * @returns {string[]} ['debug', 'elem-prop', 'event', 'func', 'model', 'attr', 'once', 'prop', 'pull', 'push', 'throttle']
    */
   static observedAttributes = [
+    'model',
+    'prop',
+    'attr',
     'elem-prop',
     'event',
     'func',
-    'model',
-    'attr',
     'once',
-    'prop',
     'pull',
     'push',
     'target',
@@ -98,13 +103,13 @@ export default class ABind extends HTMLElement {
         // model is resolved in reinit();
         break;
       case 'attr':
-        this.#modelAttr = newval;
+        this.#attr = newval;
         break;
       case 'once':
         this.#once = this.hasAttribute('once');
         break;
       case 'prop':
-        this.#property = newval;
+        this.#prop = newval;
         break;
       case 'pull':
         this.#pull = this.hasAttribute('pull');
@@ -166,7 +171,7 @@ export default class ABind extends HTMLElement {
     this.#isConnected = false;
     this.#model = null;
     this.#bound = null;
-    this.log?.('disconnectedCallback()');
+    this.log?.('disconnectedCallback()', this.#logProps());
   }
 
   // -- Static --
@@ -207,7 +212,6 @@ export default class ABind extends HTMLElement {
       }
     }
 
-    this.log?.('applyUpdate()', {target, name, value});
 
     // Bind to attribute of bound element
     if (name.startsWith('$')) {
@@ -221,23 +225,28 @@ export default class ABind extends HTMLElement {
         const attrValue = (value === true) ? '' : String(value);
         target.setAttribute(attrName, attrValue);
       }
+
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return;
     }
 
     // Boolean update logic
     if (target instanceof HTMLElement && (target.type === 'checkbox' || target.type === 'radio')) {
       if (name === 'checked' || name === this.#elemProp) {
+        this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
         return this.#handleBooleanUpdate(target, value);
       }
     }
 
     // CSS variables
     if (name.startsWith('--') && target.style) {
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return target.style.setProperty(name, value);
     }
 
     // Nested paths
     if (name.includes('.')) {
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return this.#handleNestedUpdate(target, name, value);
     }
 
@@ -254,6 +263,7 @@ export default class ABind extends HTMLElement {
         const optVal = option.value || option.text;
         option.selected = values.includes(optVal);
       }
+      this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
       return;
     }
 
@@ -273,6 +283,8 @@ export default class ABind extends HTMLElement {
         target.setAttribute(name, value);
       }
     }
+
+    this.log?.('#applyUpdate()', this.#logProps({target, name, value}));
   }
 
   // -- Private --
@@ -287,11 +299,11 @@ export default class ABind extends HTMLElement {
       return console.warn('a-bind.addListeners(): No model present, aborting.', this)
     }
 
-    this.log?.('addListeners()', {});
-    const prop = this.#property || this.#modelAttr;
+    const prop = this.#prop || this.#attr;
 
     // Element -> Model (Event)
     if (!this.#pull) {
+      this.log?.('#addListeners() : event', this.#logProps({event: this.#event}));
       this.#bound.addEventListener(this.#event, event => {
         let value = this.#bound[this.#elemProp];
         const isCheckbox = this.#bound instanceof HTMLInputElement && this.#bound.type === 'checkbox';
@@ -323,7 +335,6 @@ export default class ABind extends HTMLElement {
           value = Array.from(this.#bound.selectedOptions).map(option => option.value || option.text);
         }
 
-        this.log?.(`Event: ${this.#event}`, {value, event});
         this.#updateModel(value, event);
       }, { signal: this.#abortController.signal });
     }
@@ -332,35 +343,38 @@ export default class ABind extends HTMLElement {
     if (!this.#push && !this.#once) {
       // Subscribe to pub/sub
       crosstownBus.hopOn(this.#busKey, this.#updateSubscribers);
-      if (this.#push) return;
+      this.log?.('#addListeners() : subscribe', this.#logProps());
 
       // If model is an html element
       if (this.#model.addEventListener) {
-        this.#model.addEventListener('input', event => {
+        this.#model.addEventListener(this.#modelEvent, event => {
           if (event.target === this.#bound || event.composedPath().includes(this.#bound)) {
             return;
           }
-          const prop = this.#property || this.#modelAttr;
+          const prop = this.#prop || this.#attr;
           const value = this.#getPropertyValue(this.#model, prop);
           this.applyUpdate(this.#bound, this.#elemProp, value);
         }, { signal: this.#abortController.signal });
+
+        this.log?.('#addListeners()', this.#logProps({elem:this.#model, event: this.#modelEvent}));
       }
+
     }
   }
 
   /**
-   * Dynamically imports and attaches a Logger instance for debugging.
+   * attaches a Logger instance for debugging.
    * @private
    * @returns {Promise<Function>} A logging function wrapper.
    */
   async #attachLogger() {
+    const publicProps = [];
+    for (const prop of ABind.observedAttributes) {
+      publicProps.push(prop.replace(/-./g, x => x[1].toUpperCase()))
+    }
     try {
-      const mods = await import('./Logger.js');
-      const mod = mods.default;
-      const logger = new mod(this);
+      const logger = new Logger(this, publicProps);
       return (label, obj) => {
-        const boundVal = this.bound?.[this.elemProp];
-        label = this.bound ? `${label}: ${this.bound.localName}: ${boundVal}` : label;
         logger.log(label, obj);
       }
     } catch (error) {
@@ -396,7 +410,6 @@ export default class ABind extends HTMLElement {
    */
   #executeFunction(event) {
     if (!this.#func) return;
-    this.log?.('executeFunction()', event);
     let context;
 
     try {
@@ -421,6 +434,8 @@ export default class ABind extends HTMLElement {
     } catch (error) {
       console.error('a-bind: executeFunction()', error);
     }
+
+    this.log?.('#executeFunction()', this.#logProps({event}));
   }
 
   /**
@@ -460,7 +475,7 @@ export default class ABind extends HTMLElement {
     };
 
     const element = findTarget(this);
-    this.log?.('getBoundElement()', element);
+    this.log?.('#getBoundElement()', this.#logProps({element: element}));
     return element;
   }
 
@@ -473,7 +488,7 @@ export default class ABind extends HTMLElement {
    * @returns {any} The resolved value.
    */
   #getPropertyValue(obj, path) {
-    this.log?.('getPropertyValue()', {obj, path});
+    this.log?.('#getPropertyValue()', this.#logProps({obj, path}));
     const value = PathResolver.getValue(obj, path);
     return (value !== undefined) ? value : obj?.getAttribute?.(path);
   }
@@ -512,7 +527,7 @@ export default class ABind extends HTMLElement {
       target.checked = (modelValue === comparisonValue);
     }
 
-    this.log?.('handleBooleanUpdate()', {target, value, targetChecked: target.checked});
+    this.log?.('#handleBooleanUpdate()', this.#logProps({target, value}));
   }
 
   /**
@@ -535,7 +550,7 @@ export default class ABind extends HTMLElement {
       // stop watching temporarily to prevent infinite loops
       this.#observer.disconnect();
       try {
-        const prop = this.#property || this.#modelAttr;
+        const prop = this.#prop || this.#attr;
         const val = this.#getPropertyValue(this.#model, prop);
 
         // re-apply model value to DOM
@@ -558,7 +573,7 @@ export default class ABind extends HTMLElement {
    * @param {any} value - The value to set.
    */
   #handleNestedUpdate(target, name, value) {
-    this.log?.('handleNestedUpdate()', {target, name, value});
+    this.log?.('#handleNestedUpdate()', this.#logProps({target, name, value}));
     const parts = PathResolver.getParts(name);
     if (PathResolver.isUnsafe(parts)) {
       console.warn(`a-bind: Blocked attempt to modify unsafe path "${name}"`);
@@ -603,13 +618,10 @@ export default class ABind extends HTMLElement {
    * @returns {Promise<void>}
    */
   async #init() {
-    if (this.hasAttribute('debug')) {
-      console.log('Debugging: ', this);
-    }
     const gen = this.#initIdx;
     if (this.#shouldBail(gen)) return;
     if (this.debug && !this.log) this.log = await this.#attachLogger();
-    this.log?.('init()');
+    this.log?.('#init()', this.#logProps());
 
     // Attempt to resolve model. This will wait (via Loader) if the model is pending.
     const modelReady = await this.#resolveModel(gen);
@@ -631,12 +643,24 @@ export default class ABind extends HTMLElement {
       this.bound = this.#getBoundElement();
     }
 
-    const prop = this.#property || this.#modelAttr;
+    const prop = this.#prop || this.#attr;
     this.#busKey = Bus.getKey(this.#model, prop);
     this.#updateSubscribers = this.#updateBound.bind(this);
 
     this.#syncView();
     this.#addListeners();
+  }
+
+  #logProps(method_args = {}) {
+    return {
+      method_args,
+      bound: this.#bound,
+      busKey: this.#busKey,
+      group: this.#group,
+      initIdx: this.#initIdx,
+      isConnected: this.#isConnected,
+      model: this.#model,
+    }
   }
 
   /**
@@ -655,7 +679,7 @@ export default class ABind extends HTMLElement {
       if (value === 'false') value = false;
     }
     if (value === null || value === undefined) value = '';
-    this.log?.('parsedValue()', value);
+    this.log?.('#parsedValue()', this.#logProps({value, target}));
     return value;
   }
 
@@ -665,7 +689,7 @@ export default class ABind extends HTMLElement {
    * @private
    */
   async #reinit() {
-    this.log?.('reinit()');
+    this.log?.('#reinit()', this.#logProps());
     this.#initIdx++;
     this.#teardown();
     await this.#init();
@@ -678,7 +702,6 @@ export default class ABind extends HTMLElement {
    * @returns {boolean} False if waiting for group data, True otherwise.
    */
   #resolveGroup() {
-    this.log?.('resolveGroup()');
     this.#group = this.closest('a-bindgroup');
 
     if (this.#group) {
@@ -688,13 +711,14 @@ export default class ABind extends HTMLElement {
     if (
       this.#group &&
       (!this.#model ||
-        (!this.#property && !this.#modelAttr && !this.#func)
+        (!this.#prop && !this.#attr && !this.#func)
       )
     ) {
-      this.log?.('resolveGroup(): Waiting for group to provide model or property');
+      this.log?.('#resolveGroup(): Waiting for group to provide model or property', this.#logProps());
       return false;
     }
 
+    this.log?.('#resolveGroup()', this.#logProps());
     return true;
   }
 
@@ -703,14 +727,14 @@ export default class ABind extends HTMLElement {
    * Handles 'this', string keys, and deferred loading.
    *
    * @private
-   * @param {number} gen - The generation index for race condition checking.
+   * @param {number} idx - The generation index for race condition checking.
    * @returns {Promise<boolean>} True if model resolved, false if failed.
    */
-  async #resolveModel(gen) {
-    this.log?.('resolveModel()', {gen});
+  async #resolveModel(idx) {
 
     if (this.#model && !this.#modelKey) {
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
+      this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     }
 
@@ -720,11 +744,13 @@ export default class ABind extends HTMLElement {
     if (this.#modelKey === "this") {
       this.#model = await loader.load(this.getRootNode().host, this);
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
+      this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     }
 
     try {
       if (!this.#model) this.#model = await loader.load(this.#modelKey, this);
+      this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     } catch (error) {
       console.error(`a-bind: Failed to load model "${this.#modelKey}"`, error, this);
@@ -740,7 +766,7 @@ export default class ABind extends HTMLElement {
    * @returns {Promise<HTMLElement>} The resolved element.
    */
   async #resolveTarget(selector) {
-    this.log?.('#resolveTarget()', {target: selector});
+    this.log?.('#resolveTarget()', this.#logProps({selector}));
     try {
       return await loader.load(selector, this);
     } catch (error) {
@@ -766,10 +792,10 @@ export default class ABind extends HTMLElement {
    */
   #syncView() {
     if (this.#push) return;
-    const prop = this.#property || this.#modelAttr;
-    const value = (this.#property) ?
-      this.#getPropertyValue(this.#model, this.#property) :
-      this.#model.getAttribute?.(this.#modelAttr);
+    const prop = this.#prop || this.#attr;
+    const value = (this.#prop) ?
+      this.#getPropertyValue(this.#model, this.#prop) :
+      this.#model.getAttribute?.(this.#attr);
 
     // if () console.log(this.#bound, this.#elemProp, value)
     if (value !== undefined) {
@@ -786,7 +812,7 @@ export default class ABind extends HTMLElement {
       this.#observer.observe(this.#bound, { childList: true });
     }
 
-    this.log?.('syncView()');
+    this.log?.('#syncView()', this.#logProps());
   }
 
   /**
@@ -805,7 +831,7 @@ export default class ABind extends HTMLElement {
     if (this.#busKey) {
       this.#updateManager.cancel(`abind-update::${this.#busKey}`);
     }
-    this.log?.('teardown()', {});
+    this.log?.('#teardown()', this.#logProps());
   }
 
   /**
@@ -816,8 +842,8 @@ export default class ABind extends HTMLElement {
    * @param {any} value - The new value from the Bus.
    */
   #updateBound(value) {
-    const prop = this.#property || this.#modelAttr;
-    this.log?.('updateBound()', {prop, value});
+    const prop = this.#prop || this.#attr;
+    this.log?.('#updateBound()', this.#logProps({value}));
     this.#updateManager.defer(this, value, (val) => {
       this.applyUpdate(this.#bound, this.#elemProp, val);
     }, this);
@@ -832,7 +858,7 @@ export default class ABind extends HTMLElement {
    * @param {Event} event - The triggering event.
    */
   #updateModel(value, event) {
-    const prop = this.#property || this.#modelAttr;
+    const prop = this.#prop || this.#attr;
     if (this.#func) return this.#executeFunction(event);
 
     // auto convert text values that look like objects or arrays
@@ -872,7 +898,7 @@ export default class ABind extends HTMLElement {
       this.#updateManager.defer(taskKey, value, doUpdate, this);
     }
 
-    this.log?.('updateModel()', {value, eventTarget: event.target, targetValue: event.target.value, event});
+    this.log?.('#updateModel()', this.#logProps({value, event}));
   }
 
   // -- Getters / Setters --
@@ -884,6 +910,7 @@ export default class ABind extends HTMLElement {
    * @returns {boolean}
    */
   get debug() { return this.hasAttribute('debug') }
+  set debug(value) { this.toggleAttribute('debug', true) }
 
   /**
    * Returns the shared Bus instance.
@@ -901,7 +928,7 @@ export default class ABind extends HTMLElement {
    * Returns the property name or attribute name being bound.
    * @returns {string}
    */
-  get prop() { return this.#property || this.#modelAttr }
+  get property() { return this.#prop || this.#attr }
 
   /**
    * Gets or sets the actual DOM element being bound.
@@ -970,8 +997,8 @@ export default class ABind extends HTMLElement {
    * Used when binding to a model that is also an HTML element (attribute binding).
    * @type {string}
    */
-  get modelAttr() { return this.#modelAttr }
-  set modelAttr(value) { this.setAttribute('attr', value) }
+  get attr() { return this.#attr }
+  set attr(value) { this.setAttribute('attr', value) }
 
   /**
    * Gets/Sets the 'once' attribute.
@@ -986,8 +1013,8 @@ export default class ABind extends HTMLElement {
    * The property name on the model object.
    * @type {string}
    */
-  get property() { return this.#property }
-  set property(value) { this.setAttribute('prop', value) }
+  get prop() { return this.#prop }
+  set prop(value) { this.setAttribute('prop', value) }
 
   /**
    * Gets/Sets the 'pull' attribute.

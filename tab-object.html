@@ -332,6 +332,14 @@
   <a-bindgroup model="mod:testObject">
     <div class="flex stretch">
       <a-bind
+        pull
+        class="flex1 card"
+        prop="editable">
+
+        <output></output>
+      </a-bind>
+
+      <a-bind
         once
         prop="editable"
         elem-prop="innerHTML"
@@ -340,18 +348,22 @@
 
         <div contenteditable></div>
       </a-bind>
-
-      <a-bind
-        pull
-        class="flex1 card"
-        prop="editable">
-
-        <output></output>
-      </a-bind>
     </div>
   </a-bindgroup>
 
   <div class="flex stretch">
+    <a-code highlight class="flex1 card">
+      <textarea>
+        <a-bind
+          pull
+          model="mod:testObject"
+          prop="editable">
+
+          <output></output>
+        </a-bind>
+      </textarea>
+    </a-code>
+
     <a-code highlight class="flex1 card">
       <textarea>
         <a-bind
@@ -362,18 +374,6 @@
           throttle="300">
 
           <div contenteditable></div>
-        </a-bind>
-      </textarea>
-    </a-code>
-
-    <a-code highlight class="flex1 card">
-      <textarea>
-        <a-bind
-          pull
-          model="mod:testObject"
-          prop="editable">
-
-          <output></output>
         </a-bind>
       </textarea>
     </a-code>
