@@ -8,7 +8,7 @@
 
 import { scheduler } from './Schedule.js';
 import Bus, { crosstownBus } from './Bus.js';
-import Loader, { loader } from './Loader.js';
+import { loader } from './Loader.js';
 import PathResolver from './PathResolver.js';
 import Logger from './Logger.js';
 

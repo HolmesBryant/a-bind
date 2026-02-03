@@ -4,7 +4,7 @@
 
 a-bind is a lightweight, zero-dependency Web Component library that adds data binding to any HTML application. It bridges the gap between your DOM and your data models (ES Modules, global objects, Custom Elements or other DOM elements).
 
-
+Demo: [https://holmesbryant.github.io/a-bind/](https://holmesbryant.github.io/a-bind/)
 
 ## Features
 
