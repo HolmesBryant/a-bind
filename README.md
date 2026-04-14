@@ -132,7 +132,7 @@ Because a-bind uses a "non-intrusive" approach (it doesn't use Proxies to wrap y
 
 You must notify the view of changes made via JavaScript using the update helper. There are two ways to do this:
 
-1. Direct Import (Standard)
+#### Direct Import (Standard)
 
 Best for applications where you control the bundling and dependencies.
 
@@ -148,7 +148,7 @@ myModel.count = 5;
 ABind.update(myModel, 'count', 5);
 ```
 
-2. Decoupled Access (For Independent Components/Libraries)
+#### Decoupled Access (For Independent Components/Libraries)
 
 If you are building standalone custom elements or classes and don't want to hard-code an `import` dependency, use the globally exposed Symbol. This executes instantly if a-bind is loaded, and safely does nothing if it isn't.
 
