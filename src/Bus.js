@@ -63,11 +63,6 @@ class Bus {
    * @param {any} bozo - The event name/identifier.
    * @returns {boolean} True if the event has listeners.
    */
-  /**
-   * Checks if a specific event has any registered listeners.
-   * @param {any} bozo - The event name/identifier.
-   * @returns {boolean} True if the event has listeners.
-   */
   has(bozo) {
     return this.#bozos.has(bozo);
   }

@@ -130,7 +130,11 @@ The core element that creates a link between a data source (Model) and a DOM ele
 
 Because a-bind uses a "non-intrusive" approach (it doesn't use Proxies to wrap your original objects), standard JavaScript assignments (e.g., myModel.message = 'New') will not automatically trigger the UI to update.
 
-You must use the static helper method ABind.update to notify the view of changes made via JavaScript. This is also true if you transform the data (String -> Array, String -> Number, etc).
+You must notify the view of changes made via JavaScript using the update helper. There are two ways to do this:
+
+1. Direct Import (Standard)
+
+Best for applications where you control the bundling and dependencies.
 
 ```javascript
 import ABind from 'path/to/a-bind.min.js';
@@ -142,6 +146,22 @@ myModel.count = 5;
 // Notify the view
 
 ABind.update(myModel, 'count', 5);
+```
+
+2. Decoupled Access (For Independent Components/Libraries)
+
+If you are building standalone custom elements or classes and don't want to hard-code an `import` dependency, use the globally exposed Symbol. This executes instantly if a-bind is loaded, and safely does nothing if it isn't.
+
+```javascript
+// Look up the symbol once per file
+const abindUpdate = Symbol.for('abind.update');
+
+const myModel = { count: 0 };
+
+myModel.count = 5;
+
+// Notify the view (no imports required)
+globalThis[abindUpdate]?.(myModel, 'count', 5);
 ```
 
 **Note:** UI interactions like typing in an input, automatically handle this internally (unless you transform the data type).
@@ -483,6 +503,14 @@ Struggling to see why a value isn't updating? Add the "debug" attribute to any a
 Open your browser console. You will see logs grouping the lifecycle events.
 
 ## Change Log
+
+v3.1
+
+- Added globalThis[Symbol.for('abind.update')] to allow independent custom elements to trigger updates without direct imports or the overhead of customElements.get(). Usage in your project:
+
+  - const abindUpdate = Symbol.for('abind.update');
+  - ...
+  - globalThis[abindUpdate]?.(this, 'propertyName', value);
 
 v3.0.0
 

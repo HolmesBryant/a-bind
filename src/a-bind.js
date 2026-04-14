@@ -325,8 +325,6 @@ export default class ABind extends HTMLElement {
           } else if (!this.#bound.checked) {
             // even if bound element has a value, if not checked set value to null
             value = null;
-          } else if (value === 'on') {
-            // value = true;
           }
         }
 
@@ -792,7 +790,6 @@ export default class ABind extends HTMLElement {
    */
   #syncView() {
     if (this.#push) return;
-    const prop = this.#prop || this.#attr;
     const value = (this.#prop) ?
       this.#getPropertyValue(this.#model, this.#prop) :
       this.#model.getAttribute?.(this.#attr);
@@ -842,7 +839,6 @@ export default class ABind extends HTMLElement {
    * @param {any} value - The new value from the Bus.
    */
   #updateBound(value) {
-    const prop = this.#prop || this.#attr;
     this.log?.('#updateBound()', this.#logProps({value}));
     this.#updateManager.defer(this, value, (val) => {
       this.applyUpdate(this.#bound, this.#elemProp, val);
@@ -903,8 +899,6 @@ export default class ABind extends HTMLElement {
 
   // -- Getters / Setters --
 
-  // -- properties --
-
   /**
    * Checks if debug mode is enabled.
    * @returns {boolean}
@@ -950,8 +944,6 @@ export default class ABind extends HTMLElement {
    */
   get modelKey() { return this.#modelKey }
   set modelKey(value) { this.setAttribute('model', value) }
-
-  // -- attributes --
 
   /**
    * Gets/Sets the 'elem-prop' attribute.
@@ -1049,4 +1041,7 @@ export default class ABind extends HTMLElement {
   set target(value) { this.setAttribute('target', value) }
 }
 
+globalThis[Symbol.for('abind.update')] = ABind.update;
+
 if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);
+

@@ -144,11 +144,6 @@ class Bus {
    * @param {any} bozo - The event name/identifier.
    * @returns {boolean} True if the event has listeners.
    */
-  /**
-   * Checks if a specific event has any registered listeners.
-   * @param {any} bozo - The event name/identifier.
-   * @returns {boolean} True if the event has listeners.
-   */
   has(bozo) {
     return this.#bozos.has(bozo);
   }
@@ -241,7 +236,7 @@ Object.freeze(crosstownBus);
  * @file PathResolver.js
  * @description Utility for safe object path resolution and modification.
  * @author Holmes Bryant <https://github.com/HolmesBryant>
- * @license GPL-3.0
+ * @license MIT
  */
 
 /**
@@ -401,7 +396,7 @@ class PathResolver {
  * and race-condition handling via pending resolution.
  * @file Loader.js
  * @author Holmes Bryant
- * @license GPL-3.0
+ * @license MIT
  */
 
 
@@ -422,6 +417,8 @@ class Loader {
    * @type {number}
    */
   timeout = 2000;
+
+  // --- Public ---
 
   /**
    * Universal registration method.
@@ -517,6 +514,117 @@ class Loader {
     }
   }
 
+  // --- Private ---
+
+  /**
+   * Resolves a DOM element selector.
+   * Features:
+   * - Waits for `DOMContentLoaded`.
+   * - Supports Shadow DOM piercing via `>>>` syntax.
+   * - Waits for Custom Elements to be defined.
+   * - Retries until timeout.
+   *
+   * @private
+   * @param {string} selector - The CSS selector.
+   * @param {Node} context - The root node to search within.
+   * @returns {Promise<Element|null>}
+   */
+  async #getDomElement(selector, context) {
+      if (typeof document === 'undefined') return null;
+
+      // wait for Document Ready if loading
+      if (!context || context === document) {
+        if (document.readyState === 'loading') {
+          this.#domReadyPromise ??= new Promise(r => window.addEventListener('DOMContentLoaded', r, { once: true }));
+          await this.#domReadyPromise;
+        }
+      }
+
+      const root = (context && context.getRootNode) ? context.getRootNode() : document;
+
+      const findNode = () => {
+        if (selector.includes('>>>')) {
+          const parts = selector.split('>>>').map(s => s.trim());
+          let currentRoot = root;
+          let target = null;
+          for (const part of parts) {
+            if (!currentRoot) return null;
+            const found = currentRoot.querySelector(part);
+            if (!found) return null;
+            if (part === parts[parts.length - 1]) {
+              target = found;
+            } else if (found.shadowRoot) {
+              currentRoot = found.shadowRoot;
+            } else {
+              return null;
+            }
+          }
+
+          return target;
+        }
+
+        return root.querySelector(selector);
+      };
+
+      let elem;
+      try {
+        // Attempt to find the element, retry until timeout
+        elem = await this.#when(findNode, this.timeout, 50);
+      } catch (error) {
+        // timeout reached
+        return null;
+      }
+
+      // wait for custom elements
+      if (elem?.localName.includes('-')) {
+        await customElements.whenDefined(elem.localName);
+      }
+
+      return elem;
+  }
+
+  /**
+   * Dynamically imports a module and instantiates it if it is a class.
+   *
+   * @private
+   * @param {string} path - The module path.
+   * @param {...any} args - Constructor arguments.
+   * @returns {Promise<any>}
+   */
+  async #importModule(path, ...args) {
+    try {
+      const mod = await import(path);
+      return this.#instantiate(mod.default, ...args);
+    } catch (error) {
+      throw new Error(`Loader: Failed to import module "${path}"`, { cause: error });
+    }
+  }
+
+  /**
+   * Helper to instantiate a value if it is a class constructor.
+   * @private
+   * @param {any} obj - The object to check.
+   * @param {...any} args - Constructor arguments.
+   * @returns {any} The instance or the original object.
+   */
+  #instantiate(obj, ...args) {
+    if (typeof obj !== 'function') return obj;
+    const isConstructor = obj.prototype && obj.prototype.constructor === obj;
+    try { return isConstructor ? new obj(...args) : obj; } catch (e) { return obj; }
+  }
+
+  /**
+   * Validates if a string is a valid import path.
+   * @private
+   * @param {string} path - The path to check.
+   * @returns {boolean}
+   */
+  #isImportable(path) {
+    if (this.#validator) return this.#validator(path);
+    const normalized = path.replace(/\\/g, '/');
+    return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
+  }
+
   /**
    * Routing logic for resolution strategies.
    *
@@ -575,115 +683,6 @@ class Loader {
   }
 
   /**
-   * Dynamically imports a module and instantiates it if it is a class.
-   *
-   * @private
-   * @param {string} path - The module path.
-   * @param {...any} args - Constructor arguments.
-   * @returns {Promise<any>}
-   */
-  async #importModule(path, ...args) {
-    try {
-      const mod = await import(path);
-      return this.#instantiate(mod.default, ...args);
-    } catch (error) {
-      throw new Error(`Loader: Failed to import module "${path}"`, { cause: error });
-    }
-  }
-
-  /**
-   * Resolves a DOM element selector.
-   * Features:
-   * - Waits for `DOMContentLoaded`.
-   * - Supports Shadow DOM piercing via `>>>` syntax.
-   * - Waits for Custom Elements to be defined.
-   * - Retries until timeout.
-   *
-   * @private
-   * @param {string} selector - The CSS selector.
-   * @param {Node} context - The root node to search within.
-   * @returns {Promise<Element|null>}
-   */
-  async #getDomElement(selector, context) {
-      if (typeof document === 'undefined') return null;
-
-      // wait for Document Ready if loading
-      if (!context || context === document) {
-        if (document.readyState === 'loading') {
-          this.#domReadyPromise ??= new Promise(r => window.addEventListener('DOMContentLoaded', r, { once: true }));
-          await this.#domReadyPromise;
-        }
-      }
-
-      const root = (context && context.getRootNode) ? context.getRootNode() : document;
-
-      const findNode = () => {
-        if (selector.includes('>>>')) {
-          const parts = selector.split('>>>').map(s => s.trim());
-          let currentRoot = root;
-          let target = null;
-          for (const part of parts) {
-            if (!currentRoot) return null;
-            const found = currentRoot.querySelector(part);
-            if (!found) return null;
-            if (part === parts[parts.length - 1]) {
-              target = found;
-            } else if (found.shadowRoot) {
-              currentRoot = found.shadowRoot;
-            } else {
-              return null;
-            }
-          }
-
-          return target;
-        }
-
-        return root.querySelector(selector);
-      };
-
-      let elem;
-      try {
-        // Attempat to find the element, retry until timeout
-        elem = await this.#when(findNode, this.timeout, 50);
-      } catch (error) {
-        // timeout reached
-        return null;
-      }
-
-      // wait for custom elements
-      if (elem?.localName.includes('-')) {
-        await customElements.whenDefined(elem.localName);
-      }
-
-      return elem;
-  }
-
-  /**
-   * Validates if a string is a valid import path.
-   * @private
-   * @param {string} path - The path to check.
-   * @returns {boolean}
-   */
-  #isImportable(path) {
-    if (this.#validator) return this.#validator(path);
-    const normalized = path.replace(/\\/g, '/');
-    return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
-  }
-
-  /**
-   * Helper to instantiate a value if it is a class constructor.
-   * @private
-   * @param {any} obj - The object to check.
-   * @param {...any} args - Constructor arguments.
-   * @returns {any} The instance or the original object.
-   */
-  #instantiate(obj, ...args) {
-    if (typeof obj !== 'function') return obj;
-    const isConstructor = obj.prototype && obj.prototype.constructor === obj;
-    try { return isConstructor ? new obj(...args) : obj; } catch (e) { return obj; }
-  }
-
-  /**
    * Waits for a condition to become truthy, polling at a specified interval.
    * @async
    * @private
@@ -707,6 +706,8 @@ class Loader {
       await this.wait(pollInterval);
     }
   }
+
+  // --- Getters / Setters ---
 
   /**
    * Returns an iterator of registered keys.
@@ -1083,7 +1084,7 @@ class ABind extends HTMLElement {
           } else if (!this.#bound.checked) {
             // even if bound element has a value, if not checked set value to null
             value = null;
-          } else ;
+          }
         }
 
         // Multi-select
@@ -1548,7 +1549,6 @@ class ABind extends HTMLElement {
    */
   #syncView() {
     if (this.#push) return;
-    this.#prop || this.#attr;
     const value = (this.#prop) ?
       this.#getPropertyValue(this.#model, this.#prop) :
       this.#model.getAttribute?.(this.#attr);
@@ -1598,7 +1598,6 @@ class ABind extends HTMLElement {
    * @param {any} value - The new value from the Bus.
    */
   #updateBound(value) {
-    this.#prop || this.#attr;
     this.log?.('#updateBound()', this.#logProps({value}));
     this.#updateManager.defer(this, value, (val) => {
       this.applyUpdate(this.#bound, this.#elemProp, val);
@@ -1659,8 +1658,6 @@ class ABind extends HTMLElement {
 
   // -- Getters / Setters --
 
-  // -- properties --
-
   /**
    * Checks if debug mode is enabled.
    * @returns {boolean}
@@ -1706,8 +1703,6 @@ class ABind extends HTMLElement {
    */
   get modelKey() { return this.#modelKey }
   set modelKey(value) { this.setAttribute('model', value); }
-
-  // -- attributes --
 
   /**
    * Gets/Sets the 'elem-prop' attribute.
@@ -1804,6 +1799,8 @@ class ABind extends HTMLElement {
   get target() { return this.#target }
   set target(value) { this.setAttribute('target', value); }
 }
+
+globalThis[Symbol.for('abind.update')] = ABind.update;
 
 if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);
 

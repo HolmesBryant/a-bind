@@ -4,7 +4,7 @@
  * and race-condition handling via pending resolution.
  * @file Loader.js
  * @author Holmes Bryant
- * @license GPL-3.0
+ * @license MIT
  */
 
 import PathResolver from './PathResolver.js';
@@ -26,6 +26,8 @@ export default class Loader {
    * @type {number}
    */
   timeout = 2000;
+
+  // --- Public ---
 
   /**
    * Universal registration method.
@@ -121,6 +123,117 @@ export default class Loader {
     }
   }
 
+  // --- Private ---
+
+  /**
+   * Resolves a DOM element selector.
+   * Features:
+   * - Waits for `DOMContentLoaded`.
+   * - Supports Shadow DOM piercing via `>>>` syntax.
+   * - Waits for Custom Elements to be defined.
+   * - Retries until timeout.
+   *
+   * @private
+   * @param {string} selector - The CSS selector.
+   * @param {Node} context - The root node to search within.
+   * @returns {Promise<Element|null>}
+   */
+  async #getDomElement(selector, context) {
+      if (typeof document === 'undefined') return null;
+
+      // wait for Document Ready if loading
+      if (!context || context === document) {
+        if (document.readyState === 'loading') {
+          this.#domReadyPromise ??= new Promise(r => window.addEventListener('DOMContentLoaded', r, { once: true }));
+          await this.#domReadyPromise;
+        }
+      }
+
+      const root = (context && context.getRootNode) ? context.getRootNode() : document;
+
+      const findNode = () => {
+        if (selector.includes('>>>')) {
+          const parts = selector.split('>>>').map(s => s.trim());
+          let currentRoot = root;
+          let target = null;
+          for (const part of parts) {
+            if (!currentRoot) return null;
+            const found = currentRoot.querySelector(part);
+            if (!found) return null;
+            if (part === parts[parts.length - 1]) {
+              target = found;
+            } else if (found.shadowRoot) {
+              currentRoot = found.shadowRoot;
+            } else {
+              return null;
+            }
+          }
+
+          return target;
+        }
+
+        return root.querySelector(selector);
+      };
+
+      let elem;
+      try {
+        // Attempt to find the element, retry until timeout
+        elem = await this.#when(findNode, this.timeout, 50);
+      } catch (error) {
+        // timeout reached
+        return null;
+      }
+
+      // wait for custom elements
+      if (elem?.localName.includes('-')) {
+        await customElements.whenDefined(elem.localName);
+      }
+
+      return elem;
+  }
+
+  /**
+   * Dynamically imports a module and instantiates it if it is a class.
+   *
+   * @private
+   * @param {string} path - The module path.
+   * @param {...any} args - Constructor arguments.
+   * @returns {Promise<any>}
+   */
+  async #importModule(path, ...args) {
+    try {
+      const mod = await import(path);
+      return this.#instantiate(mod.default, ...args);
+    } catch (error) {
+      throw new Error(`Loader: Failed to import module "${path}"`, { cause: error });
+    }
+  }
+
+  /**
+   * Helper to instantiate a value if it is a class constructor.
+   * @private
+   * @param {any} obj - The object to check.
+   * @param {...any} args - Constructor arguments.
+   * @returns {any} The instance or the original object.
+   */
+  #instantiate(obj, ...args) {
+    if (typeof obj !== 'function') return obj;
+    const isConstructor = obj.prototype && obj.prototype.constructor === obj;
+    try { return isConstructor ? new obj(...args) : obj; } catch (e) { return obj; }
+  }
+
+  /**
+   * Validates if a string is a valid import path.
+   * @private
+   * @param {string} path - The path to check.
+   * @returns {boolean}
+   */
+  #isImportable(path) {
+    if (this.#validator) return this.#validator(path);
+    const normalized = path.replace(/\\/g, '/');
+    return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
+  }
+
   /**
    * Routing logic for resolution strategies.
    *
@@ -179,115 +292,6 @@ export default class Loader {
   }
 
   /**
-   * Dynamically imports a module and instantiates it if it is a class.
-   *
-   * @private
-   * @param {string} path - The module path.
-   * @param {...any} args - Constructor arguments.
-   * @returns {Promise<any>}
-   */
-  async #importModule(path, ...args) {
-    try {
-      const mod = await import(path);
-      return this.#instantiate(mod.default, ...args);
-    } catch (error) {
-      throw new Error(`Loader: Failed to import module "${path}"`, { cause: error });
-    }
-  }
-
-  /**
-   * Resolves a DOM element selector.
-   * Features:
-   * - Waits for `DOMContentLoaded`.
-   * - Supports Shadow DOM piercing via `>>>` syntax.
-   * - Waits for Custom Elements to be defined.
-   * - Retries until timeout.
-   *
-   * @private
-   * @param {string} selector - The CSS selector.
-   * @param {Node} context - The root node to search within.
-   * @returns {Promise<Element|null>}
-   */
-  async #getDomElement(selector, context) {
-      if (typeof document === 'undefined') return null;
-
-      // wait for Document Ready if loading
-      if (!context || context === document) {
-        if (document.readyState === 'loading') {
-          this.#domReadyPromise ??= new Promise(r => window.addEventListener('DOMContentLoaded', r, { once: true }));
-          await this.#domReadyPromise;
-        }
-      }
-
-      const root = (context && context.getRootNode) ? context.getRootNode() : document;
-
-      const findNode = () => {
-        if (selector.includes('>>>')) {
-          const parts = selector.split('>>>').map(s => s.trim());
-          let currentRoot = root;
-          let target = null;
-          for (const part of parts) {
-            if (!currentRoot) return null;
-            const found = currentRoot.querySelector(part);
-            if (!found) return null;
-            if (part === parts[parts.length - 1]) {
-              target = found;
-            } else if (found.shadowRoot) {
-              currentRoot = found.shadowRoot;
-            } else {
-              return null;
-            }
-          }
-
-          return target;
-        }
-
-        return root.querySelector(selector);
-      };
-
-      let elem;
-      try {
-        // Attempat to find the element, retry until timeout
-        elem = await this.#when(findNode, this.timeout, 50);
-      } catch (error) {
-        // timeout reached
-        return null;
-      }
-
-      // wait for custom elements
-      if (elem?.localName.includes('-')) {
-        await customElements.whenDefined(elem.localName);
-      }
-
-      return elem;
-  }
-
-  /**
-   * Validates if a string is a valid import path.
-   * @private
-   * @param {string} path - The path to check.
-   * @returns {boolean}
-   */
-  #isImportable(path) {
-    if (this.#validator) return this.#validator(path);
-    const normalized = path.replace(/\\/g, '/');
-    return /^(\.\/|(?!\/\/)\/).*\.m?js$/.test(normalized);
-  }
-
-  /**
-   * Helper to instantiate a value if it is a class constructor.
-   * @private
-   * @param {any} obj - The object to check.
-   * @param {...any} args - Constructor arguments.
-   * @returns {any} The instance or the original object.
-   */
-  #instantiate(obj, ...args) {
-    if (typeof obj !== 'function') return obj;
-    const isConstructor = obj.prototype && obj.prototype.constructor === obj;
-    try { return isConstructor ? new obj(...args) : obj; } catch (e) { return obj; }
-  }
-
-  /**
    * Waits for a condition to become truthy, polling at a specified interval.
    * @async
    * @private
@@ -311,6 +315,8 @@ export default class Loader {
       await this.wait(pollInterval);
     }
   }
+
+  // --- Getters / Setters ---
 
   /**
    * Returns an iterator of registered keys.

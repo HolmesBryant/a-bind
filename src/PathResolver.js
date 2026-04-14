@@ -2,7 +2,7 @@
  * @file PathResolver.js
  * @description Utility for safe object path resolution and modification.
  * @author Holmes Bryant <https://github.com/HolmesBryant>
- * @license GPL-3.0
+ * @license MIT
  */
 
 /**
