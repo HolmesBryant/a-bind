@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Foo</title>
+	<script type="module" src="src/index.js"></script>
+</head>
+<body>
+
+	<input id="slider" type="range" max="100" value="50">
+
+	<a-bind
+		debug
+		throttle="1000"
+		model="dom:#slider"
+		prop="value">
+		<output>...</output>
+	</a-bind>
+</body>
+</html>

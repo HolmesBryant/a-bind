@@ -774,7 +774,7 @@ class Logger {
  * @file a-bind.js
  * @description Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @version 3.0.0
+ * @version 3.1.1
  * @license GPL-3.0
  */
 
@@ -813,6 +813,8 @@ class ABind extends HTMLElement {
   #isConnected = false;
   #model;
   #updateManager = scheduler;
+
+  #currentValue;
 
   /**
    * List o
@@ -1129,6 +1131,9 @@ class ABind extends HTMLElement {
     for (const prop of ABind.observedAttributes) {
       publicProps.push(prop.replace(/-./g, x => x[1].toUpperCase()));
     }
+    publicProps.push('modelValue');
+    publicProps.push('boundValue');
+    // publicProps
     try {
       const logger = new Logger(this, publicProps);
       return (label, obj) => {
@@ -1642,7 +1647,6 @@ class ABind extends HTMLElement {
       }
     };
 
-
     if (this.#throttle > 0) {
       if (this.#inputTimer) clearTimeout(this.#inputTimer);
       this.#inputTimer = setTimeout(() => {
@@ -1678,10 +1682,12 @@ class ABind extends HTMLElement {
   get busKey() { return this.#busKey }
 
   /**
-   * Returns the property name or attribute name being bound.
+   * Returns the model's property name or attribute name being bound.
    * @returns {string}
    */
   get property() { return this.#prop || this.#attr }
+  get boundValue() { return PathResolver.getValue(this.bound, this.elemProp) }
+  get modelValue() { return PathResolver.getValue(this.model, this.property) }
 
   /**
    * Gets or sets the actual DOM element being bound.

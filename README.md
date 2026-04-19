@@ -504,6 +504,8 @@ Open your browser console. You will see logs grouping the lifecycle events.
 
 ## Change Log
 
+v3.1.1 Exposed modelValue and boundValue in the logger.
+
 v3.1
 
 - Added globalThis[Symbol.for('abind.update')] to allow independent custom elements to trigger updates without direct imports or the overhead of customElements.get(). Usage in your project:
