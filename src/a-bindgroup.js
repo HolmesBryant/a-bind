@@ -10,6 +10,8 @@
  * @version 1.0
  */
 
+import { loader } from './Loader.js';
+
 export default class ABindgroup extends HTMLElement {
   #childObserver;
   #children = new Set();

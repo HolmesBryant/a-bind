@@ -1,12 +1,4 @@
 /**
- * Data-binding for Custom Elements and ESM Modules.
- * @file dist/abind.js
- * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @license GPL-3.0
- * @version 3.1.2
- */
-
-/**
  * A lightweight task scheduler using requestAnimationFrame.
  * Implements a "last-write-wins" strategy for batching updates.
  *
@@ -734,8 +726,8 @@ class Loader {
  * Singleton instance of the Loader.
  * @type {Loader}
  */
-const loader$1 = new Loader();
-Object.freeze(loader$1);
+const loader = new Loader();
+Object.freeze(loader);
 
 /**
  * A dedicated debugging utility for a-bind instances.
@@ -789,8 +781,8 @@ class Logger {
 /**
  * Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @version 3.1.2
  * @license GPL-3.0
+ * @version 3.1.2
  */
 
 
@@ -1513,14 +1505,14 @@ class ABind extends HTMLElement {
 
     // If bindings are in a custom element's shadow dom
     if (this.#modelKey === "this") {
-      this.#model = await loader$1.load(this.getRootNode().host, this);
+      this.#model = await loader.load(this.getRootNode().host, this);
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
       this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     }
 
     try {
-      if (!this.#model) this.#model = await loader$1.load(this.#modelKey, this);
+      if (!this.#model) this.#model = await loader.load(this.#modelKey, this);
       this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     } catch (error) {
@@ -1539,7 +1531,7 @@ class ABind extends HTMLElement {
   async #resolveTarget(selector) {
     this.log?.('#resolveTarget()', this.#logProps({selector}));
     try {
-      return await loader$1.load(selector, this);
+      return await loader.load(selector, this);
     } catch (error) {
       console.error(`a-bind: Failed to load target element. ${this.target}`, this, error);
       return;
@@ -1841,6 +1833,7 @@ if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);
  * @license GPL-3.0
  * @version 1.0
  */
+
 
 class ABindgroup extends HTMLElement {
   #childObserver;
@@ -2183,7 +2176,7 @@ class ARepeat extends HTMLElement {
 
       case 'model':
         const currentModelId = ++this.#modelLoadId;
-        loader$1.load(newval)
+        loader.load(newval)
         .then( model => {
           if (this.#modelLoadId !== currentModelId) return;
           if (!this.#isConnected) return;
@@ -2211,7 +2204,7 @@ class ARepeat extends HTMLElement {
 
         const currentScopeId = ++this.#scopeLoadId;
 
-        loader$1.load(newval)
+        loader.load(newval)
         .then( scope => {
           if (this.#scopeLoadId !== currentScopeId) return;
           if (!this.#isConnected) return;
@@ -2258,7 +2251,7 @@ class ARepeat extends HTMLElement {
     // Resolve Target Element
     if (this.#target) {
       try {
-        this.#targetElem = await loader$1.load(this.#target, this);
+        this.#targetElem = await loader.load(this.#target, this);
       } catch (error) {
         console.error(`a-repeat: Failed to load target element. ${this.target}`, this, error);
         return;
@@ -2517,7 +2510,7 @@ class ARepeat extends HTMLElement {
 
     // External Single Template
     if (this.#template) {
-      const tmpl = await loader$1.load(this.#template, this);
+      const tmpl = await loader.load(this.#template, this);
       if (tmpl) this.#registerTemplate(tmpl);
     }
 
@@ -2979,4 +2972,4 @@ class ARepeat extends HTMLElement {
 
 if (!customElements.get('a-repeat')) customElements.define('a-repeat', ARepeat);
 
-export { ABindgroup, ARepeat, Logger, PathResolver, crosstownBus, ABind as default, loader$1 as loader, scheduler };
+export { ABindgroup, ARepeat, Logger, PathResolver, crosstownBus, ABind as default, loader, scheduler };
