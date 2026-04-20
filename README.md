@@ -120,7 +120,7 @@ The core element that creates a link between a data source (Model) and a DOM ele
 | event     | input   | The DOM event that triggers a model update. |
 | func      | null    | The name of a function in the model. ABind will invoke this function and pass an Event object as the sole argument.
 | target    | null    | A CSS selector to find the element to bind to. If omitted, binds to the first child.  |
-| throttle  | 0       | Time in ms to debounce input/output updates.  |
+| throttle  | 0       | Time in ms to debounce model updates.  |
 | pull      | false   | If present, only reads FROM the MODEL (One-way: MODEL -> DOM).  |
 | push      | false   | If present, only writes TO the MODEL (One-way: DOM -> MODEL). |
 | once      | false   | Update the DOM once on load, then stop listening but continue to update the model (unless pull is present)  |
@@ -130,7 +130,9 @@ The core element that creates a link between a data source (Model) and a DOM ele
 
 Because a-bind uses a "non-intrusive" approach (it doesn't use Proxies to wrap your original objects), standard JavaScript assignments (e.g., myModel.message = 'New') will not automatically trigger the UI to update.
 
-You must notify the view of changes made via JavaScript using the update helper. There are two ways to do this:
+**Note:** UI interactions like typing in an input, automatically handle this internally (unless you transform the data type).
+
+You must notify the view of changes made via JavaScript using the update helper. There are a few ways to do this:
 
 #### Direct Import (Standard)
 
@@ -164,7 +166,18 @@ myModel.count = 5;
 globalThis[abindUpdate]?.(myModel, 'count', 5);
 ```
 
-**Note:** UI interactions like typing in an input, automatically handle this internally (unless you transform the data type).
+#### Define Global Variable
+
+You can also define a global variable for ABind.update ( not recommended ).
+
+```html
+<script type="module">
+  import ABind from './path/to/abind.min.js';
+  window.update = ABind.update;
+</script>
+```
+
+Then announce updates when the model's property changes: `window.update(this, 'propertyName', value)`
 
 ### Basic Two-Way Binding
 
@@ -278,7 +291,7 @@ When binding to boolean values or non-input elements, you must specify the corre
 </a-bind>
 ```
 
-#### CSS Styles
+### CSS Styles
 
 You can bind directly to CSS variables or style properties.
 
@@ -293,6 +306,37 @@ You can bind directly to CSS variables or style properties.
 
 <a-bind model="dom:#my-custom-element" prop="--header-color">
   <input type="color">
+</a-bind>
+```
+
+## Using the throttle attribute
+
+The 'throttle' attribute delays the View-to-Model update (or function execution) by a specified number of milliseconds. Technically, it behaves as a debounce. The update or function will only execute after the user stops interacting with the input for the specified duration.
+
+**Why use it?**
+It prevents performance bottlenecks and excessive network requests when a user is rapidly typing in text fields (e.g., search bars, auto-save forms).
+
+### Examples ###
+
+1. Delaying Model Updates (Auto-save)
+
+The model's bio property will only update 1000ms (1 second) after the user stops typing.
+
+```html
+<!-- Updates 'user.bio' 1 second after typing stops -->
+<a-bind model="user" prop="bio" throttle="1000">
+  <textarea placeholder="Tell us about yourself..."></textarea>
+</a-bind>
+```
+
+2. Delaying Function Execution (Search)
+
+The fetchResults function will only run 500ms after the user pauses, preventing a flood of API calls on every single keystroke.
+
+```html
+<!-- Calls 'api.fetchResults(event)' 500ms after typing stops -->
+<a-bind model="api" func="fetchResults" throttle="500">
+  <input type="text" placeholder="Search...">
 </a-bind>
 ```
 
@@ -503,6 +547,8 @@ Struggling to see why a value isn't updating? Add the "debug" attribute to any a
 Open your browser console. You will see logs grouping the lifecycle events.
 
 ## Change Log
+
+v3.1.2 Tweaked throttle (debounce) functionality to account for certain edge cases.
 
 v3.1.1 Exposed modelValue and boundValue in the logger.
 

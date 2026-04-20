@@ -1,15 +1,13 @@
 /**
- * @file PathResolver.js
- * @description Utility for safe object path resolution and modification.
- * @author Holmes Bryant <https://github.com/HolmesBryant>
- * @license MIT
- */
-
-/**
  * Static utility class for resolving dot-notation paths on objects and DOM elements.
  * Includes caching, security checks against prototype pollution, and special handling
  * for CSS variables and style properties.
+ *
+ * @author Holmes Bryant <https://github.com/HolmesBryant>
+ * @license GPL-3.0
+ * @version 1.0
  */
+
 export default class PathResolver {
   /**
    * Internal LRU cache for parsed path arrays.

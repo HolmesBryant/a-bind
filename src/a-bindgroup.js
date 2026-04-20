@@ -1,18 +1,15 @@
 /**
- * @file a-bindgroup.js
- * @author Holmes Bryant <https://github.com/HolmesBryant>
- * @license GPL-3.0
- */
-
-import { loader } from './Loader.js';
-
-/**
  * A Custom Element (<a-bindgroup>) that acts as a context provider for
  * child <a-bind> and <a-repeat> elements. It allows setting a shared 'model',
  * 'prop', or 'attr' on a parent level to avoid repetition on children.
  *
  * @extends HTMLElement
+ *
+ * @author Holmes Bryant <https://github.com/HolmesBryant>
+ * @license GPL-3.0
+ * @version 1.0
  */
+
 export default class ABindgroup extends HTMLElement {
   #childObserver;
   #children = new Set();

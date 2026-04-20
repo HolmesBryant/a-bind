@@ -1,9 +1,10 @@
 /**
- * @file src/Schedule.js
- * @description A lightweight task scheduler using requestAnimationFrame.
+ * A lightweight task scheduler using requestAnimationFrame.
  * Implements a "last-write-wins" strategy for batching updates.
+ *
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
+ * @version 1.0
  */
 export default class Schedule {
   /**

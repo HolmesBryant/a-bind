@@ -1,18 +1,17 @@
 /**
+ * A utility class for resolving dependencies, managing a registry of objects,
+ * and retrieving DOM elements (including Shadow DOM piercing).
  * Handles loading and caching of modules and data models.
  * Features strict protocol handling, shadow DOM piercing, namespace isolation,
  * and race-condition handling via pending resolution.
- * @file Loader.js
+ *
  * @author Holmes Bryant
- * @license MIT
+ * @license GPL-3.0
+ * @version 1.0
  */
 
 import PathResolver from './PathResolver.js';
 
-/**
- * A utility class for resolving dependencies, managing a registry of objects,
- * and safely retrieving DOM elements (including Shadow DOM piercing).
- */
 export default class Loader {
   #domReadyPromise = null;
   #namespace = null;

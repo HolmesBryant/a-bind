@@ -1,8 +1,14 @@
 /**
- * @file a-repeat.js
- * @description A DOM-based template engine and list renderer.
+ * A DOM-based template engine and list renderer.
+ * A Custom Element (<a-repeat>) that iterates over an array (from a model or property)
+ * and renders a template for each item. Supports data binding, nested scopes,
+ * keyed rendering, and external templates.
+ *
+ * @extends HTMLElement
+ *
  * @author Holmes Bryant
  * @license GPL-3.0
+ * @version 1.0
  */
 
 import Bus, { crosstownBus } from './Bus.js';

@@ -5,17 +5,49 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Foo</title>
 	<script type="module" src="src/index.js"></script>
+	<script type="module">
+		import ABind from './src/a-bind.js';
+		window.abind = ABind;
+		// console.log(window.abind)
+	</script>
 </head>
 <body>
 
-	<input id="slider" type="range" max="100" value="50">
+	<input
+		id="slider"
+		type="range"
+		max="100"
+		value="50"
+		oninput="window.abind.update(this, 'value', `${this.value}px`)">
+
+	<div id="slider-output">
+		<a-bind
+			model="dom:#slider"
+			prop="value">
+			<output>...</output>px
+		</a-bind>
+	</div>
 
 	<a-bind
-		debug
-		throttle="1000"
+		pull
 		model="dom:#slider"
-		prop="value">
-		<output>...</output>
+		prop="value"
+		elem-prop="style.width">
+
+		<div id="resizable" style="border:1px solid lime">
+			Anim laborum aute quis enim in dolore adipisicing commodo cillum.
+		</div>
+	</a-bind>
+
+	<hr>
+
+	<input id="color" type="color">
+
+	<a-bind
+		model="dom:#color"
+		prop="value"
+		elem-prop="style.background">
+		<div>Anim laborum aute quis enim in dolore adipisicing commodo cillum.</div>
 	</a-bind>
 </body>
 </html>

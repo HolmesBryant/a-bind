@@ -1,9 +1,8 @@
 /**
- * @file a-bind.js
- * @description Data-binding for Custom Elements and ESM Modules.
+ * Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @version 3.1.1
  * @license GPL-3.0
+ * @version 3.1.2
  */
 
 import { scheduler } from './Schedule.js';
@@ -20,12 +19,6 @@ export {
   Logger
 };
 
-/**
- * A Custom Element (<a-bind>) that provides two-way data binding between
- * JavaScript models/variables and DOM elements.
- *
- * @extends HTMLElement
- */
 export default class ABind extends HTMLElement {
   #debug;
   #elemProp = 'value';
@@ -829,6 +822,11 @@ export default class ABind extends HTMLElement {
       this.#abortController = null;
     }
 
+    if (this.#inputTimer) {
+      clearTimeout(this.#inputTimer);
+      this.#inputTimer = null;
+    }
+
     this.#updateManager.cancel(this);
     if (this.#busKey) {
       this.#updateManager.cancel(`abind-update::${this.#busKey}`);
@@ -860,7 +858,6 @@ export default class ABind extends HTMLElement {
    */
   #updateModel(value, event) {
     const prop = this.#prop || this.#attr;
-    if (this.#func) return this.#executeFunction(event);
 
     // auto convert text values that look like objects or arrays
     if (typeof value === 'string' && (value.includes('[') || value.includes('{'))) {
@@ -878,8 +875,13 @@ export default class ABind extends HTMLElement {
     }
 
     // Use key for Scheduler to ensure batching works
-    const taskKey = `abind-update::${this.#busKey}`;
+    // For functions, use 'this' to prevent batching different elements calling different functions
+    const taskKey = this.#func ? this : `abind-update::${this.#busKey}`;
+    // const taskKey = `abind-update::${this.#busKey}`;
+
     const doUpdate = (newValue) => {
+      if (this.#func) return this.#executeFunction(event);
+
       const currentValue = this.#getPropertyValue(this.#model, prop);
       const hasChanged = this.#parsedValue(newValue, this.#bound) !== this.#parsedValue(currentValue, this.#bound);
       if (hasChanged && newValue !== undefined) {
@@ -891,8 +893,9 @@ export default class ABind extends HTMLElement {
     if (this.#throttle > 0) {
       if (this.#inputTimer) clearTimeout(this.#inputTimer);
       this.#inputTimer = setTimeout(() => {
-        this.#updateManager.defer(taskKey, value, doUpdate, this);
+        this.#updateManager.defer(taskKey, value, doUpdate);
         this.#inputTimer = null;
+        console.log('throttled', this.#throttle)
       }, this.#throttle)
     } else {
       this.#updateManager.defer(taskKey, value, doUpdate, this);
@@ -929,6 +932,7 @@ export default class ABind extends HTMLElement {
   get property() { return this.#prop || this.#attr }
   get boundValue() { return PathResolver.getValue(this.bound, this.elemProp) }
   get modelValue() { return PathResolver.getValue(this.model, this.property) }
+  // get modelValue() { return [this.model, this.property] }
 
   /**
    * Gets or sets the actual DOM element being bound.
@@ -1036,7 +1040,7 @@ export default class ABind extends HTMLElement {
    * @type {number}
    */
   get throttle() { return this.#throttle }
-  set throttle(value) { this.setAttribute('throttle', parseInt(value)) }
+  set throttle(value) { this.setAttribute('throttle', parseInt(value) ||0) }
 
   /**
    * Gets/Sets the 'target' attribute.

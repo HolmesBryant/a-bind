@@ -1,9 +1,18 @@
 /**
- * @file src/Schedule.js
- * @description A lightweight task scheduler using requestAnimationFrame.
- * Implements a "last-write-wins" strategy for batching updates.
+ * Data-binding for Custom Elements and ESM Modules.
+ * @file dist/abind.js
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
+ * @version 3.1.2
+ */
+
+/**
+ * A lightweight task scheduler using requestAnimationFrame.
+ * Implements a "last-write-wins" strategy for batching updates.
+ *
+ * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
+ * @license GPL-3.0
+ * @version 1.0
  */
 class Schedule {
   /**
@@ -80,11 +89,13 @@ const scheduler = new Schedule();
 Object.freeze(scheduler);
 
 /**
- * We're all bozos on this Bus
+ * We're all bozos on this Bus.
+ * A simple event bus implementation for managing pub/sub patterns.
+ * Supports unique key generation for object identity tracking.
  *
- * @file Bus.js
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
+ * @version 1.0
  */
 
 /**
@@ -233,17 +244,15 @@ const crosstownBus = new Bus();
 Object.freeze(crosstownBus);
 
 /**
- * @file PathResolver.js
- * @description Utility for safe object path resolution and modification.
- * @author Holmes Bryant <https://github.com/HolmesBryant>
- * @license MIT
- */
-
-/**
  * Static utility class for resolving dot-notation paths on objects and DOM elements.
  * Includes caching, security checks against prototype pollution, and special handling
  * for CSS variables and style properties.
+ *
+ * @author Holmes Bryant <https://github.com/HolmesBryant>
+ * @license GPL-3.0
+ * @version 1.0
  */
+
 class PathResolver {
   /**
    * Internal LRU cache for parsed path arrays.
@@ -391,19 +400,18 @@ class PathResolver {
 }
 
 /**
+ * A utility class for resolving dependencies, managing a registry of objects,
+ * and retrieving DOM elements (including Shadow DOM piercing).
  * Handles loading and caching of modules and data models.
  * Features strict protocol handling, shadow DOM piercing, namespace isolation,
  * and race-condition handling via pending resolution.
- * @file Loader.js
+ *
  * @author Holmes Bryant
- * @license MIT
+ * @license GPL-3.0
+ * @version 1.0
  */
 
 
-/**
- * A utility class for resolving dependencies, managing a registry of objects,
- * and safely retrieving DOM elements (including Shadow DOM piercing).
- */
 class Loader {
   #domReadyPromise = null;
   #namespace = null;
@@ -726,15 +734,16 @@ class Loader {
  * Singleton instance of the Loader.
  * @type {Loader}
  */
-const loader = new Loader();
-Object.freeze(loader);
+const loader$1 = new Loader();
+Object.freeze(loader$1);
 
 /**
- * @file Logger.js
- * @description A dedicated debugging utility for a-bind instances.
+ * A dedicated debugging utility for a-bind instances.
  * Provides formatted console output for inspecting binding state, model values, and attributes.
+ *
  * @author Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
+ * @version 1.0
  */
 class Logger {
 	/**
@@ -744,8 +753,15 @@ class Logger {
 	host;
 
 	/**
+	 * Array of property names on host
+	 * @type {array}
+	 */
+	props;
+
+	/**
    * Creates an instance of Logger.
    * @param {HTMLElement} host - The a-bind instance to inspect.
+   * @param {array} props - Array of host property names.
    */
 	constructor(host, props) {
 		this.host = host;
@@ -771,20 +787,13 @@ class Logger {
 }
 
 /**
- * @file a-bind.js
- * @description Data-binding for Custom Elements and ESM Modules.
+ * Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
- * @version 3.1.1
+ * @version 3.1.2
  * @license GPL-3.0
  */
 
 
-/**
- * A Custom Element (<a-bind>) that provides two-way data binding between
- * JavaScript models/variables and DOM elements.
- *
- * @extends HTMLElement
- */
 class ABind extends HTMLElement {
   #debug;
   #elemProp = 'value';
@@ -1504,14 +1513,14 @@ class ABind extends HTMLElement {
 
     // If bindings are in a custom element's shadow dom
     if (this.#modelKey === "this") {
-      this.#model = await loader.load(this.getRootNode().host, this);
+      this.#model = await loader$1.load(this.getRootNode().host, this);
       this.#modelKey = Object.getPrototypeOf(this.#model).constructor.name;
       this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     }
 
     try {
-      if (!this.#model) this.#model = await loader.load(this.#modelKey, this);
+      if (!this.#model) this.#model = await loader$1.load(this.#modelKey, this);
       this.log?.('#resolveModel()', this.#logProps({idx}));
       return true;
     } catch (error) {
@@ -1530,7 +1539,7 @@ class ABind extends HTMLElement {
   async #resolveTarget(selector) {
     this.log?.('#resolveTarget()', this.#logProps({selector}));
     try {
-      return await loader.load(selector, this);
+      return await loader$1.load(selector, this);
     } catch (error) {
       console.error(`a-bind: Failed to load target element. ${this.target}`, this, error);
       return;
@@ -1588,6 +1597,11 @@ class ABind extends HTMLElement {
       this.#abortController = null;
     }
 
+    if (this.#inputTimer) {
+      clearTimeout(this.#inputTimer);
+      this.#inputTimer = null;
+    }
+
     this.#updateManager.cancel(this);
     if (this.#busKey) {
       this.#updateManager.cancel(`abind-update::${this.#busKey}`);
@@ -1619,7 +1633,6 @@ class ABind extends HTMLElement {
    */
   #updateModel(value, event) {
     const prop = this.#prop || this.#attr;
-    if (this.#func) return this.#executeFunction(event);
 
     // auto convert text values that look like objects or arrays
     if (typeof value === 'string' && (value.includes('[') || value.includes('{'))) {
@@ -1637,8 +1650,13 @@ class ABind extends HTMLElement {
     }
 
     // Use key for Scheduler to ensure batching works
-    const taskKey = `abind-update::${this.#busKey}`;
+    // For functions, use 'this' to prevent batching different elements calling different functions
+    const taskKey = this.#func ? this : `abind-update::${this.#busKey}`;
+    // const taskKey = `abind-update::${this.#busKey}`;
+
     const doUpdate = (newValue) => {
+      if (this.#func) return this.#executeFunction(event);
+
       const currentValue = this.#getPropertyValue(this.#model, prop);
       const hasChanged = this.#parsedValue(newValue, this.#bound) !== this.#parsedValue(currentValue, this.#bound);
       if (hasChanged && newValue !== undefined) {
@@ -1650,8 +1668,9 @@ class ABind extends HTMLElement {
     if (this.#throttle > 0) {
       if (this.#inputTimer) clearTimeout(this.#inputTimer);
       this.#inputTimer = setTimeout(() => {
-        this.#updateManager.defer(taskKey, value, doUpdate, this);
+        this.#updateManager.defer(taskKey, value, doUpdate);
         this.#inputTimer = null;
+        console.log('throttled', this.#throttle);
       }, this.#throttle);
     } else {
       this.#updateManager.defer(taskKey, value, doUpdate, this);
@@ -1688,6 +1707,7 @@ class ABind extends HTMLElement {
   get property() { return this.#prop || this.#attr }
   get boundValue() { return PathResolver.getValue(this.bound, this.elemProp) }
   get modelValue() { return PathResolver.getValue(this.model, this.property) }
+  // get modelValue() { return [this.model, this.property] }
 
   /**
    * Gets or sets the actual DOM element being bound.
@@ -1795,7 +1815,7 @@ class ABind extends HTMLElement {
    * @type {number}
    */
   get throttle() { return this.#throttle }
-  set throttle(value) { this.setAttribute('throttle', parseInt(value)); }
+  set throttle(value) { this.setAttribute('throttle', parseInt(value) ||0); }
 
   /**
    * Gets/Sets the 'target' attribute.
@@ -1811,19 +1831,17 @@ globalThis[Symbol.for('abind.update')] = ABind.update;
 if (!customElements.get('a-bind')) customElements.define('a-bind', ABind);
 
 /**
- * @file a-bindgroup.js
- * @author Holmes Bryant <https://github.com/HolmesBryant>
- * @license GPL-3.0
- */
-
-
-/**
  * A Custom Element (<a-bindgroup>) that acts as a context provider for
  * child <a-bind> and <a-repeat> elements. It allows setting a shared 'model',
  * 'prop', or 'attr' on a parent level to avoid repetition on children.
  *
  * @extends HTMLElement
+ *
+ * @author Holmes Bryant <https://github.com/HolmesBryant>
+ * @license GPL-3.0
+ * @version 1.0
  */
+
 class ABindgroup extends HTMLElement {
   #childObserver;
   #children = new Set();
@@ -2079,10 +2097,16 @@ class ABindgroup extends HTMLElement {
 if (!customElements.get('a-bindgroup')) customElements.define('a-bindgroup', ABindgroup);
 
 /**
- * @file a-repeat.js
- * @description A DOM-based template engine and list renderer.
+ * A DOM-based template engine and list renderer.
+ * A Custom Element (<a-repeat>) that iterates over an array (from a model or property)
+ * and renders a template for each item. Supports data binding, nested scopes,
+ * keyed rendering, and external templates.
+ *
+ * @extends HTMLElement
+ *
  * @author Holmes Bryant
  * @license GPL-3.0
+ * @version 1.0
  */
 
 
@@ -2159,7 +2183,7 @@ class ARepeat extends HTMLElement {
 
       case 'model':
         const currentModelId = ++this.#modelLoadId;
-        loader.load(newval)
+        loader$1.load(newval)
         .then( model => {
           if (this.#modelLoadId !== currentModelId) return;
           if (!this.#isConnected) return;
@@ -2187,7 +2211,7 @@ class ARepeat extends HTMLElement {
 
         const currentScopeId = ++this.#scopeLoadId;
 
-        loader.load(newval)
+        loader$1.load(newval)
         .then( scope => {
           if (this.#scopeLoadId !== currentScopeId) return;
           if (!this.#isConnected) return;
@@ -2234,7 +2258,7 @@ class ARepeat extends HTMLElement {
     // Resolve Target Element
     if (this.#target) {
       try {
-        this.#targetElem = await loader.load(this.#target, this);
+        this.#targetElem = await loader$1.load(this.#target, this);
       } catch (error) {
         console.error(`a-repeat: Failed to load target element. ${this.target}`, this, error);
         return;
@@ -2493,7 +2517,7 @@ class ARepeat extends HTMLElement {
 
     // External Single Template
     if (this.#template) {
-      const tmpl = await loader.load(this.#template, this);
+      const tmpl = await loader$1.load(this.#template, this);
       if (tmpl) this.#registerTemplate(tmpl);
     }
 
@@ -2955,4 +2979,4 @@ class ARepeat extends HTMLElement {
 
 if (!customElements.get('a-repeat')) customElements.define('a-repeat', ARepeat);
 
-export { ABindgroup, ARepeat, Logger, PathResolver, crosstownBus, ABind as default, loader, scheduler };
+export { ABindgroup, ARepeat, Logger, PathResolver, crosstownBus, ABind as default, loader$1 as loader, scheduler };

@@ -1,9 +1,10 @@
 /**
- * @file Logger.js
- * @description A dedicated debugging utility for a-bind instances.
+ * A dedicated debugging utility for a-bind instances.
  * Provides formatted console output for inspecting binding state, model values, and attributes.
+ *
  * @author Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
+ * @version 1.0
  */
 export default class Logger {
 	/**
@@ -13,8 +14,15 @@ export default class Logger {
 	host;
 
 	/**
+	 * Array of property names on host
+	 * @type {array}
+	 */
+	props;
+
+	/**
    * Creates an instance of Logger.
    * @param {HTMLElement} host - The a-bind instance to inspect.
+   * @param {array} props - Array of host property names.
    */
 	constructor(host, props) {
 		this.host = host;

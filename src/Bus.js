@@ -1,9 +1,11 @@
 /**
- * We're all bozos on this Bus
+ * We're all bozos on this Bus.
+ * A simple event bus implementation for managing pub/sub patterns.
+ * Supports unique key generation for object identity tracking.
  *
- * @file Bus.js
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
+ * @version 1.0
  */
 
 /**
