@@ -2,7 +2,7 @@
  * Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
- * @version 3.1.2
+ * @version 3.1.3
  */
 
 import { scheduler } from './Schedule.js';
@@ -268,6 +268,12 @@ export default class ABind extends HTMLElement {
     if (name in target) {
       try {
         target[name] = parsedValue;
+        // browser prevented setting value because invalid value.
+        // try converting value to float.
+        if ((target.type === 'number' || target.type === 'range') && !target[name]) {
+          const val = parseFloat(parsedValue.replace(/[^.\d]/g, ''));
+          target[name] = val;
+        }
       } catch (error) {
         target.setAttribute(name, value);
       }
