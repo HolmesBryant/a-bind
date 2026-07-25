@@ -47,11 +47,15 @@ If you are binding data inside the shadow DOM of a custom element, use "this" as
 export class CustomElement extends HTMLElement {
   foo = 'foo';
 
-  static template = `
-    <a-bind model="this" prop="foo">
-      <input>
-    </a-bind>
-  `;
+  static template = document.createElement('template');
+
+  static {
+    this.template.innerHTML = `
+      <a-bind model="this" prop="foo">
+        <input>
+      </a-bind>
+    `;
+  }
 
   ....
 }
@@ -545,6 +549,14 @@ Struggling to see why a value isn't updating? Add the "debug" attribute to any a
 ```
 
 Open your browser console. You will see logs grouping the lifecycle events.
+
+## Edge Cases
+
+### Model updating twice
+
+There is an edge case where the model will update twice if you have an html element which is bound to a model property and you have a click or pointerdown event listener attached to the bound element's parent (or window or document) which also updates the same property.
+
+One solution is to add a "updateBound" property to your model. In the event listener callback, set `updateBound` to `false` before you change the property value. Then wherever in your model you invoke `ABind.update` or `globalThis[abindUpdate]`, first check if `updateBound` is `true`.
 
 ## Change Log
 
