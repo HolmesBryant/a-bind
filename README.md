@@ -143,7 +143,7 @@ You must notify the view of changes made via JavaScript using the update helper.
 Best for applications where you control the bundling and dependencies.
 
 ```javascript
-import ABind from 'path/to/a-bind.min.js';
+import ABind from './path/to/a-bind.min.js';
 
 const myModel = { count: 0 };
 
@@ -159,7 +159,7 @@ ABind.update(myModel, 'count', 5);
 If you are building standalone custom elements or classes and don't want to hard-code an `import` dependency, use the globally exposed Symbol. This executes instantly if a-bind is loaded, and safely does nothing if it isn't.
 
 ```javascript
-// Look up the symbol once per file
+// Look up the symbol
 const abindUpdate = Symbol.for('abind.update');
 
 const myModel = { count: 0 };
