@@ -8,7 +8,7 @@
  *
  * @author Holmes Bryant
  * @license GPL-3.0
- * @version 1.0
+ * @version 1.5
  */
 
 import Bus, { crosstownBus } from './Bus.js';
@@ -29,6 +29,7 @@ const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'ftp:']
  */
 export default class ARepeat extends HTMLElement {
   // -- Attributes --
+  #append = false;
   #debug;
   #key;
   #model;
@@ -41,13 +42,14 @@ export default class ARepeat extends HTMLElement {
   // -- Properties --
   #data = [];
   #defaultTemplate;
+  #implicitTemplate;
   #isConnected = false;
+  #modelLoadId = 0;
+  #ownedNodes = [];
+  #scopeLoadId = 0;
   #targetElem;
   #templateMap = new Map();
   #unsubscribe;
-  #modelLoadId = 0;
-  #scopeLoadId = 0;
-  #implicitTemplate;
 
   /**
    * List of attributes to observe for changes.
@@ -55,6 +57,7 @@ export default class ARepeat extends HTMLElement {
    * @returns {string[]} ['key', 'model', 'prop', 'scope', 'target', 'template', 'templates']
    */
   static observedAttributes = [
+    'append',
     'key',
     'model',
     'prop',
@@ -83,6 +86,9 @@ export default class ARepeat extends HTMLElement {
   attributeChangedCallback(attr, oldval, newval) {
     if (oldval === newval) return;
     switch (attr) {
+      case 'append':
+        this.#append = this.hasAttribute(attr);
+        break;
       case 'key':
         this.#key = newval;
         break;
@@ -189,6 +195,7 @@ export default class ARepeat extends HTMLElement {
     this.#isConnected = false;
     this.#cleanup();
     this.#targetElem = null;
+    this.#ownedNodes = [];
     this.log?.('disconnectedCallback()', this.#logProps());
   }
 
@@ -602,23 +609,27 @@ export default class ARepeat extends HTMLElement {
     if (this.#key) {
       const keyMap = new Map();
       const children = Array.from(parent.children);
+      const offset = this.#append
+        ? children.filter(c => c.__arepeat_owner !== this).length
+        : 0;
 
       // Snapshot existing DOM nodes by Key
       children.forEach(child => {
-        if (child.__arepeat_key !== undefined) {
+        if (child.__arepeat_key !== undefined && (!this.#append || child.__arepeat_owner === this)) {
           keyMap.set(child.__arepeat_key, child);
         }
       });
 
       // Iterate new data: Move, Update, or Create
       data.forEach((item, index) => {
-        const itemVal = PathResolver.getValue(item, this.#key);
+        const itemVal = ((this.#key === 'item' || this.#key === 'this') && (typeof item !== 'object' || item === null))
+          ? item
+          : PathResolver.getValue(item, this.#key);
         const itemKey = (itemVal !== undefined && itemVal !== null) ? String(itemVal) : null;
 
         if (itemKey === null) {
-          // Fallback if key missing in data
           const frag = createNode(item, index);
-          if (frag) parent.insertBefore(frag, parent.children[index] || null);
+          if (frag) parent.insertBefore(frag, parent.children[offset + index] || null);
           this.log?.('#render()', this.#logProps({data}));
           return;
         }
@@ -626,64 +637,84 @@ export default class ARepeat extends HTMLElement {
         let node = keyMap.get(itemKey);
 
         if (node) {
-          // reuse if element exists
-          keyMap.delete(itemKey); // Mark as used
+          keyMap.delete(itemKey);
 
-          // Move if position is different
-          if (parent.children[index] !== node) {
-            parent.insertBefore(node, parent.children[index] || null);
+          if (parent.children[offset + index] !== node) {
+            parent.insertBefore(node, parent.children[offset + index] || null);
           }
 
-          // Update Context: If the object reference changed, update
-          // child bindings (a-bind/a-repeat) within this node.
           if (node.model !== item) {
             node.model = item;
             const boundChildren = node.querySelectorAll('a-bind, a-repeat');
             for (const child of boundChildren) {
-              // avoid crossing into nested repeat scopes
               if (!child.closest('a-repeat') || child.closest('a-repeat') === this) {
                 child.model = item;
               }
             }
           }
         } else {
-          // create New Element
           const frag = createNode(item, index);
           if (frag) {
-            // tag the root element with the key to find it later.
-            // Note: This assumes the template produces a single root Element.
             const element = frag.firstElementChild;
             if (element) {
               element.__arepeat_key = itemKey;
-              element.model = item; // Store model ref on DOM
+              element.__arepeat_owner = this;
+              element.model = item;
             }
-            parent.insertBefore(frag, parent.children[index] || null);
+            parent.insertBefore(frag, parent.children[offset + index] || null);
           }
         }
       });
 
-      // Remove nodes whose keys are no longer in the data
       keyMap.forEach(node => node.remove());
       this.log?.('#render()', this.#logProps({data}));
       return;
     }
 
     // Fallback, index-based rendering
+    if (this.#append) {
+      if (this.#ownedNodes.length === oldData.length) {
+        while (this.#ownedNodes.length > data.length) {
+          this.#ownedNodes.pop().remove();
+        }
 
-    // only optimize if the current child count matches the previous data length.
+        data.forEach((item, index) => {
+          if (index < oldData.length && item === oldData[index]) return;
+          const frag = createNode(item, index);
+          if (!frag) return;
+          const nodes = Array.from(frag.childNodes);
+          if (index < this.#ownedNodes.length) {
+            this.#ownedNodes[index].replaceWith(frag);
+            this.#ownedNodes.splice(index, 1, ...nodes);
+          } else {
+            parent.append(frag);
+            this.#ownedNodes.push(...nodes);
+          }
+        });
+      } else {
+        this.#ownedNodes.forEach(node => node.remove());
+        const fragment = document.createDocumentFragment();
+        data.forEach((item, index) => {
+          const node = createNode(item, index);
+          if (node) fragment.append(node);
+        });
+        this.#ownedNodes = Array.from(fragment.childNodes);
+        parent.append(fragment);
+      }
+      this.log?.('#render()', this.#logProps({data}));
+      return;
+    }
+
     const canOptimize = parent.children.length === oldData.length;
 
     if (canOptimize) {
       const children = Array.from(parent.children);
 
-      // Remove excess DOM nodes if the new list is shorter
       while (children.length > data.length) {
         children.pop().remove();
       }
 
-      // Update existing items or Append new ones
       data.forEach((item, index) => {
-        // If data reference is identical, skip
         if (index < oldData.length && item === oldData[index]) {
           this.log?.('#render()', this.#logProps({data}));
           return;
@@ -692,16 +723,13 @@ export default class ARepeat extends HTMLElement {
         const newNode = createNode(item, index);
         if (newNode) {
           if (index < children.length) {
-            // Replace changed item in place
             children[index].replaceWith(newNode);
           } else {
-            // Append new item
             parent.append(newNode);
           }
         }
       });
     } else {
-      // Full Re-render for templates with multiple root nodes or length mismatch
       const fragment = document.createDocumentFragment();
       data.forEach((item, index) => {
         const node = createNode(item, index);
@@ -783,6 +811,9 @@ export default class ARepeat extends HTMLElement {
    // --- Public ---
 
   // --- Getters / Setters ---
+
+  get append() { return this.#append }
+  set append(value) { this.toggleAttribute('append', !!value) }
 
   get debug() { return this.hasAttribute('debug') }
   set debug(value) { this.setAttribute('debug', !!value) }

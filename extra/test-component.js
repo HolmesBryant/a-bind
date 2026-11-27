@@ -8,6 +8,7 @@ export class TestComponent extends HTMLElement {
   textarea = "Initial content.";
   date = "1914-12-25";
   selected = "bar";
+  selected2 = "";
   selectMulti = ['foo', 'baz'];
   checkbox = 'foo';
   checkboxBool = false;
@@ -21,6 +22,7 @@ export class TestComponent extends HTMLElement {
   editable = "<p>Eiusmod magna eiusmod anim</p>";
 
   optionsA = [
+    {value: '', label: 'Choose...'},
     {value: 'foo', label: 'Foo!'},
     {value: 'bar', label: 'Bar!'},
     {value: 'baz', label: 'Baz!'}
@@ -77,13 +79,6 @@ export class TestComponent extends HTMLElement {
               <slot name="input-code">input code</slot>
             </div>
           </div><!-- /row -->
-
-          <div class="flex column stretch">
-            <strong>The Model</strong>
-            <div class="card">
-              <slot name="model-code">model code</slot>
-            </div>
-          </div>
         </div>
       </details>
     </section>`;

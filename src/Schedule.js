@@ -74,7 +74,7 @@ export default class Schedule {
 }
 
 /**
- * Singleton instance of the Schedule class.
+ * Singleton instance
  * @type {Schedule}
  */
 const scheduler = new Schedule();

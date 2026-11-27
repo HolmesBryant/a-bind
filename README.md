@@ -29,7 +29,7 @@ Import the library into your project.
 
 ### Using a DOM Element as the model
 
-```Html
+```html
 <custom-element id="my-ce">
   foo = 'foo';
   ...
@@ -86,7 +86,11 @@ export class CustomElement extends HTMLElement {
 #### Load a file path
 
 ```html
-<a-bind model="mod:./path/to/model.js" prop="foo">...</a-bin
+<a-bind
+  model="mod:./path/to/model.js"
+  prop="foo">
+  ...
+</a-bind>
 ```
 
 #### Using loader.define()
@@ -106,7 +110,9 @@ loader.define('app', new App());
 ```html
 <!-- page.html -->
 
-<a-bind model="app" prop="foo">...</a-bind>
+<a-bind model="app" prop="foo">
+  ...
+</a-bind>
 ```
 
 ## The a-bind Element
@@ -115,28 +121,61 @@ The core element that creates a link between a data source (Model) and a DOM ele
 
 ### Attributes
 
-| Attribute | Default | Description |
-| :-------- | :------ | :---------- |
-| model     | null    | The key to resolve the data. Can be a CSS selector (dom:#id), a Module URL (mod:./file.js) or a (string) key defined via loader.define('key', model). |
-| prop      | null    | The property inside the model (e.g., name or user.address.city).  |
-| attr      | null    | Alternate to prop. Used if the model is an HTML Element and you want to bind to an attribute instead of a property.|
-| elem-prop | value   | The property on the bound DOM element to update (e.g., value, textContent, checked, style.color). |
-| event     | input   | The DOM event that triggers a model update. |
-| func      | null    | The name of a function in the model. ABind will invoke this function and pass an Event object as the sole argument.
-| target    | null    | A CSS selector to find the element to bind to. If omitted, binds to the first child.  |
-| throttle  | 0       | Time in ms to debounce model updates.  |
-| pull      | false   | If present, only reads FROM the MODEL (One-way: MODEL -> DOM).  |
-| push      | false   | If present, only writes TO the MODEL (One-way: DOM -> MODEL). |
-| once      | false   | Update the DOM once on load, then stop listening but continue to update the model (unless pull is present)  |
-| debug     | false   | Enables verbose console logging for this binding. |
+- **model**
+  - default: null
+  - The key to resolve the data. Can be a CSS selector (dom:#id), a Module URL (mod:./file.js) or a (string) key defined via loader.define('key', model).
+
+- **prop**
+  - default: null
+  - The property inside the model (e.g., name or user.address.city).
+
+- **attr**
+  - default: null
+  - Alternate to prop. Used if the model is an HTML Element and you want to bind to an attribute instead of a property.
+
+- **elem-prop**
+  - default: value
+  - The property on the bound DOM element to update (e.g., value, textContent, checked, style.color).
+
+- **event**
+  - default: input
+  - The DOM event that triggers a model update.
+
+- **func**
+  - default: null
+  - The name of a function in the model. ABind will invoke this function and pass an Event object as the sole argument.
+
+- **target**
+  - default: null
+  - A CSS selector to find the element to bind to. If omitted, binds to the first child.
+
+- **throttle**
+  - default: 0
+  - Time in ms to debounce model updates.
+
+- **pull**
+  - default: false
+  - If present, only reads FROM the MODEL (One-way: MODEL -> DOM).
+
+- **push**
+  - default: false
+  - If present, only writes TO the MODEL (One-way: DOM -> MODEL).
+
+- **once**
+  - default: false
+  - Update the DOM once on load, then stop listening but continue to update the model (unless pull is present)
+
+- **debug**
+  - default: false
+  - Enables verbose console logging for this binding.
 
 ### Reactivity (Important)
 
 Because a-bind uses a "non-intrusive" approach (it doesn't use Proxies to wrap your original objects), standard JavaScript assignments (e.g., myModel.message = 'New') will not automatically trigger the UI to update.
 
-**Note:** UI interactions like typing in an input, automatically handle this internally (unless you transform the data type).
-
 You must notify the view of changes made via JavaScript using the update helper. There are a few ways to do this:
+
+**Note:** UI interactions like typing in an input, automatically handle this internally (unless you transform the data type).
 
 #### Direct Import (Standard)
 
@@ -203,7 +242,11 @@ You can bind to specific attributes or properties of the target element (like st
 ```html
 <!-- Binds myModel.color to the element's style.color -->
 
-<a-bind model="mod:myModel" prop="color" elem-prop="style.color">
+<a-bind
+  model="mod:myModel"
+  prop="color"
+  elem-prop="style.color">
+
   <div>This text is colored</div>
 </a-bind>
 ```
@@ -246,7 +289,12 @@ The "push" attribute tells a-bind to push updates from the view to the model, bu
 ```html
 <!-- if the push attribute were not present, a-bind would set the button's value to the value of myModel.foo -->
 
-<a-bind push model="mod:myModel" prop="foo" event="click">
+<a-bind
+  push
+  model="mod:myModel"
+  prop="foo"
+  event="click">
+
   <button value="Button Value">
     Change myModel.name to "New Name"
   </button>
@@ -268,8 +316,15 @@ export class myModel {
 ```
 
 ```html
-<a-bind push model="mod:myModel" event="click" func="doSomething">
-  <button value="foo">Do Something</button>
+<a-bind
+  push
+  model="mod:myModel"
+  event="click"
+  func="doSomething">
+
+  <button value="foo">
+    Do Something
+  </button>
 </a-bind>
 ```
 
@@ -281,16 +336,25 @@ When binding to boolean values or non-input elements, you must specify the corre
 
 **Checkboxes/Radios:** Use elem-prop="checked" to bind to the boolean state.
 
-```Html
+```html
 <!-- Display a boolean as text -->
 
-<a-bind pull model="mod:myModel" prop="isActive" elem-prop="textContent">
+<a-bind
+  pull
+  model="mod:myModel"
+  prop="isActive"
+  elem-prop="textContent">
+
   <span></span>
 </a-bind>
 
 <!-- Bind a checkbox to the same boolean -->
 
-<a-bind model="mod:myModel" prop="isActive" elem-prop="checked">
+<a-bind
+  model="mod:myModel"
+  prop="isActive"
+  elem-prop="checked">
+
   <input type="checkbox">
 </a-bind>
 ```
@@ -299,16 +363,24 @@ When binding to boolean values or non-input elements, you must specify the corre
 
 You can bind directly to CSS variables or style properties.
 
-```Html
+```html
 <!-- bind an element's background color to a model property -->
 
-<a-bind model="mod:myModel" prop="headerColor" elem-prop="style.backgroundColor">
-  <header>This header's background is colored.</header>
+<a-bind
+  model="mod:myModel"
+  prop="headerColor"
+  elem-prop="style.backgroundColor">
+  <header>
+    This header's background is colored.
+  </header>
 </a-bind>
 
 <!-- bind to a css variable on a custom element -->
 
-<a-bind model="dom:#my-custom-element" prop="--header-color">
+<a-bind
+  model="dom:#my-custom-element"
+  prop="--header-color">
+
   <input type="color">
 </a-bind>
 ```
@@ -320,7 +392,7 @@ The 'throttle' attribute delays the View-to-Model update (or function execution)
 **Why use it?**
 It prevents performance bottlenecks and excessive network requests when a user is rapidly typing in text fields (e.g., search bars, auto-save forms).
 
-### Examples ###
+### Examples
 
 1. Delaying Model Updates (Auto-save)
 
@@ -328,8 +400,13 @@ The model's bio property will only update 1000ms (1 second) after the user stops
 
 ```html
 <!-- Updates 'user.bio' 1 second after typing stops -->
-<a-bind model="user" prop="bio" throttle="1000">
-  <textarea placeholder="Tell us about yourself..."></textarea>
+<a-bind
+  model="user"
+  prop="bio"
+  throttle="1000">
+
+  <textarea placeholder="Tell us about yourself...">
+  </textarea>
 </a-bind>
 ```
 
@@ -339,8 +416,14 @@ The fetchResults function will only run 500ms after the user pauses, preventing 
 
 ```html
 <!-- Calls 'api.fetchResults(event)' 500ms after typing stops -->
-<a-bind model="api" func="fetchResults" throttle="500">
-  <input type="text" placeholder="Search...">
+<a-bind
+  model="api"
+  func="fetchResults"
+  throttle="500">
+
+  <input
+    type="text"
+    placeholder="Search...">
 </a-bind>
 ```
 
@@ -348,7 +431,7 @@ The fetchResults function will only run 500ms after the user pauses, preventing 
 
 To avoid adding the "model" attribute to several a-bind's which share the same model, wrap them all in a-bindgroup. You can also set a "prop" attribute here for html collections that reference the same model property. Nested groups respect scoping.
 
-```Html
+```html
 <a-bindgroup model="mod:myModel">
 
   <!-- Inherits the model -->
@@ -386,12 +469,15 @@ A DOM-based template engine for rendering lists.
 
 ### Attributes
 
-| Attribute | Description |
-| :-------- | :---------- |
-| model     | The data source object (or module). |
-| prop      | The property on the model containing an Array to iterate over.  |
-| target    | Optional. CSS selector for the container element where items will be rendered. If no target, items are rendered inside the a-repeat element. |
-| key       | Optional. A property name in the model holding unique values (e.g. id) to enable efficient DOM reordering. |
+- **model** The data source object (or module).
+
+- **prop** The property on the model containing an Array to iterate over.
+
+- **append (optional)** Adding the `append` attribute tells `<a-repeat>` to leave pre-existing static elements in the `target` intact and handle only its own generated items after them.
+
+- **target (Optional)** CSS selector for the container element where items will be rendered. If no target, items are rendered inside the a-repeat element.
+
+- **key (Optional)** A property name in the model holding unique values (e.g. id) to enable efficient DOM reordering.
 
 ### Populating Selects and Datalists
 
@@ -404,9 +490,9 @@ export default {
     selected: 'foo',
     options: ['foo', 'bar']
 }
-````
+```
 
-```Html
+```html
 <!-- page.html -->
 
 <a-bindgroup model="mod:./myModel.js">
@@ -455,6 +541,49 @@ export default {
 </a-bindgroup>
 ```
 
+### Preserving Existing Elements (`append`)
+
+By default, `<a-repeat>` replaces the contents of its `target` container when rendering. Adding the `append` attribute tells `<a-repeat>` to leave pre-existing static elements in the `target` intact and render, update, and remove only its own generated items after them.
+
+This is useful when you need a static placeholder or header inside the target container—such as an initial `<option value="">` in a `<select>`—without adding dummy data to your model.
+
+`append` works in both standard (index-based) and keyed (`key`) modes. When iterating over an array of primitive values (like strings or numbers), you can also use `key="item"` (or `key="this"`) to key items by their value.
+
+```javascript
+// myModel.js
+
+export default {
+  selected: '',
+  options: ['foo', 'bar', 'baz']
+};
+```
+
+```html
+<!-- page.html -->
+
+<a-bindgroup model="mod:./myModel.js">
+  <!-- 1. Bind the Select element's value -->
+  <a-bind prop="selected">
+    <select id="my-select">
+      <option value="">Choose...</option>
+    </select>
+  </a-bind>
+
+  <!-- 2. Append options after the static placeholder -->
+  <a-repeat
+    append
+    target="dom:#my-select"
+    prop="options"
+    key="item">
+    <template>
+      <option value="{{item}}">{{item}}</option>
+    </template>
+  </a-repeat>
+</a-bindgroup>
+```
+
+When options updates, `<a-repeat>` updates only the options it created while keeping `<option value="">Choose...</option>` as the first option.
+
 ## Strategies for Loading Models
 
 There may be times when your model resides at a remote API endpoint, or it may even live on a CDN. Here are some strategies for loading various types of models.
@@ -463,7 +592,7 @@ There may be times when your model resides at a remote API endpoint, or it may e
 
 You can pass a full URL to import an ES Module directly from a CDN (like unpkg or jsdelivr).
 
-Requirement: The file at the URL must be an ES Module (it must export default a class or object).
+**Requirement:** The file at the URL must be an ES Module (it must `export default` a class or object).
 
 ```html
 <!-- Load a specific class from a CDN -->
@@ -489,21 +618,23 @@ Requirement: The file at the URL must be an ES Module (it must export default a 
 The Loader does not have a built-in fetch. Therefore, you cannot simply put an API endpoint in the model attribute. However, you can use Top-Level Await within a "Wrapper Module" to bridge the gap.
 
 ```JavaScript
+<textarea>
 // api-bridge.js
 
-const response = await fetch('https://jsonplaceholder.typicode.com/users');
+const response = await fetch('https://api.com/users');
 const data = await response.json();
 
 // Export the JSON data as the default model
 
 export default data;
+</textarea>
 ```
 
 Now use the mod: prefix to point to your local bridge file.
 
 ```html
+<textarea>
 <!-- ARepeat example iterating over API results -->
-
 <a-repeat model="mod:./api-bridge.js" prop="users">
   <template>
     <div class="user-card">
@@ -512,6 +643,7 @@ Now use the mod: prefix to point to your local bridge file.
     </div>
   </template>
 </a-repeat>
+</textarea>
 ```
 
 ### Using loader.define() (pre-fetching)
@@ -533,9 +665,9 @@ You can now use that key string directly. The elements will remain empty/idle un
 ```html
 <!-- The component waits for 'my-api-data' to be defined -->
 
-<a-repeat model="my-api-data" prop="products">
+a-repeat model="my-api-data" prop="products">
   <div>{{productName}} - {{price}}</div>
-</a-repeat>
+/a-repeat>
 ```
 
 ## Debugging
@@ -559,6 +691,8 @@ There is an edge case where the model will update twice if you have an html elem
 One solution is to add a "updateBound" property to your model. In the event listener callback, set `updateBound` to `false` before you change the property value. Then wherever in your model you invoke `ABind.update` or `globalThis[abindUpdate]`, first check if `updateBound` is `true`.
 
 ## Change Log
+
+v3.5 Added `append` attribute to `a-repeat`. Adding the `append` attribute tells `<a-repeat>` to leave pre-existing static elements in the `target` intact and handle only its own generated items after them.
 
 v3.1.2 Tweaked throttle (debounce) functionality to account for certain edge cases.
 

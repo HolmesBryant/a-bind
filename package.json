@@ -1,30 +1,39 @@
 {
   "name": "a-bind",
-  "version": "3.0.0",
   "description": "Data-binding for Custom Elements and ESM Modules.",
+  "version": "3.5",
+  "license": "GPL-3.0-or-later",
+  "author": "Holmes Bryant <webmaastaa@gmail.com>",
+  "homepage": "https://github.com/HolmesBryant/a-bind",
   "type": "module",
   "main": "./dist/a-bind.min.js",
   "module": "./dist/a-bind.min.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HolmesBryant/a-bind.git"
+  },
+  "keywords": [
+    "module",
+    "component"
+  ],
   "exports": {
     ".": "./dist/a-bind.min.js",
-    "./src": "./src/a-bind.js"
+    "./src/a-bind.js": "./src/a-bind.js"
   },
   "files": [
     "dist",
     "src"
   ],
-  "scripts": {
-    "dev": "vite",
-    "test": "tests/index.html",
-    "build": "rollup -c"
+  "bugs": {
+    "url": "https://github.com/HolmesBryant/a-bind/issues"
   },
-  "author": "Holmes Bryant <https://github.com/HolmesBryant>",
-  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "reload"
+  },
   "devDependencies": {
-    "@roenlie/vite-plugin-import-css-sheet": "^0.0.7",
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.30.1",
-    "vite": "^6.4.1"
+    "@rollup/plugin-node-resolve": "latest",
+    "@rollup/plugin-terser": "latest",
+    "rollup": "latest"
   }
 }

@@ -3,32 +3,57 @@
 <summary class="nofrills">Setup</summary>
   <a-code highlight="javascript">
     // test-component.js
-    export class TestComponent extends HTMLElement {
-      text = 'foo';
-      static template = `
-        /* When binding elements in Shadow DOM,
-        use "this" as the model.*/
 
-        &lt;a-bind model="this" prop="text">
-          <input>
-        &lt;/a-bind>
-      `;
+    export default class TestComponent extends HTMLElement {
+      text = "Initial Text";
+      email = "name@email.com";
+      number = 12345;
+      textarea = "Initial content.";
+      date = "1914-12-25";
+      selected = "bar";
+      selected2 = "";
+      selectMulti = ['foo', 'baz'];
+      checkbox = 'foo';
+      checkboxBool = false;
+      checkboxArr = ['foo', 'baz'];
+      radioGroup = 'foo';
+      button = "Initial Value";
+      color = "#cd5c5c";
+      range = 50;
+      progress = 50;
+      name = "My Name";
+      editable = "<p>Eiusmod magna eiusmod anim</p>";
+      options = ['foo', 'bar', 'baz'];
+      optionsA = [
+        {value: 'foo', label: 'Foo!'},
+        {value: 'bar', label: 'Bar!'},
+        {value: 'baz', label: 'Baz!'}
+      ];
 
-      constructor() {
-        super();
-        this.attachShadow({mode: 'open'})
+      constructor() { super(); }
+
+      attributeChangedCallback(attr, oldval, newval) {
+        ...
       }
-      attributeChangedCallback(attr, oldval, newval) {...}
-      connectedCallback() {
-        this.shadowRoot.innerHTML = TestComponent.template
-      }
-      disconnectedCallback() {...}
+
+      connectedCallback() { .... }
+      disconnectedCallback() { .... }
+    }
+
+    if (!customElements.get('test-component')) {
+      customElements.define('test-component', TestComponent);
     }
   </a-code>
+
+  <hr>
 
   <a-code highlight>
     <textarea>
       <!-- index.html -->
+
+      <script type="module" src="./a-bind.min.js"></script>
+      <script type="module" src="./test-component.js"></script>
+
       <test-component id="my-elem"></test-component>
 
       <!-- When binding elements in the Light DOM,
@@ -57,19 +82,11 @@
       <textarea>
         <a-bind
           model="dom:#tc-text"
-          prop="text"
-          slot="input">
+          prop="text">
 
           <input name="text">
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        text = 'Initial Text';
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -96,7 +113,7 @@
       </a-repeat>
     </div>
 
-    <a-code highight slot="input-code">
+    <a-code highlight slot="input-code">
       <textarea>
         <div slot="input">
           <input
@@ -118,13 +135,6 @@
         </div>
       </textarea>
     </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        options = ['foo', 'bar', 'baz'];
-        ...
-      }
-    </a-code>
   </test-component>
 
   <hr>
@@ -143,19 +153,11 @@
       <textarea>
         <a-bind
           model="dom:#tc-email"
-          prop="email"
-          slot="input">
+          prop="email">
 
           <input name="email">
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        email = 'name@email.com';
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -176,19 +178,11 @@
       <textarea>
         <a-bind
           model="dom:#tc-date"
-          prop="date"
-          slot="input">
+          prop="date">
 
           <input name="date">
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        date = '1914-12-25';
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -217,7 +211,7 @@
 
     <a-code highlight slot="input-code">
       <textarea>
-        <div slot="input">
+        <div>
           <a-bindgroup
             model="dom:#tc-color"
             prop="color">
@@ -237,13 +231,6 @@
           </a-bindgroup>
         </div>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        color = '#cd5c5c';
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -277,8 +264,7 @@
       <textarea>
         <a-bindgroup
           model="dom:#tc-range"
-          prop="range"
-          slot="input">
+          prop="range">
 
           <a-bind
             pull
@@ -291,13 +277,6 @@
           </a-bind>
         </a-bindgroup>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent {
-        range = 50;
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -322,19 +301,11 @@
       <textarea>
         <a-bind
           model="dom:#tc-progress"
-          prop="progress"
-          slot="input">
+          prop="progress">
           <progress max="100">
           </progress>
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        progress = 50;
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -364,8 +335,7 @@
     <a-code highlight slot="input-code">
       <textarea>
         <a-bindgroup
-          model="dom:#tc-select"
-          slot="input">
+          model="dom:#tc-select">
 
           <a-bind prop="selected">
             <select id="c-select"></select>
@@ -381,10 +351,49 @@
         </a-bindgroup>
       </textarea>
     </a-code>
+  </test-component>
 
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-      }
+  <hr>
+
+  <!-- select with empty first option -->
+  <test-component
+    id="tc-select2"
+    prop="selected2"
+    label='select with empty first option'
+    newval='baz'>
+
+    <a-bindgroup model="dom:#tc-select2" slot="input">
+      <a-bind prop="selected2">
+        <select id="c-select2"></select>
+      </a-bind>
+
+      <a-repeat
+        target="dom:#c-select2"
+        prop="optionsA">
+        <template>
+          <option value="{{value}}">{{label}}</option>
+        </template>
+      </a-repeat>
+    </a-bindgroup>
+
+    <a-code highlight slot="input-code">
+      <textarea>
+        <a-bindgroup
+          model="dom:#tc-select2">
+
+          <a-bind prop="selected2">
+            <select id="c-select2"></select>
+          </a-bind>
+
+          <a-repeat
+            target="dom:#c-select2"
+            prop="options">
+            <template>
+              <option value="{{value}}">{{label}}</option>
+            </template>
+          </a-repeat>
+        </a-bindgroup>
+      </textarea>
     </a-code>
   </test-component>
 
@@ -412,8 +421,7 @@
     <a-code highlight slot="input-code">
       <textarea>
         <a-bindgroup
-          model="dom:#tc-select-multi"
-          slot="input">
+          model="dom:#tc-select-multi">
 
           <a-bind
             prop="selectMulti">
@@ -435,19 +443,6 @@
         </a-bindgroup>
       </textarea>
     </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        selectMulti = ['foo', 'baz'];
-
-        optionsA = [
-          {value: 'foo', label: 'Foo!'},
-          {value: 'bar', label: 'Bar!'},
-          {value: 'baz', label: 'Baz!'}
-        ];
-        ...
-      }
-    </a-code>
   </test-component>
 
   <hr>
@@ -467,21 +462,13 @@
       <textarea>
         <a-bind
           model="dom:#tc-checkbox"
-          prop="checkbox"
-          slot="input">
+          prop="checkbox">
 
           <input
             type="checkbox"
             value="foo">
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        checkbox = 'foo';
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -502,19 +489,11 @@
       <textarea>
         <a-bind
           model="dom:#tc-checkboxbool"
-          prop="checkboxBool"
-          slot="input">
+          prop="checkboxBool">
 
           <input type="checkbox">
       </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        checkboxBool = false;
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -585,13 +564,6 @@
         </a-bindgroup>
       </textarea>
     </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        checkboxArr = ['foo', 'baz'];
-        ...
-      }
-    </a-code>
   </test-component>
 
   <hr>
@@ -636,8 +608,7 @@
       <textarea>
         <a-bindgroup
           model="dom:#tc-radio"
-          prop="radioGroup"
-          slot="input">
+          prop="radioGroup">
 
           <a-bind>
             <input
@@ -661,13 +632,6 @@
           </a-bind>
         </a-bindgroup>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        radioGroup = 'foo';
-        ...
-      }
     </a-code>
   </test-component>
 
@@ -696,7 +660,6 @@
     <a-code highlight slot="input-code">
       <textarea>
         <a-bind
-          slot="input"
           model="dom:#tc-button1"
           prop="button"
           elem-prop="textContent"
@@ -708,18 +671,6 @@
           </button>
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestCommponent extends HTMLElement {
-        button = "Initial Value";
-
-        ...
-
-        notify(event) {
-          console.log(event.target.value);
-        }
-      }
     </a-code>
   </test-component>
 
@@ -745,7 +696,6 @@
     <a-code highlight slot="input-code">
       <textarea>
         <a-bind
-          slot="input"
           model="dom:#tc-button1"
           prop="button"
           event="click"
@@ -754,18 +704,6 @@
           <button>Click Me!</button>
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestCommponent extends HTMLElement {
-        button = "Initial Value";
-
-        ...
-
-        notify(event) {
-          console.log(event.target.value);
-        }
-      }
     </a-code>
   </test-component>
 
@@ -799,8 +737,7 @@
       <textarea>
         <a-bindgroup
           model="dom:#tc-button3"
-          prop="button"
-          slot="input">
+          prop="button">
 
           <a-bind
             event="click"
@@ -814,18 +751,6 @@
           </a-bind>
         </a-bindgroup>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestCommponent extends HTMLElement {
-        button = "Initial Value";
-
-        ...
-
-        notify(event) {
-          console.log(event.target.value);
-        }
-      }
     </a-code>
   </test-component>
 
@@ -849,20 +774,10 @@
         <a-bind
           model="dom:#tc-file"
           event="change"
-          func="fileInfo"
-          slot="input">
+          func="fileInfo">
           <input type="file" multiple>
         </a-bind>
       </textarea>
-    </a-code>
-
-    <a-code highlight="javascript" slot="model-code">
-      export class TestComponent extends HTMLElement {
-        ...
-        fileInfo(event) {
-          console.log(event.target.files);
-        }
-      }
     </a-code>
   </test-component>
 </details>
@@ -922,13 +837,6 @@
               </textarea>
             </a-code>
           </div><!-- /row -->
-
-          <a-code highlight="javascript" class="card">
-            export class TestComponent extends HTMLElement {
-              editable = "<p>Eiusmod magna eiusmod anim</p>";
-              ...
-            }
-          </a-code><!-- /row -->
         </div> <!-- column -->
 
         </div>
@@ -987,7 +895,7 @@
 
   <hr>
 
-  <div class="flex column">
+  <div class="flex column stretch">
     <strong>HTML</strong>
 
     <a-code highlight class="card">

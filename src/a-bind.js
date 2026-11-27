@@ -1,8 +1,9 @@
 /**
+ * @file a-bind.js
  * Data-binding for Custom Elements and ESM Modules.
  * @author Holmes Bryant <Holmes Bryant <https://github.com/HolmesBryant>
  * @license GPL-3.0
- * @version 3.1.3
+ * @version 3.5
  */
 
 import { scheduler } from './Schedule.js';
