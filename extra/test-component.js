@@ -1,4 +1,3 @@
-import ABind from '../src/index.js';
 import styles from './styles.css' with {type: 'css'};
 
 export class TestComponent extends HTMLElement {

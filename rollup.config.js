@@ -56,7 +56,7 @@ function importableTemplate() {
 }
 
 export default {
-  input: 'src/a-bind.js',
+  input: 'src/index.js',
   output: [
     // Standard ES Module (unminified)
     {

@@ -171,9 +171,9 @@ The core element that creates a link between a data source (Model) and a DOM ele
 
 ### Reactivity (Important)
 
-Because a-bind uses a "non-intrusive" approach (it doesn't use Proxies to wrap your original objects), standard JavaScript assignments (e.g., myModel.message = 'New') will not automatically trigger the UI to update.
+Because a-bind uses a "non-intrusive" approach (it doesn't use Proxies to wrap your original objects), standard javascript assignments (e.g., myModel.message = 'New') will not automatically trigger the UI to update.
 
-You must notify the view of changes made via JavaScript using the update helper. There are a few ways to do this:
+You must notify the view of changes made via javascript using the update helper. There are a few ways to do this:
 
 **Note:** UI interactions like typing in an input, automatically handle this internally (unless you transform the data type).
 
@@ -617,7 +617,7 @@ You can pass a full URL to import an ES Module directly from a CDN (like unpkg o
 
 The Loader does not have a built-in fetch. Therefore, you cannot simply put an API endpoint in the model attribute. However, you can use Top-Level Await within a "Wrapper Module" to bridge the gap.
 
-```JavaScript
+```javascript
 <textarea>
 // api-bridge.js
 

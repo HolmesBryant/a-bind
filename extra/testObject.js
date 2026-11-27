@@ -1,4 +1,5 @@
-import ABind from '../src/index.js';
+// import ABind from '../src/index.js';
+const abindUpdate = Symbol.for('abind.update');
 
 /**
  * @file extra/testObject.js
@@ -1083,7 +1084,8 @@ const testObject = {
 		}
 		if (value === this._options) return;
 		this._options = value;
-		ABind.update(this, 'options', value);
+		// ABind.update(this, 'options', value);
+		globalThis[abindUpdate]?.(myModel, 'count', 5);
 	},
 } // object
 
